@@ -6,13 +6,11 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.swagger.mojang_api.handler.ProfilesApi;
-import vc.swagger.mojang_api.model.InlineResponse2001;
 import vc.swagger.vc.handler.PlaytimeApi;
 import vc.swagger.vc.model.PlaytimeResponse;
+import vc.util.PlayerLookup;
 import vc.util.Validator;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,7 +18,11 @@ import java.util.UUID;
 public class PlaytimeCommand implements SlashCommand {
 
     private final PlaytimeApi playtimeApi = new PlaytimeApi();
-    private final ProfilesApi profilesApi = new ProfilesApi();
+    private final PlayerLookup playerLookup;
+
+    public PlaytimeCommand(final PlayerLookup playerLookup) {
+        this.playerLookup = playerLookup;
+    }
 
     @Override
     public String getName() {
@@ -32,31 +34,11 @@ public class PlaytimeCommand implements SlashCommand {
         Optional<String> playerNameOptional = event.getOption("username")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
-        Optional<String> uuidOptional = event.getOption("uuid")
-                .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString);
-        return uuidOptional
-                .filter(Validator::isUUID)
-                .map(UUID::fromString)
+        return playerNameOptional
+                .filter(Validator::isValidUsername)
+                .flatMap(playerLookup::getPlayerUUID)
                 .map(uuid -> resolvePlaytime(event, uuid))
-                .orElseGet(() -> playerNameOptional
-                        .filter(Validator::isValidUsername)
-                        .flatMap(this::getPlayerUUID)
-                        .map(uuid -> resolvePlaytime(event, uuid))
-                        .orElse(error(event, "Unable to find player")));
-    }
-
-
-    private Optional<UUID> getPlayerUUID(final String username) {
-        List<InlineResponse2001> profileUuid = profilesApi.getProfileUuid(List.of(username));
-        return profileUuid.stream().findFirst()
-                .map(InlineResponse2001::getId)
-                .map(s -> s.replaceFirst("(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)", "$1-$2-$3-$4-$5"))
-                .map(UUID::fromString);
-    }
-
-    private Mono<Message> error(ChatInputInteractionEvent event, final String message) {
-        return event.createFollowup().withContent(message);
+                .orElse(error(event, "Unable to find player"));
     }
 
     private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final UUID uuid) {

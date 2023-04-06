@@ -1,6 +1,6 @@
 {
-  "name": "playtime",
-  "description": "2b2t playtime",
+  "name": "seen",
+  "description": "Get when a player was last and first seen on 2b2t",
   "options": [
     {
       "name": "username",

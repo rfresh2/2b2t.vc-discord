@@ -14,4 +14,8 @@ public interface SlashCommand {
     String getName();
 
     Mono<Message> handle(ChatInputInteractionEvent event);
+
+    default Mono<Message> error(ChatInputInteractionEvent event, final String message) {
+        return event.createFollowup().withContent(message);
+    }
 }
