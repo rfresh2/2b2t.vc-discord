@@ -35,24 +35,15 @@ public class PlaytimeCommand implements SlashCommand {
         Optional<String> uuidOptional = event.getOption("uuid")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
-        if (uuidOptional.isPresent()) {
-            if (Validator.isUUID(uuidOptional.get())) {
-                return resolvePlaytime(event, uuidOptional.map(UUID::fromString).get());
-            } else {
-                return error(event, "Invalid UUID format");
-            }
-        } else if (playerNameOptional.isPresent()) {
-            if (Validator.isValidUsername(playerNameOptional.get())) {
-                final Optional<UUID> uuid = getPlayerUUID(playerNameOptional.get());
-                if (uuid.isPresent()) {
-                    return resolvePlaytime(event, uuid.get());
-                } else {
-                    return error(event, "Unable to find player");
-                }
-            }
-        }
-        return event.createFollowup()
-                .withContent("Username or UUID must be specified");
+        return uuidOptional
+                .filter(Validator::isUUID)
+                .map(UUID::fromString)
+                .map(uuid -> resolvePlaytime(event, uuid))
+                .orElseGet(() -> playerNameOptional
+                        .filter(Validator::isValidUsername)
+                        .flatMap(this::getPlayerUUID)
+                        .map(uuid -> resolvePlaytime(event, uuid))
+                        .orElse(error(event, "Unable to find player")));
     }
 
 
@@ -69,7 +60,7 @@ public class PlaytimeCommand implements SlashCommand {
     }
 
     private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final UUID uuid) {
-        PlaytimeResponse playtime = playtimeApi.playtime(UUID.fromString("572e683c-888a-4a0d-bc10-5d9cfa76d892"));
+        PlaytimeResponse playtime = playtimeApi.playtime(uuid);
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();
         String durationStr = formatDuration(playtimeSeconds);
         return event.createFollowup()
