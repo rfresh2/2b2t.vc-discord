@@ -1,6 +1,7 @@
 package vc;
 
 import discord4j.common.JacksonResources;
+import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.RestClient;
 import discord4j.rest.service.ApplicationService;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class GlobalCommandRegistrar implements ApplicationRunner {
@@ -46,6 +49,16 @@ public class GlobalCommandRegistrar implements ApplicationRunner {
 
             commands.add(request);
         }
+
+        // delete any commands we haven't registered
+        Map<String, ApplicationCommandData> existingCommands = applicationService
+                .getGlobalApplicationCommands(applicationId)
+                .collectMap(ApplicationCommandData::name)
+                .block();
+        Optional.ofNullable(existingCommands)
+                .ifPresent(e -> e.entrySet().stream()
+                        .filter(entry -> commands.stream().noneMatch(command -> command.name().equals(entry.getKey())))
+                        .forEach(entry -> applicationService.deleteGlobalApplicationCommand(applicationId, entry.getValue().id().asLong()).block()));
 
         /* Bulk overwrite commands. This is now idempotent, so it is safe to use this even when only 1 command
         is changed/added/removed
