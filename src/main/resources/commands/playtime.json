@@ -1,0 +1,18 @@
+{
+  "name": "playtime",
+  "description": "2b2t playtime",
+  "options": [
+    {
+      "name": "username",
+      "description": "The player to get playtime for",
+      "type": 3,
+      "required": false
+    },
+    {
+      "name": "uuid",
+      "description": "The player to get playtime for",
+      "type": 3,
+      "required": false
+    }
+  ]
+}
