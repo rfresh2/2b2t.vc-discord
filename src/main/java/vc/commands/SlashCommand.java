@@ -1,6 +1,7 @@
 package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.entity.Message;
 import reactor.core.publisher.Mono;
 
 /**
@@ -12,5 +13,5 @@ public interface SlashCommand {
 
     String getName();
 
-    Mono<Void> handle(ChatInputInteractionEvent event);
+    Mono<Message> handle(ChatInputInteractionEvent event);
 }

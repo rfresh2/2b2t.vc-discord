@@ -3,6 +3,7 @@ package vc.commands;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
+import discord4j.core.object.entity.Message;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -14,7 +15,7 @@ public class GreetCommand implements SlashCommand {
     }
 
     @Override
-    public Mono<Void> handle(ChatInputInteractionEvent event) {
+    public Mono<Message> handle(ChatInputInteractionEvent event) {
         /*
         Since slash command options are optional according to discord, we will wrap it into the following function
         that gets the value of our option as a String without chaining several .get() on all the optional values
@@ -27,8 +28,6 @@ public class GreetCommand implements SlashCommand {
             .get(); //This is warning us that we didn't check if its present, we can ignore this on required options
 
         //Reply to the slash command, with the name the user supplied
-        return  event.reply()
-            .withEphemeral(true)
-            .withContent("Hello, " + name);
+        return event.deferReply().then(event.createFollowup().withContent("Hello, " + name));
     }
 }
