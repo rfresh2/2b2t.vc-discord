@@ -29,10 +29,6 @@ public class PlaytimeCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        return event.deferReply().then(handleLookup(event));
-    }
-
-    private Mono<Message> handleLookup(final ChatInputInteractionEvent event) {
         Optional<String> playerNameOptional = event.getOption("username")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
@@ -58,6 +54,7 @@ public class PlaytimeCommand implements SlashCommand {
         return event.createFollowup()
                 .withContent("Username or UUID must be specified");
     }
+
 
     private Optional<UUID> getPlayerUUID(final String username) {
         List<InlineResponse2001> profileUuid = profilesApi.getProfileUuid(List.of(username));
