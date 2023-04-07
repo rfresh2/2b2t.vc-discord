@@ -39,7 +39,7 @@ public class Application {
         return DiscordClientBuilder.create(System.getenv("BOT_TOKEN")).build()
                 .gateway()
                 .setEnabledIntents(IntentSet.none())
-                .setInitialPresence(ignore -> ClientPresence.online(ClientActivity.listening("to /commands")))
+                .setInitialPresence(ignore -> ClientPresence.online(ClientActivity.listening("/commands")))
                 .login()
                 .block();
     }
