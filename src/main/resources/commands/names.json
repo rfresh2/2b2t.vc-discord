@@ -1,0 +1,12 @@
+{
+  "name": "names",
+  "description": "Gets a player's name history",
+  "options": [
+    {
+      "name": "username",
+      "description": "The player to get the name history of",
+      "type": 3,
+      "required": true
+    }
+  ]
+}
