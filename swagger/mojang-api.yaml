@@ -100,20 +100,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id:
-                      description: UUID
-                      type: string
-                    name:
-                      description: Username
-                      type: string
-                    legacy:
-                      description: Is present if the account is legacy
-                      type: boolean
-                    demo:
-                      description: Is Present if the account is demo (unpaid)
-                      type: boolean
+                  $ref: "#/components/schemas/ProfileLookup"
               examples:
                 Example:
                   summary: "Example"
@@ -848,6 +835,21 @@ components:
       type: http
       scheme: bearer
   schemas:
+    ProfileLookup:
+      type: object
+      properties:
+        id:
+          description: UUID
+          type: string
+        name:
+          description: Username
+          type: string
+        legacy:
+          description: Is present if the account is legacy
+          type: boolean
+        demo:
+          description: Is Present if the account is demo (unpaid)
+          type: boolean
     SecurityQuestionEnum:
       type: integer
       enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]

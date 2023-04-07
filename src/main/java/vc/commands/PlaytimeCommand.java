@@ -4,8 +4,11 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
+import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.swagger.mojang_api.model.ProfileLookup;
 import vc.swagger.vc.handler.PlaytimeApi;
 import vc.swagger.vc.model.PlaytimeResponse;
 import vc.util.PlayerLookup;
@@ -36,17 +39,23 @@ public class PlaytimeCommand implements SlashCommand {
                 .map(ApplicationCommandInteractionOptionValue::asString);
         return playerNameOptional
                 .filter(Validator::isValidUsername)
-                .flatMap(playerLookup::getPlayerUUID)
-                .map(uuid -> resolvePlaytime(event, uuid))
+                .flatMap(playerLookup::getPlayerProfile)
+                .map(profile -> resolvePlaytime(event, profile))
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final UUID uuid) {
-        PlaytimeResponse playtime = playtimeApi.playtime(uuid);
+    private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final ProfileLookup profile) {
+        UUID profileUUID = playerLookup.getProfileUUID(profile);
+        PlaytimeResponse playtime = playtimeApi.playtime(profileUUID);
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();
         String durationStr = formatDuration(playtimeSeconds);
         return event.createFollowup()
-                .withContent(durationStr);
+                .withEmbeds(EmbedCreateSpec.builder()
+                        .title("Playtime: " + escape(profile.getName()))
+                        .color(Color.CYAN)
+                        .description(durationStr)
+                        .thumbnail(playerLookup.getAvatarURL(profileUUID).toString())
+                        .build());
     }
 
     private String formatDuration(long durationInSeconds) {

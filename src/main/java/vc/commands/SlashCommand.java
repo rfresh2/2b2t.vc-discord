@@ -2,6 +2,8 @@ package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
+import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.rest.util.Color;
 import reactor.core.publisher.Mono;
 
 /**
@@ -16,6 +18,15 @@ public interface SlashCommand {
     Mono<Message> handle(ChatInputInteractionEvent event);
 
     default Mono<Message> error(ChatInputInteractionEvent event, final String message) {
-        return event.createFollowup().withContent(message);
+        return event.createFollowup()
+                .withEmbeds(EmbedCreateSpec.builder()
+                        .title("Error")
+                        .color(Color.RUBY)
+                        .description(message)
+                        .build());
+    }
+
+    default String escape(String message) {
+        return message.replaceAll("_", "\\\\_");
     }
 }
