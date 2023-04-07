@@ -1,0 +1,12 @@
+{
+  "name": "deaths",
+  "description": "Gets a player's deaths",
+  "options": [
+    {
+      "name": "username",
+      "description": "The player to get deaths for",
+      "type": 3,
+      "required": true
+    }
+  ]
+}
