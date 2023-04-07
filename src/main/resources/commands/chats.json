@@ -1,0 +1,12 @@
+{
+  "name": "chats",
+  "description": "Gets a player's chat history",
+  "options": [
+    {
+      "name": "username",
+      "description": "The player to get the chat history of",
+      "type": 3,
+      "required": true
+    }
+  ]
+}

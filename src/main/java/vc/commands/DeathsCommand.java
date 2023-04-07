@@ -49,15 +49,15 @@ public class DeathsCommand implements SlashCommand {
         List<String> deathStrings = deaths.stream()
                 .map(k -> "<t:" + k.getTime().toEpochSecond() + ":f>: " + escape(k.getDeathMessage()))
                 .toList();
-        String result = "";
+        StringBuilder result = new StringBuilder();
         for (String s : deathStrings) {
             if (result.length() + s.length() > 4090) {
                 break;
             }
-            result += s + "\n";
+            result.append(s).append("\n");
         }
         if (result.length() > 0) {
-            result = result.substring(0, result.length() - 1);
+            result = new StringBuilder(result.substring(0, result.length() - 1));
         } else {
             return event.createFollowup()
                     .withEmbeds(EmbedCreateSpec.builder()
@@ -71,7 +71,7 @@ public class DeathsCommand implements SlashCommand {
                 .withEmbeds(EmbedCreateSpec.builder()
                         .title("Deaths: " + escape(profile.getName()))
                         .color(Color.CYAN)
-                        .description(result)
+                        .description(result.toString())
                         .thumbnail(playerLookup.getAvatarURL(profile.getId()).toString())
                         .build());
     }
