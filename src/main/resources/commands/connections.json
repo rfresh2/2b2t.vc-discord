@@ -1,0 +1,12 @@
+{
+  "name": "connections",
+  "description": "Gets a player's join and leave events on 2b2t",
+  "options": [
+    {
+      "name": "username",
+      "description": "The player to get the join and leave events for",
+      "type": 3,
+      "required": true
+    }
+  ]
+}
