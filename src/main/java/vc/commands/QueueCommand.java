@@ -25,8 +25,25 @@ public class QueueCommand implements SlashCommand {
                 .withEmbeds(EmbedCreateSpec.builder()
                         .title("2b2t Queue")
                         .color(Color.CYAN)
-                        .addField("Regular", queuelength.getRegular().toString(), false)
-                        .addField("Prio", queuelength.getPrio().toString(), false)
+                        .addField("Prio", queuelength.getPrio().toString(), true)
+                        .addField("Regular", queuelength.getRegular().toString(), true)
+                        .addField("ETA", getEtaStringFromSeconds(getQueueWaitInSeconds(queuelength.getRegular())), true)
                         .build());
+    }
+
+    // probably only valid for regular queue, prio seems to move a lot faster
+    // returns double representing seconds until estimated queue completion time.
+    public static double getQueueWaitInSeconds(final Integer queuePos) {
+        return 87.0 * (Math.pow(queuePos.doubleValue(), 0.962));
+    }
+
+    public static String getEtaStringFromSeconds(final double totalSeconds) {
+        final int hour = (int) (totalSeconds / 3600);
+        final int minutes = (int) ((totalSeconds / 60) % 60);
+        final int seconds = (int) (totalSeconds % 60);
+        final String hourStr = hour >= 10 ? "" + hour : "0" + hour;
+        final String minutesStr = minutes >= 10 ? "" + minutes : "0" + minutes;
+        final String secondsStr = seconds >= 10 ? "" + seconds : "0" + seconds;
+        return hourStr + ":" + minutesStr + ":" + secondsStr;
     }
 }
