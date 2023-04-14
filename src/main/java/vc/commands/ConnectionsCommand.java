@@ -17,6 +17,8 @@ import vc.util.Validator;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Objects.isNull;
+
 @Component
 public class ConnectionsCommand implements SlashCommand {
 
@@ -46,6 +48,7 @@ public class ConnectionsCommand implements SlashCommand {
 
     private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final ProfileLookup profile) {
         List<Connections> connections = connectionsApi.connections(playerLookup.getProfileUUID(profile), 0);
+        if (isNull(connections) || connections.isEmpty()) return error(event, "No connections found for player");
         List<String> connectionStrings = connections.stream()
                 .map(c -> c.getConnection().getValue() + " <t:" + c.getTime().toEpochSecond() + ":f>")
                 .toList();

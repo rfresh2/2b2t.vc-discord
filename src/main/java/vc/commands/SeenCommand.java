@@ -11,11 +11,14 @@ import org.threeten.bp.OffsetDateTime;
 import reactor.core.publisher.Mono;
 import vc.swagger.mojang_api.model.ProfileLookup;
 import vc.swagger.vc.handler.SeenApi;
+import vc.swagger.vc.model.SeenResponse;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 
 import java.util.Optional;
 import java.util.UUID;
+
+import static java.util.Objects.isNull;
 
 @Component
 public class SeenCommand implements SlashCommand {
@@ -46,8 +49,12 @@ public class SeenCommand implements SlashCommand {
 
     private Mono<Message> resolveSeen(final ChatInputInteractionEvent event, final ProfileLookup profile) {
         UUID uuid = playerLookup.getProfileUUID(profile);
-        OffsetDateTime lastSeen = seenApi.seen(uuid).getTime();
-        OffsetDateTime firstSeen = seenApi.firstSeen(uuid).getTime();
+        SeenResponse seenResponse = seenApi.seen(uuid);
+        if (isNull(seenResponse)) return error(event, "Player has not been seen");
+        SeenResponse firstSeenResponse = seenApi.firstSeen(uuid);
+        if (isNull(firstSeenResponse)) return error(event, "Player has not been seen");
+        OffsetDateTime lastSeen = seenResponse.getTime();
+        OffsetDateTime firstSeen = firstSeenResponse.getTime();
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
                         .title("Seen: " + escape(profile.getName()))

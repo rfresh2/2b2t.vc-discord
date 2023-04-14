@@ -17,6 +17,8 @@ import vc.util.Validator;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Objects.isNull;
+
 @Component
 public class ChatsCommand implements SlashCommand {
     private final ChatsApi chatsApi = new ChatsApi();
@@ -45,6 +47,7 @@ public class ChatsCommand implements SlashCommand {
 
     private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final ProfileLookup profile) {
         List<Chats> chats = chatsApi.chats(playerLookup.getProfileUUID(profile), 0);
+        if (isNull(chats) || chats.isEmpty()) return error(event, "No chats found");
         List<String> chatStrings = chats.stream()
                 .map(c -> "<t:" + c.getTime().toEpochSecond() + ":f>: " + escape(c.getChat()))
                 .toList();

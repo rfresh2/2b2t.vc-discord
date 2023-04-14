@@ -17,6 +17,8 @@ import vc.util.Validator;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Objects.isNull;
+
 @Component
 public class NamesCommand implements SlashCommand {
     private final NamesApi namesApi = new NamesApi();
@@ -45,6 +47,7 @@ public class NamesCommand implements SlashCommand {
 
     private Mono<Message> resolveNames(final ChatInputInteractionEvent event, final ProfileLookup profile) {
         List<Names> names = namesApi.names(playerLookup.getProfileUUID(profile));
+        if (isNull(names) || names.isEmpty()) return error(event, "No name history found for player");
         List<String> namesStrings = names.stream()
                 .map(n -> "**" + escape(n.getName()) + "**"
                         + Optional.ofNullable(n.getChangedtoat())

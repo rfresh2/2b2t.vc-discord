@@ -12,6 +12,8 @@ import vc.swagger.vc.model.PlaytimeTopMonthResponse;
 import java.text.DecimalFormat;
 import java.util.List;
 
+import static java.util.Objects.isNull;
+
 @Component
 public class PlaytimeTopMonthCommand implements SlashCommand {
 
@@ -26,6 +28,8 @@ public class PlaytimeTopMonthCommand implements SlashCommand {
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         List<PlaytimeTopMonthResponse> playtimeTopMonthResponses = playtimeApi.playtimeTopMonth();
+        if (isNull(playtimeTopMonthResponses) || playtimeTopMonthResponses.isEmpty())
+            return error(event, "Unable to resolve playtime list");
         List<String> ptList = playtimeTopMonthResponses.stream()
                 .map(pt -> "**" + escape(pt.getUsername()) + "**: " + df.format(pt.getPlaytimeDays()) + "d")
                 .toList();

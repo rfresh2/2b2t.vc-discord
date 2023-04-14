@@ -17,6 +17,8 @@ import vc.util.Validator;
 import java.util.Optional;
 import java.util.UUID;
 
+import static java.util.Objects.isNull;
+
 @Component
 public class PlaytimeCommand implements SlashCommand {
 
@@ -47,6 +49,7 @@ public class PlaytimeCommand implements SlashCommand {
     private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final ProfileLookup profile) {
         UUID profileUUID = playerLookup.getProfileUUID(profile);
         PlaytimeResponse playtime = playtimeApi.playtime(profileUUID);
+        if (isNull(playtime)) return error(event, "No playtime found");
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();
         String durationStr = formatDuration(playtimeSeconds);
         return event.createFollowup()

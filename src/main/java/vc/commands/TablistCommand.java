@@ -17,6 +17,8 @@ import java.util.ListIterator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.util.Objects.isNull;
+
 @Component
 public class TablistCommand implements SlashCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(TablistCommand.class);
@@ -30,7 +32,9 @@ public class TablistCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        List<String> playerNames = tabListApi.onlinePlayers().stream()
+        List<OnlinePlayers> onlinePlayers = tabListApi.onlinePlayers();
+        if (isNull(onlinePlayers) || onlinePlayers.isEmpty()) return error(event, "Unable to resolve current tablist");
+        List<String> playerNames = onlinePlayers.stream()
                 .map(OnlinePlayers::getPlayerName)
                 .distinct()
                 .sorted(String::compareTo)

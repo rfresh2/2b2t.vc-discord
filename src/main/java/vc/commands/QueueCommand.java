@@ -9,6 +9,8 @@ import reactor.core.publisher.Mono;
 import vc.swagger.vc.handler.QueueApi;
 import vc.swagger.vc.model.Queuelength;
 
+import static java.util.Objects.isNull;
+
 @Component
 public class QueueCommand implements SlashCommand {
     private final QueueApi queueApi = new QueueApi();
@@ -21,6 +23,7 @@ public class QueueCommand implements SlashCommand {
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         Queuelength queuelength = queueApi.queue();
+        if (isNull(queuelength)) return error(event, "Unable to resolve queue length");
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
                         .title("2b2t Queue")

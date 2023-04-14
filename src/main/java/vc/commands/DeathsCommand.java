@@ -17,6 +17,8 @@ import vc.util.Validator;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Objects.isNull;
+
 @Component
 public class DeathsCommand implements SlashCommand {
 
@@ -46,6 +48,7 @@ public class DeathsCommand implements SlashCommand {
 
     private Mono<Message> resolveDeaths(final ChatInputInteractionEvent event, final ProfileLookup profile) {
         List<Deaths> deaths = deathsApi.deaths(playerLookup.getProfileUUID(profile), 0);
+        if (isNull(deaths) || deaths.isEmpty()) return error(event, "No deaths found for player");
         List<String> deathStrings = deaths.stream()
                 .map(k -> "<t:" + k.getTime().toEpochSecond() + ":f>: " + escape(k.getDeathMessage()))
                 .toList();
