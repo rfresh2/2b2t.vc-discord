@@ -52,7 +52,7 @@ public class SlashCommandListener {
                 .map(ApplicationCommandInteraction::getOptions)
                 .orElse(Collections.emptyList())
                 .stream()
-                .map(s -> s.getName() + s.getValue().map(v -> ": " + v.asString()).orElse(""))
+                .map(s -> s.getName() + s.getValue().map(v -> ": " + v.getRaw()).orElse(""))
                 .collect(Collectors.joining(", "));
         LOGGER.info(username.orElse("?") + "#" + discrim.orElse("?")
                 + " executed command: " + command.getName()
