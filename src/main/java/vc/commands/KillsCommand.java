@@ -6,6 +6,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.swagger.mojang_api.model.ProfileLookup;
@@ -18,10 +19,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.util.Objects.isNull;
+import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
 public class KillsCommand implements SlashCommand {
-
+    private static final Logger LOGGER = getLogger(KillsCommand.class);
     private final DeathsApi deathsApi = new DeathsApi();
     private final PlayerLookup playerLookup;
 
@@ -39,19 +41,20 @@ public class KillsCommand implements SlashCommand {
         Optional<String> playerNameOptional = event.getOption("username")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
-//        Long page = event.getOption("page")
-//                .flatMap(ApplicationCommandInteractionOption::getValue)
-//                .map(ApplicationCommandInteractionOptionValue::asLong)
-//                .orElse(0L);
+        int page = event.getOption("page")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asLong)
+                .map(Long::intValue)
+                .orElse(0);
         return playerNameOptional
                 .filter(Validator::isValidUsername)
                 .flatMap(playerLookup::getPlayerProfile)
-                .map(profile -> resolveKills(event, profile))
+                .map(profile -> resolveKills(event, profile, page))
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolveKills(final ChatInputInteractionEvent event, final ProfileLookup profile) {
-        List<Deaths> kills = deathsApi.kills(playerLookup.getProfileUUID(profile), 25, 0);
+    private Mono<Message> resolveKills(final ChatInputInteractionEvent event, final ProfileLookup profile, int page) {
+        List<Deaths> kills = deathsApi.kills(playerLookup.getProfileUUID(profile), 25, page);
         if (isNull(kills) || kills.isEmpty()) return error(event, "No kills found for player");
         List<String> killStrings = kills.stream()
                 .map(k -> "<t:" + k.getTime().toEpochSecond() + ":f>: " + escape(k.getDeathMessage()))
@@ -59,6 +62,7 @@ public class KillsCommand implements SlashCommand {
         StringBuilder result = new StringBuilder();
         for (String s : killStrings) {
             if (result.length() + s.length() > 4090) {
+                LOGGER.warn("Kills message too long, truncating: {}", s);
                 break;
             }
             result.append(s).append("\n");

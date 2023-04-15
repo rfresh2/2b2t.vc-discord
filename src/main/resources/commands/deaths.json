@@ -7,6 +7,12 @@
       "description": "The player to get deaths for",
       "type": 3,
       "required": true
+    },
+    {
+      "name": "page",
+      "description": "Results page",
+      "type": 4,
+      "required": false
     }
   ]
 }

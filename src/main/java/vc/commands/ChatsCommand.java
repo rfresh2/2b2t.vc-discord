@@ -6,6 +6,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.swagger.mojang_api.model.ProfileLookup;
@@ -18,9 +19,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.util.Objects.isNull;
+import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
 public class ChatsCommand implements SlashCommand {
+    private static final Logger LOGGER = getLogger(ChatsCommand.class);
     private final ChatsApi chatsApi = new ChatsApi();
     private final PlayerLookup playerLookup;
 
@@ -38,15 +41,20 @@ public class ChatsCommand implements SlashCommand {
         Optional<String> playerNameOptional = event.getOption("username")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
+        final int page = event.getOption("page")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asLong)
+                .map(Long::intValue)
+                .orElse(0);
         return playerNameOptional
                 .filter(Validator::isValidUsername)
                 .flatMap(playerLookup::getPlayerProfile)
-                .map(profile -> resolveChats(event, profile))
+                .map(profile -> resolveChats(event, profile, page))
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final ProfileLookup profile) {
-        List<Chats> chats = chatsApi.chats(playerLookup.getProfileUUID(profile), 25, 0);
+    private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final ProfileLookup profile, int page) {
+        List<Chats> chats = chatsApi.chats(playerLookup.getProfileUUID(profile), 25, page);
         if (isNull(chats) || chats.isEmpty()) return error(event, "No chats found");
         List<String> chatStrings = chats.stream()
                 .map(c -> "<t:" + c.getTime().toEpochSecond() + ":f>: " + escape(c.getChat()))
@@ -54,6 +62,7 @@ public class ChatsCommand implements SlashCommand {
         StringBuilder result = new StringBuilder();
         for (String s : chatStrings) {
             if (result.length() + s.length() > 4090) {
+                LOGGER.warn("Chat message too long, truncating: {}", s);
                 break;
             }
             result.append(s).append("\n");
