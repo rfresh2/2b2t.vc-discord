@@ -47,7 +47,7 @@ public class DeathsCommand implements SlashCommand {
     }
 
     private Mono<Message> resolveDeaths(final ChatInputInteractionEvent event, final ProfileLookup profile) {
-        List<Deaths> deaths = deathsApi.deaths(playerLookup.getProfileUUID(profile), 0);
+        List<Deaths> deaths = deathsApi.deaths(playerLookup.getProfileUUID(profile), 25, 0);
         if (isNull(deaths) || deaths.isEmpty()) return error(event, "No deaths found for player");
         List<String> deathStrings = deaths.stream()
                 .map(k -> "<t:" + k.getTime().toEpochSecond() + ":f>: " + escape(k.getDeathMessage()))

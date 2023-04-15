@@ -47,7 +47,7 @@ public class ConnectionsCommand implements SlashCommand {
     }
 
     private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final ProfileLookup profile) {
-        List<Connections> connections = connectionsApi.connections(playerLookup.getProfileUUID(profile), 0);
+        List<Connections> connections = connectionsApi.connections(playerLookup.getProfileUUID(profile), 25, 0);
         if (isNull(connections) || connections.isEmpty()) return error(event, "No connections found for player");
         List<String> connectionStrings = connections.stream()
                 .map(c -> c.getConnection().getValue() + " <t:" + c.getTime().toEpochSecond() + ":f>")

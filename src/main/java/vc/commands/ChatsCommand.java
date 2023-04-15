@@ -46,7 +46,7 @@ public class ChatsCommand implements SlashCommand {
     }
 
     private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final ProfileLookup profile) {
-        List<Chats> chats = chatsApi.chats(playerLookup.getProfileUUID(profile), 0);
+        List<Chats> chats = chatsApi.chats(playerLookup.getProfileUUID(profile), 25, 0);
         if (isNull(chats) || chats.isEmpty()) return error(event, "No chats found");
         List<String> chatStrings = chats.stream()
                 .map(c -> "<t:" + c.getTime().toEpochSecond() + ":f>: " + escape(c.getChat()))
