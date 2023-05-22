@@ -9,7 +9,6 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.swagger.mojang_api.model.ProfileLookup;
 import vc.swagger.vc.handler.ChatsApi;
 import vc.swagger.vc.model.Chats;
 import vc.util.PlayerLookup;
@@ -48,13 +47,13 @@ public class ChatsCommand implements SlashCommand {
                 .orElse(0);
         return playerNameOptional
                 .filter(Validator::isValidUsername)
-                .flatMap(playerLookup::getPlayerProfile)
-                .map(profile -> resolveChats(event, profile, page))
+                .flatMap(playerLookup::getPlayerIdentity)
+                .map(identity -> resolveChats(event, identity, page))
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final ProfileLookup profile, int page) {
-        List<Chats> chats = chatsApi.chats(playerLookup.getProfileUUID(profile), 25, page);
+    private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity, int page) {
+        List<Chats> chats = chatsApi.chats(identity.uuid(), null,25, page);
         if (isNull(chats) || chats.isEmpty()) return error(event, "No chats found");
         List<String> chatStrings = chats.stream()
                 .map(c -> "<t:" + c.getTime().toEpochSecond() + ":f>: " + escape(c.getChat()))
@@ -72,18 +71,18 @@ public class ChatsCommand implements SlashCommand {
         } else {
             return event.createFollowup()
                     .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Chats: " + escape(profile.getName()))
+                            .title("Chats: " + escape(identity.username()))
                             .color(Color.CYAN)
                             .description("No chats found")
-                            .thumbnail(playerLookup.getAvatarURL(profile.getId()).toString())
+                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
                             .build());
         }
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Chats: " + escape(profile.getName()))
+                        .title("Chats: " + escape(identity.username()))
                         .color(Color.CYAN)
                         .description(result.toString())
-                        .thumbnail(playerLookup.getAvatarURL(profile.getId()).toString())
+                        .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
                         .build());
     }
 }

@@ -9,7 +9,6 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.swagger.mojang_api.model.ProfileLookup;
 import vc.swagger.vc.handler.ConnectionsApi;
 import vc.swagger.vc.model.Connections;
 import vc.util.PlayerLookup;
@@ -48,13 +47,13 @@ public class ConnectionsCommand implements SlashCommand {
                 .orElse(0);
         return playerNameOptional
                 .filter(Validator::isValidUsername)
-                .flatMap(playerLookup::getPlayerProfile)
-                .map(profile -> resolveConnections(event, profile, page))
+                .flatMap(playerLookup::getPlayerIdentity)
+                .map(identity -> resolveConnections(event, identity, page))
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final ProfileLookup profile, int page) {
-        List<Connections> connections = connectionsApi.connections(playerLookup.getProfileUUID(profile), 25, page);
+    private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity, int page) {
+        List<Connections> connections = connectionsApi.connections(identity.uuid(), null, 25, page);
         if (isNull(connections) || connections.isEmpty()) return error(event, "No connections found for player");
         List<String> connectionStrings = connections.stream()
                 .map(c -> c.getConnection().getValue() + " <t:" + c.getTime().toEpochSecond() + ":f>")
@@ -72,18 +71,18 @@ public class ConnectionsCommand implements SlashCommand {
         } else {
             return event.createFollowup()
                     .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Connections: " + escape(profile.getName()))
+                            .title("Connections: " + escape(identity.username()))
                             .color(Color.CYAN)
                             .description("No connections found")
-                            .thumbnail(playerLookup.getAvatarURL(profile.getId()).toString())
+                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
                             .build());
         }
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Connections: " + escape(profile.getName()))
+                        .title("Connections: " + escape(identity.username()))
                         .color(Color.CYAN)
                         .description(result.toString())
-                        .thumbnail(playerLookup.getAvatarURL(profile.getId()).toString())
+                        .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
                         .build());
     }
 }

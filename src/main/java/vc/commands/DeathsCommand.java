@@ -9,7 +9,6 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.swagger.mojang_api.model.ProfileLookup;
 import vc.swagger.vc.handler.DeathsApi;
 import vc.swagger.vc.model.Deaths;
 import vc.util.PlayerLookup;
@@ -48,13 +47,13 @@ public class DeathsCommand implements SlashCommand {
                 .orElse(0);
         return playerNameOptional
                 .filter(Validator::isValidUsername)
-                .flatMap(playerLookup::getPlayerProfile)
-                .map(profile -> resolveDeaths(event, profile, page))
+                .flatMap(playerLookup::getPlayerIdentity)
+                .map(identity -> resolveDeaths(event, identity, page))
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolveDeaths(final ChatInputInteractionEvent event, final ProfileLookup profile, int page) {
-        List<Deaths> deaths = deathsApi.deaths(playerLookup.getProfileUUID(profile), 25, page);
+    private Mono<Message> resolveDeaths(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity, int page) {
+        List<Deaths> deaths = deathsApi.deaths(identity.uuid(), null,25, page);
         if (isNull(deaths) || deaths.isEmpty()) return error(event, "No deaths found for player");
         List<String> deathStrings = deaths.stream()
                 .map(k -> "<t:" + k.getTime().toEpochSecond() + ":f>: " + escape(k.getDeathMessage()))
@@ -72,18 +71,18 @@ public class DeathsCommand implements SlashCommand {
         } else {
             return event.createFollowup()
                     .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Deaths: " + escape(profile.getName()))
+                            .title("Deaths: " + escape(identity.username()))
                             .color(Color.CYAN)
                             .description("No deaths found")
-                            .thumbnail(playerLookup.getAvatarURL(profile.getId()).toString())
+                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
                             .build());
         }
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Deaths: " + escape(profile.getName()))
+                        .title("Deaths: " + escape(identity.username()))
                         .color(Color.CYAN)
                         .description(result.toString())
-                        .thumbnail(playerLookup.getAvatarURL(profile.getId()).toString())
+                        .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
                         .build());
     }
 }

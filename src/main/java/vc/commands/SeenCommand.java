@@ -9,7 +9,6 @@ import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import org.threeten.bp.OffsetDateTime;
 import reactor.core.publisher.Mono;
-import vc.swagger.mojang_api.model.ProfileLookup;
 import vc.swagger.vc.handler.SeenApi;
 import vc.swagger.vc.model.SeenResponse;
 import vc.util.PlayerLookup;
@@ -42,22 +41,22 @@ public class SeenCommand implements SlashCommand {
                 .map(ApplicationCommandInteractionOptionValue::asString);
         return playerNameOptional
                 .filter(Validator::isValidUsername)
-                .flatMap(playerLookup::getPlayerProfile)
-                .map(profile -> resolveSeen(event, profile))
+                .flatMap(playerLookup::getPlayerIdentity)
+                .map(identity -> resolveSeen(event, identity))
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolveSeen(final ChatInputInteractionEvent event, final ProfileLookup profile) {
-        UUID uuid = playerLookup.getProfileUUID(profile);
-        SeenResponse seenResponse = seenApi.seen(uuid);
+    private Mono<Message> resolveSeen(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity) {
+        UUID uuid = identity.uuid();
+        SeenResponse seenResponse = seenApi.seen(uuid, null);
         if (isNull(seenResponse)) return error(event, "Player has not been seen");
-        SeenResponse firstSeenResponse = seenApi.firstSeen(uuid);
+        SeenResponse firstSeenResponse = seenApi.firstSeen(uuid, null);
         if (isNull(firstSeenResponse)) return error(event, "Player has not been seen");
         OffsetDateTime lastSeen = seenResponse.getTime();
         OffsetDateTime firstSeen = firstSeenResponse.getTime();
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Seen: " + escape(profile.getName()))
+                        .title("Seen: " + escape(identity.username()))
                         .color(Color.CYAN)
                         .addField("First seen", "<t:" + firstSeen.toEpochSecond() + ":f>", false)
                         .addField("Last seen", "<t:" + lastSeen.toEpochSecond() + ":f>", false)

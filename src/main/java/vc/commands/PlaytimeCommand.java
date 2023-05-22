@@ -8,7 +8,6 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.swagger.mojang_api.model.ProfileLookup;
 import vc.swagger.vc.handler.PlaytimeApi;
 import vc.swagger.vc.model.PlaytimeResponse;
 import vc.util.PlayerLookup;
@@ -41,20 +40,20 @@ public class PlaytimeCommand implements SlashCommand {
                 .map(ApplicationCommandInteractionOptionValue::asString);
         return playerNameOptional
                 .filter(Validator::isValidUsername)
-                .flatMap(playerLookup::getPlayerProfile)
-                .map(profile -> resolvePlaytime(event, profile))
+                .flatMap(playerLookup::getPlayerIdentity)
+                .map(identity -> resolvePlaytime(event, identity))
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final ProfileLookup profile) {
-        UUID profileUUID = playerLookup.getProfileUUID(profile);
-        PlaytimeResponse playtime = playtimeApi.playtime(profileUUID);
+    private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity) {
+        UUID profileUUID = identity.uuid();
+        PlaytimeResponse playtime = playtimeApi.playtime(profileUUID, null);
         if (isNull(playtime)) return error(event, "No playtime found");
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();
         String durationStr = formatDuration(playtimeSeconds);
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Playtime: " + escape(profile.getName()))
+                        .title("Playtime: " + escape(identity.username()))
                         .color(Color.CYAN)
                         .description(durationStr)
                         .thumbnail(playerLookup.getAvatarURL(profileUUID).toString())
