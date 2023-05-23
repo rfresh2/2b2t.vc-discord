@@ -36,11 +36,11 @@ public class SeenCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Optional<String> playerNameOptional = event.getOption("username")
+        Optional<String> playerNameOptional = event.getOption("playername")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
         return playerNameOptional
-                .filter(Validator::isValidUsername)
+                .filter(Validator::isValidPlayerName)
                 .flatMap(playerLookup::getPlayerIdentity)
                 .map(identity -> resolveSeen(event, identity))
                 .orElse(error(event, "Unable to find player"));
@@ -56,7 +56,7 @@ public class SeenCommand implements SlashCommand {
         OffsetDateTime firstSeen = firstSeenResponse.getTime();
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Seen: " + escape(identity.username()))
+                        .title("Seen: " + escape(identity.playerName()))
                         .color(Color.CYAN)
                         .addField("First seen", "<t:" + firstSeen.toEpochSecond() + ":f>", false)
                         .addField("Last seen", "<t:" + lastSeen.toEpochSecond() + ":f>", false)

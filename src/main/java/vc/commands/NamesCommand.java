@@ -34,11 +34,11 @@ public class NamesCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Optional<String> playerNameOptional = event.getOption("username")
+        Optional<String> playerNameOptional = event.getOption("playername")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
         return playerNameOptional
-                .filter(Validator::isValidUsername)
+                .filter(Validator::isValidPlayerName)
                 .flatMap(playerLookup::getPlayerIdentity)
                 .map(identity -> resolveNames(event, identity))
                 .orElse(error(event, "Unable to find player"));
@@ -68,7 +68,7 @@ public class NamesCommand implements SlashCommand {
         } else {
             return event.createFollowup()
                     .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Names: " + escape(identity.username()))
+                            .title("Names: " + escape(identity.playerName()))
                             .color(Color.CYAN)
                             .description("No names found")
                             .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
@@ -76,7 +76,7 @@ public class NamesCommand implements SlashCommand {
         }
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Names: " + escape(identity.username()))
+                        .title("Names: " + escape(identity.playerName()))
                         .color(Color.CYAN)
                         .description(result.toString())
                         .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())

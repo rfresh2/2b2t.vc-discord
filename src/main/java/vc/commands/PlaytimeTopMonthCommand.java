@@ -31,7 +31,7 @@ public class PlaytimeTopMonthCommand implements SlashCommand {
         if (isNull(playtimeTopMonthResponses) || playtimeTopMonthResponses.isEmpty())
             return error(event, "Unable to resolve playtime list");
         List<String> ptList = playtimeTopMonthResponses.stream()
-                .map(pt -> "**" + escape(pt.getUsername()) + "**: " + df.format(pt.getPlaytimeDays()) + "d")
+                .map(pt -> "**" + escape(pt.getPlayerName()) + "**: " + df.format(pt.getPlaytimeDays()) + "d")
                 .toList();
         StringBuilder result = new StringBuilder();
         for (int i = 0, ptListSize = Math.min(50, ptList.size()); i < ptListSize; i++) {

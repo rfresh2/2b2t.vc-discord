@@ -3,7 +3,7 @@
   "description": "Get when a player was last and first seen on 2b2t",
   "options": [
     {
-      "name": "username",
+      "name": "playername",
       "description": "The player to lookup",
       "type": 3,
       "required": true

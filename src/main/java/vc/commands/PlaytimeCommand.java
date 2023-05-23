@@ -35,11 +35,11 @@ public class PlaytimeCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Optional<String> playerNameOptional = event.getOption("username")
+        Optional<String> playerNameOptional = event.getOption("playername")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
         return playerNameOptional
-                .filter(Validator::isValidUsername)
+                .filter(Validator::isValidPlayerName)
                 .flatMap(playerLookup::getPlayerIdentity)
                 .map(identity -> resolvePlaytime(event, identity))
                 .orElse(error(event, "Unable to find player"));
@@ -53,7 +53,7 @@ public class PlaytimeCommand implements SlashCommand {
         String durationStr = formatDuration(playtimeSeconds);
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Playtime: " + escape(identity.username()))
+                        .title("Playtime: " + escape(identity.playerName()))
                         .color(Color.CYAN)
                         .description(durationStr)
                         .thumbnail(playerLookup.getAvatarURL(profileUUID).toString())

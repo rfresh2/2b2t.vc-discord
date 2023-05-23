@@ -37,7 +37,7 @@ public class DeathsCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Optional<String> playerNameOptional = event.getOption("username")
+        Optional<String> playerNameOptional = event.getOption("playername")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
         int page = event.getOption("page")
@@ -46,7 +46,7 @@ public class DeathsCommand implements SlashCommand {
                 .map(Long::intValue)
                 .orElse(0);
         return playerNameOptional
-                .filter(Validator::isValidUsername)
+                .filter(Validator::isValidPlayerName)
                 .flatMap(playerLookup::getPlayerIdentity)
                 .map(identity -> resolveDeaths(event, identity, page))
                 .orElse(error(event, "Unable to find player"));
@@ -71,7 +71,7 @@ public class DeathsCommand implements SlashCommand {
         } else {
             return event.createFollowup()
                     .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Deaths: " + escape(identity.username()))
+                            .title("Deaths: " + escape(identity.playerName()))
                             .color(Color.CYAN)
                             .description("No deaths found")
                             .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
@@ -79,7 +79,7 @@ public class DeathsCommand implements SlashCommand {
         }
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Deaths: " + escape(identity.username()))
+                        .title("Deaths: " + escape(identity.playerName()))
                         .color(Color.CYAN)
                         .description(result.toString())
                         .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())

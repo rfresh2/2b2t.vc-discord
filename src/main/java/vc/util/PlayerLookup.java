@@ -1,7 +1,7 @@
 package vc.util;
 
 import vc.swagger.minetools_api.handler.UuidApi;
-import vc.swagger.minetools_api.model.UUIDAndUsername;
+import vc.swagger.minetools_api.model.UUIDAndPlayerName;
 
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
@@ -12,16 +12,16 @@ import java.util.UUID;
 public class PlayerLookup {
     private final UuidApi uuidApi = new UuidApi();
 
-    public record PlayerIdentity(UUID uuid, String username) { }
+    public record PlayerIdentity(UUID uuid, String playerName) { }
 
-    public Optional<PlayerIdentity> getPlayerIdentity(final String username) {
-        final UUIDAndUsername uuidAndUsername = uuidApi.getUUIDAndUsername(username);
-        if (uuidAndUsername == null) return Optional.empty();
-        if (uuidAndUsername.getStatus() != UUIDAndUsername.StatusEnum.OK) return Optional.empty();
-        return Optional.of(new PlayerIdentity(UUID.fromString(uuidAndUsername
+    public Optional<PlayerIdentity> getPlayerIdentity(final String playerName) {
+        final UUIDAndPlayerName uuidAndPlayerName = uuidApi.getUUIDAndPlayerName(playerName);
+        if (uuidAndPlayerName == null) return Optional.empty();
+        if (uuidAndPlayerName.getStatus() != UUIDAndPlayerName.StatusEnum.OK) return Optional.empty();
+        return Optional.of(new PlayerIdentity(UUID.fromString(uuidAndPlayerName
                 .getId()
                 .replaceFirst("(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)", "$1-$2-$3-$4-$5")
-        ), uuidAndUsername.getName()));
+        ), uuidAndPlayerName.getName()));
     }
 
     public URL getAvatarURL(UUID uuid) {

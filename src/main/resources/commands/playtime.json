@@ -3,7 +3,7 @@
   "description": "2b2t playtime",
   "options": [
     {
-      "name": "username",
+      "name": "playername",
       "description": "The player to lookup",
       "type": 3,
       "required": true
