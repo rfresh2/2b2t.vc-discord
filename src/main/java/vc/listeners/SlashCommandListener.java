@@ -45,16 +45,14 @@ public class SlashCommandListener {
 
     private void logMessage(SlashCommand command, final ChatInputInteractionEvent event) {
         Optional<String> username = event.getInteraction().getMember()
-                .map(User::getUsername);
-        Optional<String> discrim = event.getInteraction().getMember()
-                .map(User::getDiscriminator);
+                .map(User::getTag);
         String dataOptions = event.getInteraction().getCommandInteraction()
                 .map(ApplicationCommandInteraction::getOptions)
                 .orElse(Collections.emptyList())
                 .stream()
                 .map(s -> s.getName() + s.getValue().map(v -> ": " + v.getRaw()).orElse(""))
                 .collect(Collectors.joining(", "));
-        LOGGER.info(username.orElse("?") + "#" + discrim.orElse("?")
+        LOGGER.info(username.orElse("?")
                 + " executed command: " + command.getName()
                 + (dataOptions.length() > 0 ? " with options: " + dataOptions : ""));
     }
