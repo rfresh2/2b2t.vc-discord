@@ -53,7 +53,7 @@ public class SlashCommandListener {
                 .map(s -> s.getName() + s.getValue().map(v -> ": " + v.getRaw()).orElse(""))
                 .collect(Collectors.joining(", "));
         LOGGER.info(username.orElse("?")
-                + " executed command: " + command.getName()
+                + " (" + event.getInteraction().getMember().get().getId().asString() + ") executed command: " + command.getName()
                 + (dataOptions.length() > 0 ? " with options: " + dataOptions : ""));
     }
 }
