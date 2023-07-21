@@ -13,8 +13,8 @@
         <maven.compiler.source>20</maven.compiler.source>
         <maven.compiler.target>20</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <swagger-annotations-version>2.0.0</swagger-annotations-version>
-        <jackson-version>2.15.1</jackson-version>
+        <jackson-version>2.15.2</jackson-version>
+        <swagger-annotations-version>2.2.15</swagger-annotations-version>
         <jackson-threetenbp-version>2.6.4</jackson-threetenbp-version>
         <maven-plugin-version>1.0.0</maven-plugin-version>
         <junit-version>4.13.1</junit-version>
@@ -76,7 +76,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>32.0.0-jre</version>
+            <version>32.1.1-jre</version>
         </dependency>
     </dependencies>
 
@@ -85,7 +85,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.1.2</version>
                 <executions>
                     <execution>
                         <configuration>
