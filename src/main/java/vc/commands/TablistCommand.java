@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.swagger.vc.handler.TabListApi;
-import vc.swagger.vc.model.OnlinePlayers;
+import vc.swagger.vc.model.TablistEntry;
 
 import java.util.ArrayList;
 import java.util.Formatter;
@@ -32,10 +32,10 @@ public class TablistCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        List<OnlinePlayers> onlinePlayers = tabListApi.onlinePlayers();
+        List<TablistEntry> onlinePlayers = tabListApi.onlinePlayers();
         if (isNull(onlinePlayers) || onlinePlayers.isEmpty()) return error(event, "Unable to resolve current tablist");
         List<String> playerNames = onlinePlayers.stream()
-                .map(OnlinePlayers::getPlayerName)
+                .map(TablistEntry::getPlayerName)
                 .distinct()
                 .sorted(String::compareTo)
                 .toList();
