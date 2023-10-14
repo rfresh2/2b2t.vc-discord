@@ -24,7 +24,6 @@ public class Application implements ApplicationRunner {
         SpringApplication.run(Application.class, args);
     }
 
-
     @Bean
     public GatewayDiscordClient gatewayDiscordClient() {
         return DiscordClientBuilder.create(token).build()
@@ -52,6 +51,8 @@ public class Application implements ApplicationRunner {
 
     @Override
     public void run(final ApplicationArguments args) throws Exception {
-        System.out.println("Application started");
+        while (true) {
+            Thread.sleep(100000);
+        }
     }
 }
