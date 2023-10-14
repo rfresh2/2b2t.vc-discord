@@ -6,37 +6,28 @@ import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.RestClient;
-import org.springframework.boot.WebApplicationType;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 import vc.util.PlayerLookup;
 
 @SpringBootApplication
-public class Application {
+public class Application implements ApplicationRunner {
+    @Value("${BOT_TOKEN}")
+    String token;
+
     public static void main(String[] args) {
-        try {
-            new SpringApplicationBuilder(Application.class)
-                    .web(WebApplicationType.NONE)
-                    .build()
-                    .run();
-        } catch (final Throwable e) {
-            e.printStackTrace();
-        }
-        while (true) {
-            try {
-                Thread.sleep(1000);
-            } catch (final InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        SpringApplication.run(Application.class, args);
     }
 
 
     @Bean
     public GatewayDiscordClient gatewayDiscordClient() {
-        return DiscordClientBuilder.create(System.getenv("BOT_TOKEN")).build()
+        return DiscordClientBuilder.create(token).build()
                 .gateway()
                 .setEnabledIntents(IntentSet.none())
                 .setInitialPresence(ignore -> ClientPresence.online(ClientActivity.listening("/commands")))
@@ -57,5 +48,10 @@ public class Application {
     @Bean
     public PlayerLookup playerLookup() {
         return new PlayerLookup();
+    }
+
+    @Override
+    public void run(final ApplicationArguments args) throws Exception {
+        System.out.println("Application started");
     }
 }
