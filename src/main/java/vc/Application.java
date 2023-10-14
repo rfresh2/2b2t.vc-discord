@@ -4,6 +4,7 @@ import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
+import discord4j.core.object.presence.Status;
 import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.RestClient;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +30,7 @@ public class Application implements ApplicationRunner {
         return DiscordClientBuilder.create(token).build()
                 .gateway()
                 .setEnabledIntents(IntentSet.none())
-                .setInitialPresence(ignore -> ClientPresence.online(ClientActivity.listening("/commands")))
+                .setInitialPresence(ignore -> ClientPresence.of(Status.ONLINE, ClientActivity.custom("/commands")))
                 .login()
                 .block();
     }
