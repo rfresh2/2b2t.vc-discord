@@ -1,0 +1,23 @@
+name: 2b-bot PR Build
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'zulu'
+
+      - name: Elevate wrapper permissions
+        run: chmod +x ./mvnw
+
+      - name: Build 2b-bot
+        run: ./mvnw install
