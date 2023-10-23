@@ -107,7 +107,7 @@
             <plugin>
                 <groupId>io.swagger.codegen.v3</groupId>
                 <artifactId>swagger-codegen-maven-plugin</artifactId>
-                <version>3.0.47</version>
+                <version>3.0.49</version>
                 <executions>
                     <execution>
                         <id>api.2b2t.vc</id>
