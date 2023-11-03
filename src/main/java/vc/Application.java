@@ -19,6 +19,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 import vc.config.GuildConfigDatabase;
 import vc.config.GuildConfigManager;
+import vc.live.LiveChat;
+import vc.live.LiveConnections;
+import vc.live.LiveFeedManager;
 import vc.live.RedisClient;
 import vc.util.PlayerLookup;
 
@@ -96,5 +99,10 @@ public class Application {
                 .setNameFormat("scheduled-%d")
                 .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught exception in scheduled thread: {}", t.getName(), e))
             .build());
+    }
+
+    @Bean
+    public LiveFeedManager liveFeedManager(final LiveChat liveChat, final LiveConnections liveConnections) {
+        return new LiveFeedManager(liveChat, liveConnections);
     }
 }

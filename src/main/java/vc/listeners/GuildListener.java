@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.config.GuildConfigManager;
-import vc.live.LiveChat;
+import vc.live.LiveFeedManager;
 
 import java.util.stream.Collectors;
 
@@ -17,11 +17,14 @@ import java.util.stream.Collectors;
 public class GuildListener {
     private static final Logger LOGGER = LoggerFactory.getLogger("GuildListener");
     private final GuildConfigManager guildConfigManager;
-    private final LiveChat liveChat;
+    private final LiveFeedManager liveFeedManager;
 
-    public GuildListener(final GatewayDiscordClient client, final RestClient restClient, final GuildConfigManager guildConfigManager, final LiveChat liveChat) {
+    public GuildListener(final GatewayDiscordClient client,
+                         final RestClient restClient,
+                         final GuildConfigManager guildConfigManager,
+                         final LiveFeedManager liveFeedManager) {
         this.guildConfigManager = guildConfigManager;
-        this.liveChat = liveChat;
+        this.liveFeedManager = liveFeedManager;
         client.on(GuildCreateEvent.class, this::handle).subscribe();
         restClient.getGuilds().collectList().subscribe(guilds -> {
             LOGGER.info("Connected to {} guilds", guilds.size());
@@ -30,7 +33,7 @@ public class GuildListener {
                 .collect(Collectors.joining("'\n'", "\n'", "'")));
             guilds.forEach(guildConfigManager::loadGuild);
             guildConfigManager.writeAllGuildConfigs();
-            liveChat.onAllGuildsLoaded();
+            liveFeedManager.onAllGuildsLoaded();
         });
     }
 

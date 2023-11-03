@@ -24,7 +24,7 @@ public class GuildConfigManager {
 
     public void loadGuild(final GuildFields guildFields) {
         final GuildConfigRecord guildConfigRecord = guildConfigDatabase.getGuildConfigRecord(guildFields.id().asString())
-            .orElse(new GuildConfigRecord(guildFields.id().asString(), guildFields.name(), false, ""));
+            .orElse(new GuildConfigRecord(guildFields.id().asString(), guildFields.name(), false, "", false, ""));
         guildConfigMap.put(guildFields.id().asString(), guildConfigRecord);
     }
 

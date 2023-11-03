@@ -55,7 +55,14 @@ public class GuildConfigDatabase {
 
     private void createGuildConfigTable() {
         try {
-            connection.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS guild_config (guild_id INTEGER, guild_name TEXT, live_chat_enabled INTEGER, live_chat_channel_id TEXT)");
+            connection.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS guild_config ("
+                                                           + "guild_id INTEGER, "
+                                                           + "guild_name TEXT, "
+                                                           + "live_chat_enabled INTEGER, "
+                                                           + "live_chat_channel_id TEXT, "
+                                                           + "live_connections_enabled INTEGER, "
+                                                           + "live_connections_channel_id TEXT"
+                                                           + ")");
             connection.createStatement().executeUpdate("CREATE UNIQUE INDEX IF NOT EXISTS unique_guild_id ON guild_config (guild_id)");
         } catch (final Exception e) {
             throw new RuntimeException(e);
@@ -71,7 +78,9 @@ public class GuildConfigDatabase {
                     resultSet.getString("guild_id"),
                     resultSet.getString("guild_name"),
                     resultSet.getBoolean("live_chat_enabled"),
-                    resultSet.getString("live_chat_channel_id")
+                    resultSet.getString("live_chat_channel_id"),
+                    resultSet.getBoolean("live_connections_enabled"),
+                    resultSet.getString("live_connections_channel_id")
                 ));
             }
         } catch (final Exception e) {
@@ -82,11 +91,13 @@ public class GuildConfigDatabase {
 
     public void writeGuildConfigRecord(final GuildConfigRecord config) {
         try {
-            PreparedStatement statement = connection.prepareStatement("INSERT OR REPLACE INTO guild_config VALUES (?, ?, ?, ?)");
+            PreparedStatement statement = connection.prepareStatement("INSERT OR REPLACE INTO guild_config VALUES (?, ?, ?, ?, ?, ?)");
             statement.setString(1, config.guildId());
             statement.setString(2, config.guildName());
             statement.setBoolean(3, config.liveChatEnabled());
             statement.setString(4, config.liveChatChannelId());
+            statement.setBoolean(5, config.liveConnectionsEnabled());
+            statement.setString(6, config.liveConnectionsChannelId());
             statement.executeUpdate();
         } catch (final Exception e) {
             LOGGER.error("Error writing guild config record for guild {}", config.guildId(), e);

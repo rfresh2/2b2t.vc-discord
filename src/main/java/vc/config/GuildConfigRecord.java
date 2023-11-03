@@ -1,3 +1,10 @@
 package vc.config;
 
-public record GuildConfigRecord(String guildId, String guildName, boolean liveChatEnabled, String liveChatChannelId) {}
+public record GuildConfigRecord(
+    String guildId,
+    String guildName,
+    boolean liveChatEnabled,
+    String liveChatChannelId,
+    boolean liveConnectionsEnabled,
+    String liveConnectionsChannelId
+) {}

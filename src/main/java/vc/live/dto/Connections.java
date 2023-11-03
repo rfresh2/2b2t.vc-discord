@@ -4,6 +4,8 @@
 package vc.live.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import vc.live.dto.enums.Connectiontype;
 
 import java.io.Serializable;
@@ -31,11 +33,12 @@ public class Connections implements Serializable {
         this.playerUuid = value.playerUuid;
     }
 
+    @JsonCreator
     public Connections(
-            OffsetDateTime time,
-            Connectiontype connection,
-            String playerName,
-            UUID playerUuid
+            @JsonProperty("time") OffsetDateTime time,
+            @JsonProperty("connection") Connectiontype connection,
+            @JsonProperty("playerName") String playerName,
+            @JsonProperty("playerUuid") UUID playerUuid
     ) {
         this.time = time;
         this.connection = connection;
