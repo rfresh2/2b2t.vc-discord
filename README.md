@@ -6,6 +6,8 @@ Invite link: [bot.2b2t.vc](https://bot.2b2t.vc)
 
 # Commands
 
+* `/livechat` -> Configures a live chat feed channel in your server
+* `/liveconnections` -> Configures a live join/leave feed channel in your server
 * `/queue` -> Shows 2b2t's current queue lengths and ETA
 * `/seen` -> When a player was last and first seen on 2b2t
 * `/chats` -> Prints a player's chat history 
