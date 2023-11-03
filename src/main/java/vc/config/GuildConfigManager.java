@@ -41,11 +41,6 @@ public class GuildConfigManager {
         Optional.ofNullable(guildConfigMap.get(guildId)).ifPresent(guildConfigDatabase::writeGuildConfigRecord);
     }
 
-    public void writeGuildConfig(final GuildConfigRecord guildConfigRecord) {
-        guildConfigMap.put(guildConfigRecord.guildId(), guildConfigRecord);
-        guildConfigDatabase.writeGuildConfigRecord(guildConfigRecord);
-    }
-
     public void updateGuildConfig(final GuildConfigRecord guildConfigRecord) {
         guildConfigMap.put(guildConfigRecord.guildId(), guildConfigRecord);
         writeGuildConfig(guildConfigRecord.guildId());

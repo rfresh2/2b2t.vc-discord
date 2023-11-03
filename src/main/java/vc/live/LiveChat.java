@@ -20,6 +20,9 @@ import static java.util.Arrays.asList;
 @Component
 public class LiveChat extends LiveFeed {
 
+    // todo: we aren't receiving system messages from the existing chat queue
+    //  so no restart msgs
+
     public LiveChat(final RedisClient redisClient,
                     final GatewayDiscordClient discordClient,
                     final GuildConfigManager guildConfigManager,
