@@ -58,8 +58,8 @@ public class LiveChat extends LiveFeed {
 
     @Override
     protected List<InputQueue> inputQueues() {
-        return asList(new InputQueue<>("ChatQueue", Chats.class, this::getChatEmbed),
-                      new InputQueue<>("DeathQueue", Deaths.class, this::getDeathEmbed));
+        return asList(new InputQueue<>("ChatsQueue", Chats.class, this::getChatEmbed),
+                      new InputQueue<>("DeathsQueue", Deaths.class, this::getDeathEmbed));
     }
 
     private EmbedData getChatEmbed(final Chats chat) {
