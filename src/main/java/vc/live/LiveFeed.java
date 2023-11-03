@@ -64,7 +64,7 @@ public abstract class LiveFeed {
         this.executorService = executorService;
         this.objectMapper = objectMapper;
         syncChannels();
-        this.executorService.scheduleAtFixedRate(this::processMessageQueue, ((int) (Math.random() * 10)), 10, SECONDS);
+        this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 10, SECONDS);
         inputQueues().forEach(this::monitorQueue);
     }
 
@@ -73,7 +73,7 @@ public abstract class LiveFeed {
     private void monitorQueue(final InputQueue inputQueue) {
         final RBoundedBlockingQueue<String> queue = this.redisClient.getQueue(inputQueue.queueName());
         inputQueues.put(inputQueue, queue);
-        this.executorService.scheduleAtFixedRate(() -> processInputQueue(queue, inputQueue), 1, 3, SECONDS);
+        this.executorService.scheduleWithFixedDelay(() -> processInputQueue(queue, inputQueue), 1, 3, SECONDS);
     }
 
     private String feedName() {
