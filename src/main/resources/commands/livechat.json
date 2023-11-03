@@ -1,0 +1,18 @@
+{
+  "name": "livechat",
+  "description": "Configures the live chat feature",
+  "options": [
+    {
+      "name": "enabled",
+      "description": "Enable/disable live chat",
+      "type": 5,
+      "required": false
+    },
+    {
+      "name": "channel",
+      "description": "Live chat channel",
+      "type": 7,
+      "required": false
+    }
+  ]
+}

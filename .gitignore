@@ -26,3 +26,7 @@ hs_err_pid*
 target/
 log/
 .env
+
+guild-config.db
+guild-config.db-journal
+backups/
