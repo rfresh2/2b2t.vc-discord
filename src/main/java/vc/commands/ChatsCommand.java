@@ -57,7 +57,7 @@ public class ChatsCommand implements SlashCommand {
         List<Chats> chats = chatsApi.chats(identity.uuid(), null,25, page);
         if (isNull(chats) || chats.isEmpty()) return error(event, "No chats found");
         List<String> chatStrings = chats.stream()
-                .map(c -> "<t:" + c.getTime().toEpochSecond() + ":f>: " + escape(c.getChat()))
+                .map(c -> "<t:" + c.getTime().toInstant().getEpochSecond() + ":f>: " + escape(c.getChat()))
                 .toList();
         StringBuilder result = new StringBuilder();
         for (String s : chatStrings) {
@@ -67,7 +67,7 @@ public class ChatsCommand implements SlashCommand {
             }
             result.append(s).append("\n");
         }
-        if (result.length() > 0) {
+        if (!result.isEmpty()) {
             result = new StringBuilder(result.substring(0, result.length() - 1));
         } else {
             return event.createFollowup()

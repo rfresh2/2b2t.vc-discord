@@ -15,7 +15,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson-version>2.15.3</jackson-version>
         <swagger-annotations-version>2.2.18</swagger-annotations-version>
-        <jackson-threetenbp-version>2.6.4</jackson-threetenbp-version>
         <maven-plugin-version>1.0.0</maven-plugin-version>
         <junit-version>4.13.1</junit-version>
         <default.package>vc.swagger</default.package>
@@ -62,11 +61,6 @@
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-json-provider</artifactId>
             <version>${jackson-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.joschi.jackson</groupId>
-            <artifactId>jackson-datatype-threetenbp</artifactId>
-            <version>${jackson-threetenbp-version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
@@ -149,6 +143,10 @@
                             <invokerPackage>${default.package}.vc.handler</invokerPackage>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
+                            <configOptions>
+                                <dateLibrary>java8-instant</dateLibrary>
+                                <java11>true</java11>
+                            </configOptions>
                             <environmentVariables>
                                 <models/>
                             </environmentVariables>
@@ -169,6 +167,10 @@
                             <invokerPackage>${default.package}.minetools-api.handler</invokerPackage>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
+                            <configOptions>
+                                <dateLibrary>java8-instant</dateLibrary>
+                                <java11>true</java11>
+                            </configOptions>
                             <environmentVariables>
                                 <models/>
                             </environmentVariables>

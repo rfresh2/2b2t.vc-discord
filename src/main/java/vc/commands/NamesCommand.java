@@ -51,10 +51,10 @@ public class NamesCommand implements SlashCommand {
         List<String> namesStrings = names.stream()
                 .map(n -> "**" + escape(n.getName()) + "**"
                         + Optional.ofNullable(n.getChangedtoat())
-                            .map(at -> " (To: <t:" + at.toEpochSecond() + ":f>)")
+                            .map(at -> " (To: <t:" + at.toInstant().getEpochSecond() + ":f>)")
                             .orElse("")
                         + Optional.ofNullable(n.getChangedfromat())
-                            .map(at -> " (From: <t:" + at.toEpochSecond() + ":f>)")
+                            .map(at -> " (From: <t:" + at.toInstant().getEpochSecond() + ":f>)")
                             .orElse(""))
                 .toList();
         StringBuilder result = new StringBuilder();

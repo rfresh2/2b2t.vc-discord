@@ -57,7 +57,7 @@ public class KillsCommand implements SlashCommand {
         List<Deaths> kills = deathsApi.kills(identity.uuid(), null, 25, page);
         if (isNull(kills) || kills.isEmpty()) return error(event, "No kills found for player");
         List<String> killStrings = kills.stream()
-                .map(k -> "<t:" + k.getTime().toEpochSecond() + ":f>: " + escape(k.getDeathMessage()))
+                .map(k -> "<t:" + k.getTime().toInstant().getEpochSecond() + ":f>: " + escape(k.getDeathMessage()))
                 .toList();
         StringBuilder result = new StringBuilder();
         for (String s : killStrings) {

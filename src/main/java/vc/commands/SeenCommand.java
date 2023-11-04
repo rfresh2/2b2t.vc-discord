@@ -7,13 +7,13 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
-import org.threeten.bp.OffsetDateTime;
 import reactor.core.publisher.Mono;
 import vc.swagger.vc.handler.SeenApi;
 import vc.swagger.vc.model.SeenResponse;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -59,8 +59,8 @@ public class SeenCommand implements SlashCommand {
                 .withEmbeds(EmbedCreateSpec.builder()
                         .title("Seen: " + escape(identity.playerName()))
                         .color(Color.CYAN)
-                        .addField("First seen", "<t:" + firstSeen.toEpochSecond() + ":f>", false)
-                        .addField("Last seen", "<t:" + lastSeen.toEpochSecond() + ":f>", false)
+                        .addField("First seen", "<t:" + firstSeen.toInstant().getEpochSecond() + ":f>", false)
+                        .addField("Last seen", "<t:" + lastSeen.toInstant().getEpochSecond() + ":f>", false)
                         .thumbnail(playerLookup.getAvatarURL(uuid).toString())
                         .build());
     }

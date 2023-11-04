@@ -57,7 +57,7 @@ public class ConnectionsCommand implements SlashCommand {
         List<Connections> connections = connectionsApi.connections(identity.uuid(), null, 25, page);
         if (isNull(connections) || connections.isEmpty()) return error(event, "No connections found for player");
         List<String> connectionStrings = connections.stream()
-                .map(c -> c.getConnection().getValue() + " <t:" + c.getTime().toEpochSecond() + ":f>")
+                .map(c -> c.getConnection().getValue() + " <t:" + c.getTime().toInstant().getEpochSecond() + ":f>")
                 .toList();
         StringBuilder result = new StringBuilder();
         for (String s : connectionStrings) {
