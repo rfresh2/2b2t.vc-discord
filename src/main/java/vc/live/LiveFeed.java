@@ -157,7 +157,7 @@ public abstract class LiveFeed {
                 .runOn(Schedulers.parallel())
                 .flatMap(entry -> processSend(entry, embeds))
                 .sequential()
-                .blockLast(Duration.ofMinutes(1));
+                .blockLast(Duration.ofSeconds(20));
         } catch (final Throwable e) {
             LOGGER.error("Error processing message queue", e);
         }
