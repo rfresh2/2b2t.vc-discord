@@ -22,6 +22,7 @@ import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -49,6 +51,7 @@ public abstract class LiveFeed {
     private final Cache<String, AtomicInteger> guildMessageSendFailCountCache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, MINUTES)
         .build();
+    private ScheduledFuture<?> processMessageQueueFuture;
 
     public LiveFeed(final RedisClient redisClient,
                     final GatewayDiscordClient discordClient,
@@ -64,7 +67,7 @@ public abstract class LiveFeed {
         this.executorService = executorService;
         this.objectMapper = objectMapper;
         syncChannels();
-        this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 10, SECONDS);
+        this.processMessageQueueFuture = this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 10, SECONDS);
         inputQueues().forEach(this::monitorQueue);
     }
 
@@ -154,7 +157,7 @@ public abstract class LiveFeed {
                 .runOn(Schedulers.parallel())
                 .flatMap(entry -> processSend(entry, embeds))
                 .sequential()
-                .blockLast();
+                .blockLast(Duration.ofMinutes(1));
         } catch (final Throwable e) {
             LOGGER.error("Error processing message queue", e);
         }

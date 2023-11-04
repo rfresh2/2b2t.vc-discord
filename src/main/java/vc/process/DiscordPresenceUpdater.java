@@ -84,7 +84,7 @@ public class DiscordPresenceUpdater {
 
     Optional<String> getPlayerCount() {
         try {
-            return Optional.of(String.format("%d Online Players", tabListApi.onlinePlayers().size()));
+            return Optional.of(String.format("%d Players Online", tabListApi.onlinePlayers().size()));
         } catch (final Exception e) {
             LOGGER.error("Error getting player count", e);
             return Optional.empty();
