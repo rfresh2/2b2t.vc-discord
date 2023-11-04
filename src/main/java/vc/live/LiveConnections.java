@@ -53,7 +53,10 @@ public class LiveConnections extends LiveFeed {
 
     @Override
     protected List<InputQueue> inputQueues() {
-        return asList(new InputQueue<>("ConnectionsQueue", Connections.class, this::buildConnectionsEmbed));
+        return asList(new InputQueue<>("ConnectionsQueue",
+                                       Connections.class,
+                                       this::buildConnectionsEmbed,
+                                       this::getConnectionTimestamp));
     }
 
     protected EmbedData buildConnectionsEmbed(final Connections con) {
@@ -65,5 +68,9 @@ public class LiveConnections extends LiveFeed {
             .timestamp(Instant.ofEpochSecond(con.getTime().toEpochSecond()))
             .build()
             .asRequest();
+    }
+
+    protected long getConnectionTimestamp(final Connections con) {
+        return con.getTime().toEpochSecond();
     }
 }

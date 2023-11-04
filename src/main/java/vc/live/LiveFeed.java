@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,7 +45,7 @@ public abstract class LiveFeed {
     protected final Map<String, RestChannel> liveChannels;
     protected final Map<InputQueue, RBoundedBlockingQueue> inputQueues;
     protected final GuildConfigManager guildConfigManager;
-    private final ConcurrentLinkedQueue<EmbedData> messageQueue;
+    private final PriorityBlockingQueue<Message> messageQueue;
     private final ScheduledExecutorService executorService;
     private final ObjectMapper objectMapper;
     private final Cache<String, AtomicInteger> guildMessageSendFailCountCache = CacheBuilder.newBuilder()
@@ -62,7 +62,7 @@ public abstract class LiveFeed {
         this.discordClient = discordClient;
         this.liveChannels = new ConcurrentHashMap<>();
         this.guildConfigManager = guildConfigManager;
-        this.messageQueue = new ConcurrentLinkedQueue<>();
+        this.messageQueue = new PriorityBlockingQueue<>(100);
         this.inputQueues = new ConcurrentHashMap<>();
         this.executorService = executorService;
         this.objectMapper = objectMapper;
@@ -71,7 +71,19 @@ public abstract class LiveFeed {
         inputQueues().forEach(this::monitorQueue);
     }
 
-    record InputQueue<T>(String queueName, Class<T> deserializedType, Function<T, EmbedData> embedBuilderFunction) {}
+    record InputQueue<T>(
+        String queueName,
+        Class<T> deserializedType,
+        Function<T, EmbedData> embedBuilderFunction,
+        Function<T, Long> timestampFunction
+    ) {}
+
+    record Message(EmbedData embedData, long timestamp) implements Comparable<Message> {
+        @Override
+        public int compareTo(final Message o) {
+            return (timestamp() < o.timestamp()) ? -1 : ((timestamp() == o.timestamp()) ? 0 : 1);
+        }
+    }
 
     private void monitorQueue(final InputQueue inputQueue) {
         final RBoundedBlockingQueue<String> queue = this.redisClient.getQueue(inputQueue.queueName());
@@ -85,10 +97,11 @@ public abstract class LiveFeed {
 
     private void processInputQueue(final RBoundedBlockingQueue<String> queue, final InputQueue inputQueue) {
         try {
-            final String json = queue.poll();
-            if (json == null) return;
-            final Object data = objectMapper.readValue(json, inputQueue.deserializedType);
-            this.messageQueue.add((EmbedData) inputQueue.embedBuilderFunction.apply(data));
+            String json;
+            while ((json = queue.poll()) != null) {
+                final Object data = objectMapper.readValue(json, inputQueue.deserializedType());
+                this.messageQueue.add(new Message((EmbedData) inputQueue.embedBuilderFunction().apply(data), (long) inputQueue.timestampFunction().apply(data)));
+            }
         } catch (final Exception e) {
             LOGGER.error("Error processing {} queue", feedName(), e);
         }
@@ -146,9 +159,9 @@ public abstract class LiveFeed {
     protected void processMessageQueue() {
         try {
             final List<EmbedData> embeds = new ArrayList<>(4);
-            EmbedData embedDate;
-            while (embeds.size() < 10 && (embedDate = messageQueue.poll()) != null) {
-                embeds.add(embedDate);
+            Message message;
+            while (embeds.size() < 10 && (message = messageQueue.poll()) != null) {
+                embeds.add(message.embedData());
             }
             if (embeds.isEmpty()) return;
             // todo: test if we need to use a rate limiter between sending messages to different guilds

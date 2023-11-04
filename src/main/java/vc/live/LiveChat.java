@@ -58,8 +58,8 @@ public class LiveChat extends LiveFeed {
 
     @Override
     protected List<InputQueue> inputQueues() {
-        return asList(new InputQueue<>("ChatsQueue", Chats.class, this::getChatEmbed),
-                      new InputQueue<>("DeathsQueue", Deaths.class, this::getDeathEmbed));
+        return asList(new InputQueue<>("ChatsQueue", Chats.class, this::getChatEmbed, this::getChatTimestamp),
+                      new InputQueue<>("DeathsQueue", Deaths.class, this::getDeathEmbed, this::getDeathTimestamp));
     }
 
     private EmbedData getChatEmbed(final Chats chat) {
@@ -72,6 +72,10 @@ public class LiveChat extends LiveFeed {
             .asRequest();
     }
 
+    protected long getChatTimestamp(final Chats chat) {
+        return chat.getTime().toEpochSecond();
+    }
+
     private EmbedData getDeathEmbed(final Deaths death) {
         return EmbedCreateSpec.builder()
             .description(escape(death.getDeathMessage().replace(death.getVictimPlayerName(), "**" + death.getVictimPlayerName() + "**")))
@@ -80,5 +84,9 @@ public class LiveChat extends LiveFeed {
             .timestamp(Instant.ofEpochSecond(death.getTime().toEpochSecond()))
             .build()
             .asRequest();
+    }
+
+    protected long getDeathTimestamp(final Deaths death) {
+        return death.getTime().toEpochSecond();
     }
 }
