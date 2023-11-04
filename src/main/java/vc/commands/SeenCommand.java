@@ -22,10 +22,11 @@ import static java.util.Objects.isNull;
 @Component
 public class SeenCommand implements SlashCommand {
 
-    private final SeenApi seenApi = new SeenApi();
+    private final SeenApi seenApi;
     private final PlayerLookup playerLookup;
 
-    public SeenCommand(final PlayerLookup playerLookup) {
+    public SeenCommand(final SeenApi seenApi, final PlayerLookup playerLookup) {
+        this.seenApi = seenApi;
         this.playerLookup = playerLookup;
     }
 

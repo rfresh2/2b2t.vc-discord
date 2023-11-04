@@ -13,8 +13,12 @@ import java.util.UUID;
 
 @Component
 public class PlayerLookup {
-    private final UuidApi uuidApi = new UuidApi();
+    private final UuidApi uuidApi;
     private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger("PlayerLookup");
+
+    public PlayerLookup(final UuidApi uuidApi) {
+        this.uuidApi = uuidApi;
+    }
 
     public record PlayerIdentity(UUID uuid, String playerName) { }
 

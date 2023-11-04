@@ -21,10 +21,11 @@ import static java.util.Objects.isNull;
 @Component
 public class PlaytimeCommand implements SlashCommand {
 
-    private final PlaytimeApi playtimeApi = new PlaytimeApi();
+    private final PlaytimeApi playtimeApi;
     private final PlayerLookup playerLookup;
 
-    public PlaytimeCommand(final PlayerLookup playerLookup) {
+    public PlaytimeCommand(final PlaytimeApi playtimeApi, final PlayerLookup playerLookup) {
+        this.playtimeApi = playtimeApi;
         this.playerLookup = playerLookup;
     }
 

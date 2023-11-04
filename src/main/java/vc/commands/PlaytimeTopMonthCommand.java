@@ -17,8 +17,12 @@ import static java.util.Objects.isNull;
 @Component
 public class PlaytimeTopMonthCommand implements SlashCommand {
 
-    private final PlaytimeApi playtimeApi = new PlaytimeApi();
+    private final PlaytimeApi playtimeApi;
     private static final DecimalFormat df = new DecimalFormat("0.00");
+
+    public PlaytimeTopMonthCommand(final PlaytimeApi playtimeApi) {
+        this.playtimeApi = playtimeApi;
+    }
 
     @Override
     public String getName() {

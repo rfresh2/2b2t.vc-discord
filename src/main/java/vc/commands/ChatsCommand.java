@@ -23,10 +23,11 @@ import static org.slf4j.LoggerFactory.getLogger;
 @Component
 public class ChatsCommand implements SlashCommand {
     private static final Logger LOGGER = getLogger(ChatsCommand.class);
-    private final ChatsApi chatsApi = new ChatsApi();
+    private final ChatsApi chatsApi;
     private final PlayerLookup playerLookup;
 
-    public ChatsCommand(final PlayerLookup playerLookup) {
+    public ChatsCommand(final ChatsApi chatsApi, final PlayerLookup playerLookup) {
+        this.chatsApi = chatsApi;
         this.playerLookup = playerLookup;
     }
 

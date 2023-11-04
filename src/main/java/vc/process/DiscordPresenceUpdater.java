@@ -21,7 +21,7 @@ import static vc.commands.QueueCommand.getEtaStringFromSeconds;
 import static vc.commands.QueueCommand.getQueueWaitInSeconds;
 
 @Component
-public class LivePresence {
+public class DiscordPresenceUpdater {
     private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger("LivePresence");
     private final ScheduledExecutorService scheduledExecutorService;
     private final GatewayDiscordClient discordClient;
@@ -37,7 +37,7 @@ public class LivePresence {
         "2b2t is full"
     );
 
-    public LivePresence(final ScheduledExecutorService scheduledExecutorService, final GatewayDiscordClient discordClient, final QueueApi queueApi, final TabListApi tabListApi) {
+    public DiscordPresenceUpdater(final ScheduledExecutorService scheduledExecutorService, final GatewayDiscordClient discordClient, final QueueApi queueApi, final TabListApi tabListApi) {
         this.scheduledExecutorService = scheduledExecutorService;
         this.discordClient = discordClient;
         this.queueApi = queueApi;

@@ -20,10 +20,11 @@ import static java.util.Objects.isNull;
 
 @Component
 public class NamesCommand implements SlashCommand {
-    private final NamesApi namesApi = new NamesApi();
+    private final NamesApi namesApi;
     private final PlayerLookup playerLookup;
 
-    public NamesCommand(final PlayerLookup playerLookup) {
+    public NamesCommand(final NamesApi namesApi, final PlayerLookup playerLookup) {
+        this.namesApi = namesApi;
         this.playerLookup = playerLookup;
     }
 
