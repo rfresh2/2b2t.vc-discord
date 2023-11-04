@@ -1,5 +1,8 @@
 package vc.live;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class LiveFeedManager {
     private final LiveChat liveChatFeed;
     private final LiveConnections liveConnections;

@@ -1,6 +1,7 @@
 package vc.config;
 
 import discord4j.discordjson.json.GuildFields;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+@Component
 public class GuildConfigManager {
     private final Map<String, GuildConfigRecord> guildConfigMap;
     private final GuildConfigDatabase guildConfigDatabase;

@@ -4,11 +4,14 @@ import org.redisson.Redisson;
 import org.redisson.api.RBoundedBlockingQueue;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
+@Component
 public class RedisClient {
     private RedissonClient redissonClient;
 
-    public RedisClient(final String redisURL, final String redisUsername, final String redisPassword) {
+    public RedisClient(@Value("${REDIS_URL}") final String redisURL, @Value("${REDIS_USERNAME}") final String redisUsername, @Value("${REDIS_PASSWORD}") final String redisPassword) {
         this.redissonClient = buildRedisClient(redisURL, redisUsername, redisPassword);
     }
 

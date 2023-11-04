@@ -2,6 +2,7 @@ package vc.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -17,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Optional;
 
+@Component
 public class GuildConfigDatabase {
     private static final Logger LOGGER = LoggerFactory.getLogger(GuildConfigDatabase.class);
     // backups older than this date will be deleted

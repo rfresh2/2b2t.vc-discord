@@ -1,6 +1,7 @@
 package vc.util;
 
 import org.slf4j.Logger;
+import org.springframework.stereotype.Component;
 import vc.swagger.minetools_api.handler.UuidApi;
 import vc.swagger.minetools_api.model.UUIDAndPlayerName;
 
@@ -10,6 +11,7 @@ import java.net.URL;
 import java.util.Optional;
 import java.util.UUID;
 
+@Component
 public class PlayerLookup {
     private final UuidApi uuidApi = new UuidApi();
     private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger("PlayerLookup");
