@@ -149,7 +149,7 @@ public abstract class LiveFeed {
             }
             if (embeds.isEmpty()) return;
             // todo: test if we need to use a rate limiter between sending messages to different guilds
-            Flux.just(this.liveChannels.entrySet().toArray(new Map.Entry[0]))
+            Flux.fromIterable(liveChannels.entrySet())
                 .parallel()
                 .runOn(Schedulers.parallel())
                 .flatMap(entry -> processSend(entry, embeds))
