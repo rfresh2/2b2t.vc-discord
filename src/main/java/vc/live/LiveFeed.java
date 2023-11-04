@@ -52,6 +52,7 @@ public abstract class LiveFeed {
         .expireAfterWrite(5, MINUTES)
         .build();
     private ScheduledFuture<?> processMessageQueueFuture;
+    private ScheduledFuture<?> processInputQueuesFuture;
 
     public LiveFeed(final RedisClient redisClient,
                     final GatewayDiscordClient discordClient,
@@ -67,9 +68,19 @@ public abstract class LiveFeed {
         this.executorService = executorService;
         this.objectMapper = objectMapper;
         syncChannels();
-        this.processMessageQueueFuture = this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 10, SECONDS);
-        inputQueues().forEach(this::monitorQueue);
+        this.processMessageQueueFuture = this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 11, SECONDS);
+        inputQueues().forEach(this::registerInputQueue);
+        this.processInputQueuesFuture = this.executorService.scheduleWithFixedDelay(this::processInputQueues, ((int) (Math.random() * 10)), 4, SECONDS);
     }
+
+    protected abstract boolean channelEnabledPredicate(final GuildConfigRecord guildConfigRecord);
+    protected abstract String liveChannelId(final GuildConfigRecord guildConfigRecord);
+
+    protected abstract GuildConfigRecord disableRecordInternal(final GuildConfigRecord in);
+
+    protected abstract GuildConfigRecord enableRecordInternal(final GuildConfigRecord in, final String guildId, final String channelId);
+
+    protected abstract List<InputQueue> inputQueues();
 
     record InputQueue<T>(
         String queueName,
@@ -85,17 +96,16 @@ public abstract class LiveFeed {
         }
     }
 
-    private void monitorQueue(final InputQueue inputQueue) {
+    private void registerInputQueue(final InputQueue inputQueue) {
         final RBoundedBlockingQueue<String> queue = this.redisClient.getQueue(inputQueue.queueName());
         inputQueues.put(inputQueue, queue);
-        this.executorService.scheduleWithFixedDelay(() -> processInputQueue(queue, inputQueue), 1, 3, SECONDS);
     }
 
     private String feedName() {
         return getClass().getSimpleName();
     }
 
-    private void processInputQueue(final RBoundedBlockingQueue<String> queue, final InputQueue inputQueue) {
+    private void processInputQueue(final InputQueue inputQueue, final RBoundedBlockingQueue<String> queue) {
         try {
             String json;
             while ((json = queue.poll()) != null) {
@@ -107,14 +117,9 @@ public abstract class LiveFeed {
         }
     }
 
-    protected abstract boolean channelEnabledPredicate(final GuildConfigRecord guildConfigRecord);
-    protected abstract String liveChannelId(final GuildConfigRecord guildConfigRecord);
-
-    protected abstract GuildConfigRecord disableRecordInternal(final GuildConfigRecord in);
-
-    protected abstract GuildConfigRecord enableRecordInternal(final GuildConfigRecord in, final String guildId, final String channelId);
-
-    protected abstract List<InputQueue> inputQueues();
+    private void processInputQueues() {
+        inputQueues.forEach(this::processInputQueue);
+    }
 
     public void syncChannels() {
         liveChannels.clear();
@@ -183,24 +188,22 @@ public abstract class LiveFeed {
                 MessageCreateRequest.builder()
                     .embeds(embeds)
                     .build())
-            .onErrorResume(error -> {
+            .doOnError(error -> {
+                LOGGER.info("caught error sending msg to channel: {}", channel.getId().asString());
                 if (error instanceof ClientException e) {
                     int code = e.getStatus().code();
                     if (code == 429) {
                         // rate limit
                         LOGGER.error("Rate limited while broadcasting message to channel: {}", channel.getId().asString());
-                        return Mono.empty();
                     } else if (code == 403 || code == 404) {
                         // missing permissions or channel deleted, disable immediately
                         LOGGER.error("Missing permissions while broadcasting message to channel: {}", channel.getId().asString());
                         disableFeed(guildId);
-                        return Mono.empty();
                     }
                 }
                 // for any unknown error, count it and disable if we get too many
                 countMessageSendFailure(guildId);
                 LOGGER.error("Error broadcasting message to guild: {}", guildId, error);
-                return Mono.empty();
             });
     }
 
