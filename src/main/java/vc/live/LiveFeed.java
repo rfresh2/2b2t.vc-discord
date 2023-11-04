@@ -118,7 +118,9 @@ public abstract class LiveFeed {
     }
 
     private void processInputQueues() {
-        inputQueues.forEach(this::processInputQueue);
+        synchronized (this.messageQueue) {
+            inputQueues.forEach(this::processInputQueue);
+        }
     }
 
     public void syncChannels() {
@@ -164,9 +166,11 @@ public abstract class LiveFeed {
     protected void processMessageQueue() {
         try {
             final List<EmbedData> embeds = new ArrayList<>(4);
-            Message message;
-            while (embeds.size() < 10 && (message = messageQueue.poll()) != null) {
-                embeds.add(message.embedData());
+            synchronized (this.messageQueue) {
+                Message message;
+                while (embeds.size() < 10 && (message = messageQueue.poll()) != null) {
+                    embeds.add(message.embedData());
+                }
             }
             if (embeds.isEmpty()) return;
             // todo: test if we need to use a rate limiter between sending messages to different guilds
