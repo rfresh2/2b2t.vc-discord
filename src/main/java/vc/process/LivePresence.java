@@ -1,4 +1,4 @@
-package vc.live;
+package vc.process;
 
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.ClientActivity;
@@ -7,6 +7,7 @@ import discord4j.core.object.presence.Status;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import vc.swagger.vc.handler.QueueApi;
+import vc.swagger.vc.handler.TabListApi;
 import vc.swagger.vc.model.Queuelength;
 
 import java.util.List;
@@ -16,6 +17,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.asList;
+import static vc.commands.QueueCommand.getEtaStringFromSeconds;
+import static vc.commands.QueueCommand.getQueueWaitInSeconds;
 
 @Component
 public class LivePresence {
@@ -23,6 +26,7 @@ public class LivePresence {
     private final ScheduledExecutorService scheduledExecutorService;
     private final GatewayDiscordClient discordClient;
     private final QueueApi queueApi;
+    private final TabListApi tabListApi;
     private final Random random = new Random();
 
     // todo: could be cool to have a secondary list of all 2b2t motd's and randomly select one of those
@@ -33,10 +37,11 @@ public class LivePresence {
         "2b2t is full"
     );
 
-    public LivePresence(final ScheduledExecutorService scheduledExecutorService, final GatewayDiscordClient discordClient, final QueueApi queueApi) {
+    public LivePresence(final ScheduledExecutorService scheduledExecutorService, final GatewayDiscordClient discordClient, final QueueApi queueApi, final TabListApi tabListApi) {
         this.scheduledExecutorService = scheduledExecutorService;
         this.discordClient = discordClient;
         this.queueApi = queueApi;
+        this.tabListApi = tabListApi;
         this.scheduledExecutorService.scheduleWithFixedDelay(this::updatePresence, 1, 1, TimeUnit.MINUTES);
     }
 
@@ -53,11 +58,11 @@ public class LivePresence {
     }
 
     private String selectStatusMessage() {
-        if (random.nextInt(2) > 0) {
-            return getQueueStatus().orElse(randomStaticStatusMessage());
-        } else {
-            return randomStaticStatusMessage();
-        }
+        return switch (random.nextInt(3)) {
+            case 0 -> getQueueStatus().orElse(randomStaticStatusMessage());
+            case 1 -> getPlayerCount().orElse(randomStaticStatusMessage());
+            default -> randomStaticStatusMessage();
+        };
     }
 
     private String randomStaticStatusMessage() {
@@ -67,9 +72,21 @@ public class LivePresence {
     Optional<String> getQueueStatus() {
         try {
             Queuelength queuelength = queueApi.queue();
-            return Optional.of(String.format("Q: %d | Prio: %d", queuelength.getRegular(), queuelength.getPrio()));
+            return Optional.of(String.format("Q: %d | Prio: %d | ETA: %s",
+                                             queuelength.getRegular(),
+                                             queuelength.getPrio(),
+                                             getEtaStringFromSeconds(getQueueWaitInSeconds(queuelength.getRegular()))));
         } catch (final Exception e) {
             LOGGER.error("Error getting queue status", e);
+            return Optional.empty();
+        }
+    }
+
+    Optional<String> getPlayerCount() {
+        try {
+            return Optional.of(String.format("%d Online Players", tabListApi.onlinePlayers().size()));
+        } catch (final Exception e) {
+            LOGGER.error("Error getting player count", e);
             return Optional.empty();
         }
     }

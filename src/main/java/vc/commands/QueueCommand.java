@@ -13,7 +13,11 @@ import static java.util.Objects.isNull;
 
 @Component
 public class QueueCommand implements SlashCommand {
-    private final QueueApi queueApi = new QueueApi();
+    private final QueueApi queueApi;
+
+    public QueueCommand(final QueueApi queueApi) {
+        this.queueApi = queueApi;
+    }
 
     @Override
     public String getName() {

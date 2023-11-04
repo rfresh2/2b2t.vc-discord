@@ -23,7 +23,11 @@ import static java.util.Objects.isNull;
 public class TablistCommand implements SlashCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(TablistCommand.class);
 
-    private final TabListApi tabListApi = new TabListApi();
+    private final TabListApi tabListApi;
+
+    public TablistCommand(final TabListApi tabListApi) {
+        this.tabListApi = tabListApi;
+    }
 
     @Override
     public String getName() {

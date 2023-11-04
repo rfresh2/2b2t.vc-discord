@@ -23,6 +23,8 @@ import vc.live.LiveChat;
 import vc.live.LiveConnections;
 import vc.live.LiveFeedManager;
 import vc.live.RedisClient;
+import vc.swagger.vc.handler.QueueApi;
+import vc.swagger.vc.handler.TabListApi;
 import vc.util.PlayerLookup;
 
 import java.util.concurrent.Executors;
@@ -104,5 +106,15 @@ public class Application {
     @Bean
     public LiveFeedManager liveFeedManager(final LiveChat liveChat, final LiveConnections liveConnections) {
         return new LiveFeedManager(liveChat, liveConnections);
+    }
+
+    @Bean
+    public TabListApi tabListApi() {
+        return new TabListApi();
+    }
+
+    @Bean
+    public QueueApi queueApi() {
+        return new QueueApi();
     }
 }
