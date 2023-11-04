@@ -1,7 +1,8 @@
 package vc;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import discord4j.core.DiscordClientBuilder;
@@ -16,8 +17,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
+import org.threeten.bp.OffsetDateTime;
 
+import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -51,16 +56,40 @@ public class Application {
     }
 
     @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
+    public RestTemplate restTemplate(ObjectMapper objectMapper) {
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getMessageConverters().add(0, new MappingJackson2HttpMessageConverter(objectMapper));
+        return restTemplate;
     }
 
     @Bean
+    @Primary
     public ObjectMapper objectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.registerModule(new JavaTimeModule());
+        JavaTimeModule javaTimeModule = new JavaTimeModule();
+        objectMapper.registerModule(javaTimeModule);
+        javaTimeModule.addSerializer(OffsetDateTime.class, new OffsetDateTimeSerializer());
+        javaTimeModule.addDeserializer(OffsetDateTime.class, new OffsetDateTimeDeserializer());
+//        objectMapper.registerModule(new ThreeTenModule());
+        objectMapper.registerModule(javaTimeModule);
+
         return objectMapper;
+    }
+
+
+    public static class OffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
+        @Override
+        public void serialize(OffsetDateTime arg0, JsonGenerator arg1, SerializerProvider arg2) throws IOException {
+            arg1.writeString(arg0.toString());
+        }
+    }
+
+    public static class OffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
+        @Override
+        public OffsetDateTime deserialize(JsonParser arg0, DeserializationContext arg1) throws IOException {
+            return OffsetDateTime.parse(arg0.getText());
+        }
     }
 
     @Bean
