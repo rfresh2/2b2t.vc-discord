@@ -3,12 +3,14 @@ package vc.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -17,6 +19,11 @@ import java.util.Optional;
 
 public class GuildConfigDatabase {
     private static final Logger LOGGER = LoggerFactory.getLogger(GuildConfigDatabase.class);
+    // backups older than this date will be deleted
+    private static final Duration ROLLING_BACKUP_DURATION = Duration.ofDays(7);
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss").withLocale(Locale.US).withZone(
+        ZoneId.of("America/Los_Angeles"));
+    private final Path backupPath = Paths.get("backups");
     private final Connection connection;
 
     public GuildConfigDatabase() {
@@ -41,15 +48,41 @@ public class GuildConfigDatabase {
 
     public void backupDatabase() {
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss").withLocale(Locale.US).withZone(
-                ZoneId.of("America/Los_Angeles"));
-            final Path backupPath = Paths.get("backups");
             if (!backupPath.toFile().exists()) {
                 backupPath.toFile().mkdirs();
             }
-            connection.createStatement().executeUpdate("BACKUP TO 'backups/guild-config-backup-" + formatter.format(Instant.now()) + ".db'");
+            connection.createStatement().executeUpdate("BACKUP TO 'backups/guild-config-backup-" + DATE_FORMATTER.format(Instant.now()) + ".db'");
         } catch (final Exception e) {
             LOGGER.error("Error backing up guild config database", e);
+        }
+        cleanOldBackups();
+    }
+
+    private void cleanOldBackups() {
+        try {
+            if (!backupPath.toFile().exists()) {
+                return;
+            }
+            File[] files = backupPath.toFile().listFiles();
+            if (files == null) {
+                LOGGER.warn("no backups found?");
+                return;
+            }
+            for (final File file : files) {
+                if (file.getName().startsWith("guild-config-backup-")) {
+                    final String dateString = file.getName().substring("guild-config-backup-".length(), "guild-config-backup-".length() + "yyyy-MM-dd-HH-mm-ss".length());
+                    final Instant date = Instant.from(DATE_FORMATTER.parse(dateString));
+                    if (date.isBefore(Instant.now().minus(ROLLING_BACKUP_DURATION))) {
+                        LOGGER.info("Deleting old guild config database backup {}", file.getName());
+                        if (!file.delete()) {
+                            LOGGER.warn("Failed to delete old guild config database backup {}", file.getName());
+                        }
+                    }
+                }
+            }
+            LOGGER.info("Completed cleaning old backups");
+        } catch (final Exception e) {
+            LOGGER.error("Error cleaning old guild config database backups", e);
         }
     }
 

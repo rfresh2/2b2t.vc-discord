@@ -53,7 +53,7 @@ public class LiveChat extends LiveFeed {
 
     @Override
     protected GuildConfigRecord enableRecordInternal(final GuildConfigRecord in, final String guildId, final String channelId) {
-        return new GuildConfigRecord(in.guildId(), in.guildName(), true, channelId, in.liveConnectionsEnabled(), in.liveConnectionsChannelId());
+        return new GuildConfigRecord(guildId, in.guildName(), true, channelId, in.liveConnectionsEnabled(), in.liveConnectionsChannelId());
     }
 
     @Override
