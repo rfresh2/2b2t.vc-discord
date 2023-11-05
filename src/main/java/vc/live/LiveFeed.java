@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.retry.RetryExhaustedException;
 import reactor.util.retry.Retry;
 import vc.config.GuildConfigManager;
 import vc.config.GuildConfigRecord;
@@ -193,30 +194,35 @@ public abstract class LiveFeed {
             .timeout(Duration.ofSeconds(3))
             // retry only on TimeoutException
             .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
-                           .filter(error -> error instanceof TimeoutException))
+                           .filter(error -> error instanceof TimeoutException)
+                           .onRetryExhaustedThrow((spec, signal) ->
+                                  new RetryExhaustedException("Retries exhausted sending message to guild: " + guildId + ", channelId: " + channel.getId().asString(), signal.failure())))
             .onErrorResume(error -> {
-                if (error instanceof ClientException e) {
-                    int code = e.getStatus().code();
-                    if (code == 429) {
-                        // rate limit
-                        LOGGER.error("Rate limited while broadcasting message to channel: {}", channel.getId().asString());
-                        return Mono.empty();
-                    } else if (code == 403 || code == 404) {
-                        // missing permissions or channel deleted, disable immediately
-                        LOGGER.error("Missing permissions while broadcasting message to channel: {}", channel.getId().asString());
-                        disableFeed(guildId);
-                        return Mono.empty();
-                    }
-                }
-                if (error instanceof TimeoutException e) {
-                    LOGGER.error("Timeout while broadcasting message to guild: {}, channel: {}", guildId, channel.getId().asString());
-                    return Mono.empty();
-                }
-                // for any unknown error, count it and disable if we get too many
-                countMessageSendFailure(guildId);
-                LOGGER.error("Error broadcasting message to guild: {}", guildId, error);
-                return Mono.empty();
+                if (error instanceof RetryExhaustedException e) {
+                    handleBroadcastError(e.getCause(), guildId, channel);
+                } else
+                    handleBroadcastError(error, guildId, channel);
+               return Mono.empty();
             });
+    }
+
+    private void handleBroadcastError(final Throwable error, final String guildId, final RestChannel channel) {
+        if (error instanceof ClientException e) {
+            int code = e.getStatus().code();
+            if (code == 429) {
+                // rate limit
+                LOGGER.error("Rate limited while broadcasting message to channel: {}", channel.getId().asString());
+                return;
+            } else if (code == 403 || code == 404) {
+                // missing permissions or channel deleted, disable immediately
+                LOGGER.error("Missing permissions while broadcasting message to channel: {}", channel.getId().asString());
+                disableFeed(guildId);
+                return;
+            }
+        }
+        // for any unknown error, count it and disable if we get too many
+        LOGGER.error("Error broadcasting message to guild: {}", guildId, error);
+        countMessageSendFailure(guildId);
     }
 
     private void countMessageSendFailure(final String guildId) {
