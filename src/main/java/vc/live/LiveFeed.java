@@ -118,7 +118,8 @@ public abstract class LiveFeed {
 
     private void processInputQueues() {
         synchronized (this.messageQueue) {
-            inputQueues.forEach(this::processInputQueue);
+            if (this.messageQueue.size() < 100)
+                inputQueues.forEach(this::processInputQueue);
         }
     }
 
