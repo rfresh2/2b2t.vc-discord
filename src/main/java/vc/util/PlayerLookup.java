@@ -1,39 +1,51 @@
 package vc.util;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import vc.swagger.minetools_api.handler.UuidApi;
-import vc.swagger.minetools_api.model.UUIDAndPlayerName;
+import vc.swagger.mojang_api.handler.ProfileApi;
+import vc.swagger.mojang_api.model.UUIDAndUser;
 
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 
 @Component
 public class PlayerLookup {
-    private final UuidApi uuidApi;
-    private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger("PlayerLookup");
-
-    public PlayerLookup(final UuidApi uuidApi) {
-        this.uuidApi = uuidApi;
-    }
+    private static final Logger logger = LoggerFactory.getLogger(PlayerLookup.class);
+    private final ProfileApi mojangApi = new ProfileApi();
+    private final Cache<String, PlayerIdentity> uuidCache = Caffeine.newBuilder()
+        .expireAfterWrite(Duration.ofMinutes(10))
+        .maximumSize(250)
+        .build();
 
     public record PlayerIdentity(UUID uuid, String playerName) { }
 
     public Optional<PlayerIdentity> getPlayerIdentity(final String playerName) {
-        if (!validPlayerName(playerName)) {
-            LOGGER.info("Invalid playerName: {}", playerName);
+        final PlayerIdentity identityFromCache = uuidCache.getIfPresent(playerName);
+        if (identityFromCache != null)
+            return Optional.of(identityFromCache);
+        try {
+            UUIDAndUser uuidAndUsername = mojangApi.getProfileFromUsername(playerName);
+            if (uuidAndUsername == null) return Optional.empty();
+            final PlayerIdentity playerIdentity = new PlayerIdentity(
+                UUID.fromString(uuidAndUsername
+                                    .getId()
+                                    .replaceFirst(
+                                        "(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)",
+                                        "$1-$2-$3-$4-$5")
+                ), uuidAndUsername.getName());
+            uuidCache.put(playerName, playerIdentity);
+            return Optional.of(playerIdentity);
+        } catch (final Exception e) {
+            logger.error("Error while looking up player identity", e);
             return Optional.empty();
         }
-        final UUIDAndPlayerName uuidAndPlayerName = uuidApi.getUUIDAndPlayerName(playerName.trim());
-        if (uuidAndPlayerName == null) return Optional.empty();
-        if (uuidAndPlayerName.getStatus() != UUIDAndPlayerName.StatusEnum.OK) return Optional.empty();
-        return Optional.of(new PlayerIdentity(UUID.fromString(uuidAndPlayerName
-                .getId()
-                .replaceFirst("(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)", "$1-$2-$3-$4-$5")
-        ), uuidAndPlayerName.getName()));
     }
 
     public URL getAvatarURL(UUID uuid) {
@@ -46,6 +58,16 @@ public class PlayerLookup {
         } catch (MalformedURLException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    public Optional<UUID> getOrResolveUuid(final UUID uuid, final String username) {
+        if (uuid != null) return Optional.of(uuid);
+        return getPlayerIdentity(username.trim()).map(PlayerIdentity::uuid);
+    }
+
+    public Optional<PlayerIdentity> getOrResolvePlayerIdentity(final UUID uuid, final String username) {
+        if (uuid != null) return Optional.of(new PlayerIdentity(uuid, username));
+        return getPlayerIdentity(username.trim());
     }
 
     private boolean validPlayerName(String username) {

@@ -10,13 +10,13 @@ info:
   contact:
     email: "theairblow.help@gmail.com"
 tags:
-- name: "all"
-  description: "All endpoints"
+  - name: "all"
+    description: "All endpoints"
 paths:
   /session/minecraft/profile/{uuid}:
     get:
       tags:
-      - "all"
+        - "all"
       summary: "Get user's profile by UUID"
       operationId: "getProfileByUuid"
       description: |
@@ -27,20 +27,20 @@ paths:
         [JavaScript (includes explanation)](https://github.com/crafatar/crafatar/blob/9d2fe0c45424de3ebc8e0b10f9446e7d5c3738b2/lib/skins.js#L90-L108)
         [Java (includes sample UUIDs)](https://web.archive.org/web/20151022205119/https://gist.github.com/jomo/9968b8d572c38e1b1f4c)
       parameters:
-      - in: path
-        name: uuid
-        description: Trimmed UUID
-        required: true
-        schema:
-          type: string
-        example: f1bfcbddc68b49bfaac9fb9d8ce5293d
-      - in: query
-        name: unsigned
-        description: "false to append signature, true to omit"
-        required: true
-        schema:
-          type: boolean
-        example: false
+        - in: path
+          name: uuid
+          description: Trimmed UUID
+          required: true
+          schema:
+            type: string
+          example: f1bfcbddc68b49bfaac9fb9d8ce5293d
+        - in: query
+          name: unsigned
+          description: "false to append signature, true to omit"
+          required: true
+          schema:
+            type: boolean
+          example: false
       responses:
         "200":
           description: OK
@@ -113,7 +113,7 @@ paths:
   /blockedservers:
     get:
       tags:
-      - "all"
+        - "all"
       summary: "Get blocked servers"
       description: |
         This endpoint lists SHA1 hashes of all of the server IPs & domains that Mojang blocks.
