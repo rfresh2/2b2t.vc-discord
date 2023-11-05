@@ -27,10 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -193,22 +190,28 @@ public abstract class LiveFeed {
                     .embeds(embeds)
                     .build())
             .timeout(Duration.ofSeconds(3))
-            .doOnError(error -> {
-                LOGGER.info("caught error sending msg to channel: {}", channel.getId().asString());
+            .onErrorResume(error -> {
                 if (error instanceof ClientException e) {
                     int code = e.getStatus().code();
                     if (code == 429) {
                         // rate limit
                         LOGGER.error("Rate limited while broadcasting message to channel: {}", channel.getId().asString());
+                        return Mono.empty();
                     } else if (code == 403 || code == 404) {
                         // missing permissions or channel deleted, disable immediately
                         LOGGER.error("Missing permissions while broadcasting message to channel: {}", channel.getId().asString());
                         disableFeed(guildId);
+                        return Mono.empty();
                     }
+                }
+                if (error instanceof TimeoutException e) {
+                    LOGGER.error("Timeout while broadcasting message to guild: {}, channel: {}", guildId, channel.getId().asString());
+                    return Mono.empty();
                 }
                 // for any unknown error, count it and disable if we get too many
                 countMessageSendFailure(guildId);
                 LOGGER.error("Error broadcasting message to guild: {}", guildId, error);
+                return Mono.empty();
             });
     }
 
