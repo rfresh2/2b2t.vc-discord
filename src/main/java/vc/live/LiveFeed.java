@@ -120,6 +120,8 @@ public abstract class LiveFeed {
         synchronized (this.messageQueue) {
             if (this.messageQueue.size() < 100)
                 inputQueues.forEach(this::processInputQueue);
+            else
+                LOGGER.warn("Message queue is full, skipping input queues");
         }
     }
 
