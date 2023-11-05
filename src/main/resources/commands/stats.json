@@ -1,0 +1,12 @@
+{
+  "name": "stats",
+  "description": "Gets a player's 2b2t stats",
+  "options": [
+    {
+      "name": "player",
+      "description": "The player to get stats of",
+      "type": 3,
+      "required": true
+    }
+  ]
+}
