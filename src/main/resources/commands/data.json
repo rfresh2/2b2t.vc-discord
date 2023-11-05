@@ -1,0 +1,12 @@
+{
+  "name": "data",
+  "description": "Gets a dump of all a player's data on 2b2t",
+  "options": [
+    {
+      "name": "player",
+      "description": "The player to get the data for",
+      "type": 3,
+      "required": true
+    }
+  ]
+}
