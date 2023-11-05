@@ -16,6 +16,7 @@ import vc.util.Validator;
 import java.util.List;
 import java.util.Optional;
 
+import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static java.util.Objects.isNull;
 
 @Component
@@ -51,10 +52,10 @@ public class NamesCommand implements SlashCommand {
         List<String> namesStrings = names.stream()
                 .map(n -> "**" + escape(n.getName()) + "**"
                         + Optional.ofNullable(n.getChangedtoat())
-                            .map(at -> " (To: <t:" + at.toInstant().getEpochSecond() + ":f>)")
+                            .map(at -> " (To: " + SHORT_DATE_TIME.format(at.toInstant()) + ")")
                             .orElse("")
                         + Optional.ofNullable(n.getChangedfromat())
-                            .map(at -> " (From: <t:" + at.toInstant().getEpochSecond() + ":f>)")
+                            .map(at -> " (From: " + SHORT_DATE_TIME.format(at.toInstant()) + ")")
                             .orElse(""))
                 .toList();
         StringBuilder result = new StringBuilder();

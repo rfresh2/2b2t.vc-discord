@@ -17,6 +17,7 @@ import vc.util.Validator;
 import java.util.List;
 import java.util.Optional;
 
+import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static java.util.Objects.isNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -57,7 +58,7 @@ public class ConnectionsCommand implements SlashCommand {
         List<Connections> connections = connectionsApi.connections(identity.uuid(), null, 25, page);
         if (isNull(connections) || connections.isEmpty()) return error(event, "No connections found for player");
         List<String> connectionStrings = connections.stream()
-                .map(c -> c.getConnection().getValue() + " <t:" + c.getTime().toInstant().getEpochSecond() + ":f>")
+                .map(c -> c.getConnection().getValue() + " " + SHORT_DATE_TIME.format(c.getTime().toInstant()))
                 .toList();
         StringBuilder result = new StringBuilder();
         for (String s : connectionStrings) {

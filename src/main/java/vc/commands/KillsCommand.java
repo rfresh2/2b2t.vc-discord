@@ -17,6 +17,7 @@ import vc.util.Validator;
 import java.util.List;
 import java.util.Optional;
 
+import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static java.util.Objects.isNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -57,7 +58,7 @@ public class KillsCommand implements SlashCommand {
         List<Deaths> kills = deathsApi.kills(identity.uuid(), null, 25, page);
         if (isNull(kills) || kills.isEmpty()) return error(event, "No kills found for player");
         List<String> killStrings = kills.stream()
-                .map(k -> "<t:" + k.getTime().toInstant().getEpochSecond() + ":f>: " + escape(k.getDeathMessage()))
+                .map(k -> SHORT_DATE_TIME.format(k.getTime().toInstant()) + " " + escape(k.getDeathMessage()))
                 .toList();
         StringBuilder result = new StringBuilder();
         for (String s : killStrings) {

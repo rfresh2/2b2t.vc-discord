@@ -14,6 +14,8 @@ import vc.util.Validator;
 
 import java.util.Optional;
 
+import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
+
 @Component
 public class PlayerStatsCommand implements SlashCommand {
 
@@ -52,8 +54,8 @@ public class PlayerStatsCommand implements SlashCommand {
                             .addField("Joins", ""+playerStats.getJoinCount(), true)
                             .addField("Leaves", ""+playerStats.getLeaveCount(), true)
                             .addField("\u200B", "\u200B", true)
-                            .addField("First Seen", "<t:" + playerStats.getFirstSeen().toInstant().getEpochSecond() + ":f>", true)
-                            .addField("Last Seen", "<t:" + playerStats.getLastSeen().toInstant().getEpochSecond() + ":f>", true)
+                            .addField("First Seen", SHORT_DATE_TIME.format(playerStats.getFirstSeen().toInstant()), true)
+                            .addField("Last Seen", SHORT_DATE_TIME.format(playerStats.getLastSeen().toInstant()), true)
                             .addField("\u200B", "\u200B", true)
                             .addField("Playtime", formatDuration(playerStats.getPlaytimeSeconds()), true)
                             .addField("Playtime (Last 30 Days)", formatDuration(playerStats.getPlaytimeSecondsMonth()), true)

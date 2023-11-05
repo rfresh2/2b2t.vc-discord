@@ -17,6 +17,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static java.util.Objects.isNull;
 
 @Component
@@ -59,8 +60,8 @@ public class SeenCommand implements SlashCommand {
                 .withEmbeds(EmbedCreateSpec.builder()
                         .title("Seen: " + escape(identity.playerName()))
                         .color(Color.CYAN)
-                        .addField("First seen", "<t:" + firstSeen.toInstant().getEpochSecond() + ":f>", false)
-                        .addField("Last seen", "<t:" + lastSeen.toInstant().getEpochSecond() + ":f>", false)
+                        .addField("First seen", SHORT_DATE_TIME.format(firstSeen.toInstant()), false)
+                        .addField("Last seen", SHORT_DATE_TIME.format(lastSeen.toInstant()), false)
                         .thumbnail(playerLookup.getAvatarURL(uuid).toString())
                         .build());
     }

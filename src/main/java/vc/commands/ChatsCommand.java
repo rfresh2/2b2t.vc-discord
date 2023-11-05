@@ -17,6 +17,7 @@ import vc.util.Validator;
 import java.util.List;
 import java.util.Optional;
 
+import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static java.util.Objects.isNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -57,7 +58,7 @@ public class ChatsCommand implements SlashCommand {
         List<Chats> chats = chatsApi.chats(identity.uuid(), null,25, page);
         if (isNull(chats) || chats.isEmpty()) return error(event, "No chats found");
         List<String> chatStrings = chats.stream()
-                .map(c -> "<t:" + c.getTime().toInstant().getEpochSecond() + ":f>: " + escape(c.getChat()))
+                .map(c -> SHORT_DATE_TIME.format(c.getTime().toInstant()) + " " + escape(c.getChat()))
                 .toList();
         StringBuilder result = new StringBuilder();
         for (String s : chatStrings) {
