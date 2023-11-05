@@ -192,6 +192,7 @@ public abstract class LiveFeed {
                 MessageCreateRequest.builder()
                     .embeds(embeds)
                     .build())
+            .timeout(Duration.ofSeconds(3))
             .doOnError(error -> {
                 LOGGER.info("caught error sending msg to channel: {}", channel.getId().asString());
                 if (error instanceof ClientException e) {
