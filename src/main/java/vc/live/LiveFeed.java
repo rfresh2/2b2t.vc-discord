@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.retry.Retry;
 import vc.config.GuildConfigManager;
 import vc.config.GuildConfigRecord;
 
@@ -190,6 +191,9 @@ public abstract class LiveFeed {
                     .embeds(embeds)
                     .build())
             .timeout(Duration.ofSeconds(3))
+            // retry only on TimeoutException
+            .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
+                           .filter(error -> error instanceof TimeoutException))
             .onErrorResume(error -> {
                 if (error instanceof ClientException e) {
                     int code = e.getStatus().code();
