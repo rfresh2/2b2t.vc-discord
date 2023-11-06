@@ -119,12 +119,12 @@ public abstract class LiveFeed {
     private void processInputQueues() {
         synchronized (this.messageQueue) {
             if (this.messageQueue.size() < 200) {
-                try {
-                    queueHealthCheck();
-                } catch (final Exception e) {
-                    LOGGER.error("Error during queue health check", e);
-                    return;
-                }
+//                try {
+//                    queueHealthCheck();
+//                } catch (final Exception e) {
+//                    LOGGER.error("Error during queue health check", e);
+//                    return;
+//                }
                 inputQueues.forEach(this::processInputQueue);
             } else
                 LOGGER.warn("Message queue is full, skipping input queues");
@@ -134,6 +134,10 @@ public abstract class LiveFeed {
     private void queueHealthCheck() {
         final List<InputQueue> recreate = new ArrayList<>(1);
         for (Map.Entry<InputQueue, RBoundedBlockingQueue> entry : inputQueues.entrySet()) {
+            // todo: this is returning false for some reason
+            //  need to find out what the queue failure modes are
+            //  what happens on redis restart?
+            //  do queues have an expiry?
             if (!entry.getValue().isExists()) recreate.add(entry.getKey());
         }
         if (!recreate.isEmpty()) {
