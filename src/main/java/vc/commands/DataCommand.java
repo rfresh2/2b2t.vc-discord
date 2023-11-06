@@ -53,6 +53,7 @@ public class DataCommand implements SlashCommand {
                             .addField("Data Count", ""+playerDataDump.lines().count(), true)
                             .description("CSV Generated!")
                             .color(Color.CYAN)
+                            .thumbnail(playerLookup.getAvatarURL(playerIdentityOptional.get().uuid()).toString())
                             .build());
     }
 }
