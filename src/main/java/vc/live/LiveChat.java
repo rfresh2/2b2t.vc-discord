@@ -66,7 +66,7 @@ public class LiveChat extends LiveFeed {
         return EmbedCreateSpec.builder()
             .description(escape("**" + chat.getPlayerName() + ":** " + chat.getChat()))
             .footer("\u200b", avatarUrl(chat.getPlayerUuid()).toString())
-            .color(Color.BLACK)
+            .color(chat.getChat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.BLACK)
             .timestamp(Instant.ofEpochSecond(chat.getTime().toEpochSecond()))
             .build()
             .asRequest();
