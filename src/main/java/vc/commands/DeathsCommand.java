@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.swagger.vc.handler.DeathsApi;
-import vc.swagger.vc.model.Deaths;
+import vc.swagger.vc.model.DeathsResponse;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 
@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
-import static java.util.Objects.isNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
@@ -55,9 +54,10 @@ public class DeathsCommand implements SlashCommand {
     }
 
     private Mono<Message> resolveDeaths(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity, int page) {
-        List<Deaths> deaths = deathsApi.deaths(identity.uuid(), null,25, page);
-        if (isNull(deaths) || deaths.isEmpty()) return error(event, "No deaths found for player");
-        List<String> deathStrings = deaths.stream()
+        DeathsResponse deathsResponse = deathsApi.deaths(identity.uuid(), null, 25, page);
+        if (deathsResponse == null || deathsResponse.getDeaths() == null || deathsResponse.getDeaths().isEmpty())
+            return error(event, "No deaths found for player");
+        List<String> deathStrings = deathsResponse.getDeaths().stream()
                 .map(k -> SHORT_DATE_TIME.format(k.getTime().toInstant()) + " " + escape(k.getDeathMessage()))
                 .toList();
         StringBuilder result = new StringBuilder();
@@ -72,19 +72,22 @@ public class DeathsCommand implements SlashCommand {
             result = new StringBuilder(result.substring(0, result.length() - 1));
         } else {
             return event.createFollowup()
-                    .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Deaths: " + escape(identity.playerName()))
-                            .color(Color.CYAN)
-                            .description("No deaths found")
-                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
-                            .build());
+                .withEmbeds(EmbedCreateSpec.builder()
+                                .title("Deaths: " + escape(identity.playerName()))
+                                .color(Color.CYAN)
+                                .description("No deaths found")
+                                .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                                .build());
         }
         return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Deaths: " + escape(identity.playerName()))
-                        .color(Color.CYAN)
-                        .description(result.toString())
-                        .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
-                        .build());
+            .withEmbeds(EmbedCreateSpec.builder()
+                            .title("Deaths: " + escape(identity.playerName()))
+                            .color(Color.CYAN)
+                            .description(result.toString())
+                            .addField("Total", ""+deathsResponse.getTotal(), true)
+                            .addField("Page", ""+page, true)
+                            .addField("Page Count", ""+deathsResponse.getPageCount(), true)
+                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                            .build());
     }
 }

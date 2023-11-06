@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.swagger.vc.handler.ChatsApi;
-import vc.swagger.vc.model.Chats;
+import vc.swagger.vc.model.ChatsResponse;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 
@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
-import static java.util.Objects.isNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
@@ -55,9 +54,10 @@ public class ChatsCommand implements SlashCommand {
     }
 
     private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity, int page) {
-        List<Chats> chats = chatsApi.chats(identity.uuid(), null,25, page);
-        if (isNull(chats) || chats.isEmpty()) return error(event, "No chats found");
-        List<String> chatStrings = chats.stream()
+        ChatsResponse chatsResponse = chatsApi.chats(identity.uuid(), null, 25, page);
+        if (chatsResponse == null || chatsResponse.getChats() == null || chatsResponse.getChats().isEmpty())
+            return error(event, "No chats found");
+        List<String> chatStrings = chatsResponse.getChats().stream()
                 .map(c -> SHORT_DATE_TIME.format(c.getTime().toInstant()) + " " + escape(c.getChat()))
                 .toList();
         StringBuilder result = new StringBuilder();
@@ -72,19 +72,22 @@ public class ChatsCommand implements SlashCommand {
             result = new StringBuilder(result.substring(0, result.length() - 1));
         } else {
             return event.createFollowup()
-                    .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Chats: " + escape(identity.playerName()))
-                            .color(Color.CYAN)
-                            .description("No chats found")
-                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
-                            .build());
+                .withEmbeds(EmbedCreateSpec.builder()
+                                .title("Chats: " + escape(identity.playerName()))
+                                .color(Color.CYAN)
+                                .description("No chats found")
+                                .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                                .build());
         }
         return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Chats: " + escape(identity.playerName()))
-                        .color(Color.CYAN)
-                        .description(result.toString())
-                        .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
-                        .build());
+            .withEmbeds(EmbedCreateSpec.builder()
+                            .title("Chats: " + escape(identity.playerName()))
+                            .color(Color.CYAN)
+                            .description(result.toString())
+                            .addField("Total", ""+chatsResponse.getTotal(), true)
+                            .addField("Current Page", ""+page, true)
+                            .addField("Total Pages", ""+chatsResponse.getPageCount(), true)
+                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                            .build());
     }
 }

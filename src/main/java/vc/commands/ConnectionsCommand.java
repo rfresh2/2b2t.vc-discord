@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.swagger.vc.handler.ConnectionsApi;
-import vc.swagger.vc.model.Connections;
+import vc.swagger.vc.model.ConnectionsResponse;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 
@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
-import static java.util.Objects.isNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
@@ -55,9 +54,10 @@ public class ConnectionsCommand implements SlashCommand {
     }
 
     private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity, int page) {
-        List<Connections> connections = connectionsApi.connections(identity.uuid(), null, 25, page);
-        if (isNull(connections) || connections.isEmpty()) return error(event, "No connections found for player");
-        List<String> connectionStrings = connections.stream()
+        ConnectionsResponse connectionsResponse = connectionsApi.connections(identity.uuid(), null, 25, page);
+        if (connectionsResponse == null || connectionsResponse.getConnections() == null || connectionsResponse.getConnections().isEmpty())
+            return error(event, "No connections found for player");
+        List<String> connectionStrings = connectionsResponse.getConnections().stream()
                 .map(c -> c.getConnection().getValue() + " " + SHORT_DATE_TIME.format(c.getTime().toInstant()))
                 .toList();
         StringBuilder result = new StringBuilder();
@@ -72,19 +72,22 @@ public class ConnectionsCommand implements SlashCommand {
             result = new StringBuilder(result.substring(0, result.length() - 1));
         } else {
             return event.createFollowup()
-                    .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Connections: " + escape(identity.playerName()))
-                            .color(Color.CYAN)
-                            .description("No connections found")
-                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
-                            .build());
+                .withEmbeds(EmbedCreateSpec.builder()
+                                .title("Connections: " + escape(identity.playerName()))
+                                .color(Color.CYAN)
+                                .description("No connections found")
+                                .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                                .build());
         }
         return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Connections: " + escape(identity.playerName()))
-                        .color(Color.CYAN)
-                        .description(result.toString())
-                        .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
-                        .build());
+            .withEmbeds(EmbedCreateSpec.builder()
+                            .title("Connections: " + escape(identity.playerName()))
+                            .color(Color.CYAN)
+                            .description(result.toString())
+                            .addField("Total", ""+connectionsResponse.getTotal(), true)
+                            .addField("Current Page", ""+page, true)
+                            .addField("Page Count", ""+connectionsResponse.getPageCount(), true)
+                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                            .build());
     }
 }
