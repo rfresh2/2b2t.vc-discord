@@ -62,7 +62,7 @@ public abstract class LiveFeed {
         this.discordClient = discordClient;
         this.liveChannels = new ConcurrentHashMap<>();
         this.guildConfigManager = guildConfigManager;
-        this.messageQueue = new PriorityBlockingQueue<>(100);
+        this.messageQueue = new PriorityBlockingQueue<>(200);
         this.inputQueues = new ConcurrentHashMap<>();
         this.executorService = executorService;
         this.objectMapper = objectMapper;
@@ -118,7 +118,7 @@ public abstract class LiveFeed {
 
     private void processInputQueues() {
         synchronized (this.messageQueue) {
-            if (this.messageQueue.size() < 100)
+            if (this.messageQueue.size() < 200)
                 inputQueues.forEach(this::processInputQueue);
             else
                 LOGGER.warn("Message queue is full, skipping input queues");
