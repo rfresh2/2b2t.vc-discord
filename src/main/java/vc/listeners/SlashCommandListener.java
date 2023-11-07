@@ -1,5 +1,6 @@
 package vc.listeners;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteraction;
@@ -53,7 +54,7 @@ public class SlashCommandListener {
                 .map(s -> s.getName() + s.getValue().map(v -> ": " + v.getRaw()).orElse(""))
                 .collect(Collectors.joining(", "));
         LOGGER.info(username.orElse("?")
-                + " (" + event.getInteraction().getMember().get().getId().asString() + ") executed command: " + command.getName()
-                + (dataOptions.length() > 0 ? " with options: " + dataOptions : ""));
+                + " (" + event.getInteraction().getGuildId().map(Snowflake::asString).orElse("?") + ") executed command: " + command.getName()
+                + (!dataOptions.isEmpty() ? " with options: " + dataOptions : ""));
     }
 }

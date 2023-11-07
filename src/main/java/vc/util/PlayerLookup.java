@@ -18,11 +18,15 @@ import java.util.UUID;
 @Component
 public class PlayerLookup {
     private static final Logger logger = LoggerFactory.getLogger(PlayerLookup.class);
-    private final ProfileApi mojangApi = new ProfileApi();
+    private final ProfileApi mojangApi;
     private final Cache<String, PlayerIdentity> uuidCache = Caffeine.newBuilder()
-        .expireAfterWrite(Duration.ofMinutes(10))
+        .expireAfterWrite(Duration.ofHours(12))
         .maximumSize(250)
         .build();
+
+    public PlayerLookup(final ProfileApi mojangApi) {
+        this.mojangApi = mojangApi;
+    }
 
     public record PlayerIdentity(UUID uuid, String playerName) { }
 
