@@ -21,14 +21,13 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static java.util.Objects.isNull;
 
 @Component
-public class SeenCommand implements SlashCommand {
+public class SeenCommand extends PlayerLookupCommand {
 
     private final SeenApi seenApi;
-    private final PlayerLookup playerLookup;
 
     public SeenCommand(final SeenApi seenApi, final PlayerLookup playerLookup) {
+        super(playerLookup);
         this.seenApi = seenApi;
-        this.playerLookup = playerLookup;
     }
 
     @Override
@@ -57,8 +56,8 @@ public class SeenCommand implements SlashCommand {
         OffsetDateTime lastSeen = seenResponse.getTime();
         OffsetDateTime firstSeen = firstSeenResponse.getTime();
         return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Seen: " + escape(identity.playerName()))
+                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                        .title("Seen")
                         .color(Color.CYAN)
                         .addField("First seen", SHORT_DATE_TIME.format(firstSeen.toInstant()), false)
                         .addField("Last seen", SHORT_DATE_TIME.format(lastSeen.toInstant()), false)

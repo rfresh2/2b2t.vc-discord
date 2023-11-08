@@ -17,13 +17,11 @@ import java.util.Optional;
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 
 @Component
-public class PlayerStatsCommand implements SlashCommand {
-
-    private final PlayerLookup playerLookup;
+public class PlayerStatsCommand extends PlayerLookupCommand {
     private final StatsApi statsApi;
 
     public PlayerStatsCommand(final PlayerLookup playerLookup, final StatsApi statsApi) {
-        this.playerLookup = playerLookup;
+        super(playerLookup);
         this.statsApi = statsApi;
     }
 
@@ -48,8 +46,8 @@ public class PlayerStatsCommand implements SlashCommand {
         if (playerStats == null)
             return error(event, "Unable to find player");
         return event.createFollowup()
-            .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Player Stats: " + escape(playerNameOptional.get()))
+            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), playerIdentityOptional.get())
+                            .title("Player Stats")
                             .color(Color.CYAN)
                             .addField("Joins", ""+playerStats.getJoinCount(), true)
                             .addField("Leaves", ""+playerStats.getLeaveCount(), true)

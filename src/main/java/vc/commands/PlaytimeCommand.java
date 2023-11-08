@@ -19,14 +19,13 @@ import java.util.UUID;
 import static java.util.Objects.isNull;
 
 @Component
-public class PlaytimeCommand implements SlashCommand {
+public class PlaytimeCommand extends PlayerLookupCommand {
 
     private final PlaytimeApi playtimeApi;
-    private final PlayerLookup playerLookup;
 
     public PlaytimeCommand(final PlaytimeApi playtimeApi, final PlayerLookup playerLookup) {
+        super(playerLookup);
         this.playtimeApi = playtimeApi;
-        this.playerLookup = playerLookup;
     }
 
     @Override
@@ -53,8 +52,8 @@ public class PlaytimeCommand implements SlashCommand {
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();
         String durationStr = formatDuration(playtimeSeconds);
         return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Playtime: " + escape(identity.playerName()))
+                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                        .title("Playtime")
                         .color(Color.CYAN)
                         .description(durationStr)
                         .thumbnail(playerLookup.getAvatarURL(profileUUID).toString())

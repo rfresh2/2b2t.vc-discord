@@ -21,14 +21,13 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class DeathsCommand implements SlashCommand {
+public class DeathsCommand extends PlayerLookupCommand {
     private static final Logger LOGGER = getLogger(DeathsCommand.class);
     private final DeathsApi deathsApi;
-    private final PlayerLookup playerLookup;
 
     public DeathsCommand(final DeathsApi deathsApi, final PlayerLookup playerLookup) {
+        super(playerLookup);
         this.deathsApi = deathsApi;
-        this.playerLookup = playerLookup;
     }
 
     @Override
@@ -72,16 +71,16 @@ public class DeathsCommand implements SlashCommand {
             result = new StringBuilder(result.substring(0, result.length() - 1));
         } else {
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
-                                .title("Deaths: " + escape(identity.playerName()))
+                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                                .title("Deaths")
                                 .color(Color.CYAN)
                                 .description("No deaths found")
                                 .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
                                 .build());
         }
         return event.createFollowup()
-            .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Deaths: " + escape(identity.playerName()))
+            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                            .title("Deaths")
                             .color(Color.CYAN)
                             .description(result.toString())
                             .addField("Total", ""+deathsResponse.getTotal(), true)

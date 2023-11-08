@@ -17,12 +17,11 @@ import java.io.ByteArrayInputStream;
 import java.util.Optional;
 
 @Component
-public class DataCommand implements SlashCommand {
-    private final PlayerLookup playerLookup;
+public class DataCommand extends PlayerLookupCommand {
     private final DataDumpApi dataDumpApi;
 
     public DataCommand(final PlayerLookup playerLookup, final DataDumpApi dataDumpApi) {
-        this.playerLookup = playerLookup;
+        super(playerLookup);
         this.dataDumpApi = dataDumpApi;
     }
 
@@ -48,8 +47,8 @@ public class DataCommand implements SlashCommand {
             return error(event, "Unable to find player");
         return event.createFollowup()
             .withFiles(MessageCreateFields.File.of(playerIdentityOptional.get().playerName() + ".csv", new ByteArrayInputStream(playerDataDump.getBytes())))
-            .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Data Dump: " + escape(playerIdentityOptional.get().playerName()))
+            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), playerIdentityOptional.get())
+                            .title("Data Dump")
                             .addField("Data Count", ""+playerDataDump.lines().count(), true)
                             .description("CSV Generated!")
                             .color(Color.CYAN)

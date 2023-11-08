@@ -21,14 +21,12 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class ChatsCommand implements SlashCommand {
+public class ChatsCommand extends PlayerLookupCommand {
     private static final Logger LOGGER = getLogger(ChatsCommand.class);
     private final ChatsApi chatsApi;
-    private final PlayerLookup playerLookup;
-
     public ChatsCommand(final ChatsApi chatsApi, final PlayerLookup playerLookup) {
+        super(playerLookup);
         this.chatsApi = chatsApi;
-        this.playerLookup = playerLookup;
     }
 
     @Override
@@ -72,16 +70,16 @@ public class ChatsCommand implements SlashCommand {
             result = new StringBuilder(result.substring(0, result.length() - 1));
         } else {
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
-                                .title("Chats: " + escape(identity.playerName()))
+                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                                .title("Chats")
                                 .color(Color.CYAN)
                                 .description("No chats found")
                                 .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
                                 .build());
         }
         return event.createFollowup()
-            .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Chats: " + escape(identity.playerName()))
+            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                            .title("Chats")
                             .color(Color.CYAN)
                             .description(result.toString())
                             .addField("Total", ""+chatsResponse.getTotal(), true)

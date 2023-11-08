@@ -93,6 +93,10 @@ public class PlayerLookup {
         }
     }
 
+    public String getNameMCLink(UUID uuid) {
+        return "https://namemc.com/profile/" + uuid.toString();
+    }
+
     public Optional<UUID> getOrResolveUuid(final UUID uuid, final String username) {
         if (uuid != null) return Optional.of(uuid);
         return getPlayerIdentity(username.trim()).map(PlayerIdentity::uuid);

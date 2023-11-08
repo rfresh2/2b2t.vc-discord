@@ -20,13 +20,12 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static java.util.Objects.isNull;
 
 @Component
-public class NamesCommand implements SlashCommand {
+public class NamesCommand extends PlayerLookupCommand {
     private final NamesApi namesApi;
-    private final PlayerLookup playerLookup;
 
     public NamesCommand(final NamesApi namesApi, final PlayerLookup playerLookup) {
+        super(playerLookup);
         this.namesApi = namesApi;
-        this.playerLookup = playerLookup;
     }
 
     @Override
@@ -69,16 +68,16 @@ public class NamesCommand implements SlashCommand {
             result = new StringBuilder(result.substring(0, result.length() - 1));
         } else {
             return event.createFollowup()
-                    .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Names: " + escape(identity.playerName()))
+                    .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                            .title("Names")
                             .color(Color.CYAN)
                             .description("No names found")
                             .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
                             .build());
         }
         return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Names: " + escape(identity.playerName()))
+                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                        .title("Names")
                         .color(Color.CYAN)
                         .description(result.toString())
                         .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
