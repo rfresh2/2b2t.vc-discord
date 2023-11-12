@@ -12,7 +12,7 @@ public abstract class PlayerLookupCommand implements SlashCommand {
 
     EmbedCreateSpec.Builder populateIdentity(final EmbedCreateSpec.Builder builder, PlayerLookup.PlayerIdentity identity) {
         return builder
-            .addField("Player", "[" + escape(identity.playerName()) + "](" + playerLookup.getNameMCLink(identity.uuid()) + ")", true)
+            .addField("Player", "[" + identity.playerName() + "](" + playerLookup.getNameMCLink(identity.uuid()) + ")", true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true);
     }
