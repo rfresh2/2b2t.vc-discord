@@ -14,7 +14,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson-version>2.15.3</jackson-version>
-        <swagger-annotations-version>2.2.18</swagger-annotations-version>
+        <swagger-annotations-version>2.2.19</swagger-annotations-version>
         <maven-plugin-version>1.0.0</maven-plugin-version>
         <junit-version>4.13.1</junit-version>
         <default.package>vc.swagger</default.package>
@@ -100,7 +100,7 @@
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
-            <version>3.43.2.2</version>
+            <version>3.44.0.0</version>
         </dependency>
     </dependencies>
 
