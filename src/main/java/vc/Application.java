@@ -41,7 +41,7 @@ public class Application {
     public GatewayDiscordClient gatewayDiscordClient() {
         return DiscordClientBuilder.create(token).build()
                 .gateway()
-                .setEnabledIntents(IntentSet.none())
+                .setEnabledIntents(IntentSet.nonPrivileged())
                 .setInitialPresence(ignore -> ClientPresence.of(Status.ONLINE, ClientActivity.custom("/commands")))
                 .login()
                 .block();
