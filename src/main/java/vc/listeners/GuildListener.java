@@ -25,7 +25,8 @@ public class GuildListener {
                          final LiveFeedManager liveFeedManager) {
         this.guildConfigManager = guildConfigManager;
         this.liveFeedManager = liveFeedManager;
-        client.on(GuildCreateEvent.class, this::handle).subscribe();
+
+        client.getEventDispatcher().on(GuildCreateEvent.class, this::handle).subscribe();
         restClient.getGuilds().collectList().subscribe(guilds -> {
             LOGGER.info("Connected to {} guilds", guilds.size());
             LOGGER.info("Connected to guilds: {}", guilds.stream()
