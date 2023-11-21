@@ -25,10 +25,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -164,20 +161,26 @@ public abstract class LiveFeed {
                 this.liveChannels.remove(guildId);
                 LOGGER.info("Disabled {} for guild {}, {}", feedName(), guildId, guildConfigRecord.guildName());
             }, () -> {
+                this.liveChannels.remove(guildId);
                 throw new RuntimeException("Guild config not found");
             });
     }
 
     public void enableFeed(final String guildId, final String channelId) {
-        this.guildConfigManager.getGuildConfig(guildId)
-            .ifPresentOrElse(guildConfigRecord -> {
-                final GuildConfigRecord newRecord = enableRecordInternal(guildConfigRecord, guildId, channelId);
-                this.guildConfigManager.updateGuildConfig(newRecord);
-                this.liveChannels.put(guildId, getRestChannel(channelId));
-                LOGGER.info("Enabled {} for guild {}, {}", feedName(), guildId, guildConfigRecord.guildName());
-            }, () -> {
-                throw new RuntimeException("Guild config not found");
-            });
+        Optional<GuildConfigRecord> guildConfigOptional = this.guildConfigManager.getGuildConfig(guildId);
+        if (guildConfigOptional.isEmpty()) {
+            this.guildConfigManager.loadGuild(guildId).block();
+            guildConfigOptional = this.guildConfigManager.getGuildConfig(guildId);
+            if (guildConfigOptional.isEmpty()) {
+                LOGGER.error("Error getting guild data to create record for guild: {}", guildId);
+                guildConfigOptional = Optional.of(new GuildConfigRecord(guildId, "", false, "", false, ""));
+            }
+        }
+        var guildConfigRecord = guildConfigOptional.get();
+        final GuildConfigRecord newRecord = enableRecordInternal(guildConfigRecord, guildId, channelId);
+        this.guildConfigManager.updateGuildConfig(newRecord);
+        this.liveChannels.put(guildId, getRestChannel(channelId));
+        LOGGER.info("Enabled {} for guild {}, {}", feedName(), guildId, guildConfigRecord.guildName());
     }
 
     private RestChannel getRestChannel(final String channelId) {
