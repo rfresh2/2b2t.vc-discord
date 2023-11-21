@@ -169,8 +169,12 @@ public abstract class LiveFeed {
     public void enableFeed(final String guildId, final String channelId) {
         Optional<GuildConfigRecord> guildConfigOptional = this.guildConfigManager.getGuildConfig(guildId);
         if (guildConfigOptional.isEmpty()) {
-            this.guildConfigManager.loadGuild(guildId).block();
-            guildConfigOptional = this.guildConfigManager.getGuildConfig(guildId);
+            try {
+                this.guildConfigManager.loadGuild(guildId).block();
+                guildConfigOptional = this.guildConfigManager.getGuildConfig(guildId);
+            } catch (final Exception e) {
+                LOGGER.error("Error loading guild data to create record for guild: {}", guildId, e);
+            }
             if (guildConfigOptional.isEmpty()) {
                 LOGGER.error("Error getting guild data to create record for guild: {}", guildId);
                 guildConfigOptional = Optional.of(new GuildConfigRecord(guildId, "", false, "", false, ""));
