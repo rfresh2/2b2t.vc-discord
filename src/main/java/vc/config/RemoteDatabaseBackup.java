@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.net.URI;
@@ -25,6 +26,7 @@ public class RemoteDatabaseBackup {
         this.bucketName = bucketName;
         s3Client = S3Client.builder()
             .endpointOverride(URI.create(bucketUrl))
+            .region(Region.of("auto"))
             .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(awsAccessKeyId, awsSecretAccessKey)))
             .build();
     }
