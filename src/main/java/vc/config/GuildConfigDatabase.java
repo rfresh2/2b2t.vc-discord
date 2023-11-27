@@ -27,8 +27,10 @@ public class GuildConfigDatabase {
         ZoneId.of("America/Los_Angeles"));
     private final Path backupPath = Paths.get("backups");
     private final Connection connection;
+    private final RemoteDatabaseBackup remoteDatabaseBackup;
 
-    public GuildConfigDatabase() {
+    public GuildConfigDatabase(final RemoteDatabaseBackup remoteDatabaseBackup) {
+        this.remoteDatabaseBackup = remoteDatabaseBackup;
         try {
             final Path dbPath = Paths.get("guild-config.db");
             connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
@@ -53,7 +55,9 @@ public class GuildConfigDatabase {
             if (!backupPath.toFile().exists()) {
                 backupPath.toFile().mkdirs();
             }
-            connection.createStatement().executeUpdate("BACKUP TO 'backups/guild-config-backup-" + DATE_FORMATTER.format(Instant.now()) + ".db'");
+            var backupPath = "backups/guild-config-backup-" + DATE_FORMATTER.format(Instant.now()) + ".db";
+            connection.createStatement().executeUpdate("BACKUP TO '" + backupPath + "'");
+            remoteDatabaseBackup.uploadDatabaseBackup(backupPath);
         } catch (final Exception e) {
             LOGGER.error("Error backing up guild config database", e);
         }
