@@ -30,7 +30,7 @@ public class GuildConfigManager {
         this.gatewayDiscordClient = gatewayDiscordClient;
         this.guildConfigMap = new ConcurrentHashMap<>();
         this.guildConfigDatabase = guildConfigDatabase;
-        this.scheduledExecutorService.scheduleAtFixedRate(this::writeAllGuildConfigs, 20, 60 * 24, TimeUnit.MINUTES);
+        this.scheduledExecutorService.scheduleAtFixedRate(this::writeAllGuildConfigs, 1, 1, TimeUnit.DAYS);
     }
 
     public void loadGuild(final GuildFields guildFields) {
