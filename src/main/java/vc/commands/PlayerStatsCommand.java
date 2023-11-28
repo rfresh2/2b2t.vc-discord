@@ -52,8 +52,14 @@ public class PlayerStatsCommand extends PlayerLookupCommand {
                             .addField("Joins", ""+playerStats.getJoinCount(), true)
                             .addField("Leaves", ""+playerStats.getLeaveCount(), true)
                             .addField("\u200B", "\u200B", true)
-                            .addField("First Seen", SHORT_DATE_TIME.format(playerStats.getFirstSeen().toInstant()), true)
-                            .addField("Last Seen", SHORT_DATE_TIME.format(playerStats.getLastSeen().toInstant()), true)
+                            .addField("First Seen", playerStats.getFirstSeen() != null
+                                          ? SHORT_DATE_TIME.format(playerStats.getFirstSeen().toInstant())
+                                          : "Never",
+                                      true)
+                            .addField("Last Seen", playerStats.getLastSeen() != null
+                                          ? SHORT_DATE_TIME.format(playerStats.getLastSeen().toInstant())
+                                          : "Never",
+                                      true)
                             .addField("\u200B", "\u200B", true)
                             .addField("Playtime", formatDuration(playerStats.getPlaytimeSeconds()), true)
                             .addField("Playtime (Last 30 Days)", formatDuration(playerStats.getPlaytimeSecondsMonth()), true)
