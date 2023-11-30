@@ -8,6 +8,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import discord4j.rest.util.Permission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -27,6 +28,8 @@ public abstract class LiveFeedCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
+        if (!validateUserPermissions(event)) return error(event, "You must have permission: " + Permission.MANAGE_MESSAGES
+            + " to use this command");
         Optional<Boolean> enabledBoolean = event.getOption("enabled")
             .flatMap(ApplicationCommandInteractionOption::getValue)
             .map(ApplicationCommandInteractionOptionValue::asBoolean);
@@ -65,6 +68,13 @@ public abstract class LiveFeedCommand implements SlashCommand {
                 return error(event, "Unable to disable " + feedName() + ": " + e.getMessage());
             }
         }
+    }
+
+    private boolean validateUserPermissions(final ChatInputInteractionEvent event) {
+        return event.getInteraction().getMember()
+            .map(member -> member.getBasePermissions().block())
+            .map(perms -> perms.contains(Permission.MANAGE_MESSAGES))
+            .orElse(false);
     }
 
     private boolean testPermissions(final String guildId, final Channel channel) {
