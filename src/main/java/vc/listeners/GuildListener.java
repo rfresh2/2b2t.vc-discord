@@ -2,6 +2,8 @@ package vc.listeners;
 
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
+import discord4j.core.event.domain.guild.GuildDeleteEvent;
+import discord4j.core.object.entity.Guild;
 import discord4j.discordjson.json.UserGuildData;
 import discord4j.rest.RestClient;
 import org.slf4j.Logger;
@@ -25,7 +27,8 @@ public class GuildListener {
                          final LiveFeedManager liveFeedManager) {
         this.guildConfigManager = guildConfigManager;
         this.liveFeedManager = liveFeedManager;
-        client.getEventDispatcher().on(GuildCreateEvent.class, this::handle).subscribe();
+        client.getEventDispatcher().on(GuildCreateEvent.class, this::handleGuildCreateJoin).subscribe();
+        client.getEventDispatcher().on(GuildDeleteEvent.class, this::handleGuildDeleteLeave).subscribe();
         restClient.getGuilds().collectList().subscribe(guilds -> {
             LOGGER.info("Connected to {} guilds", guilds.size());
             LOGGER.info("Connected to guilds: {}", guilds.stream()
@@ -37,9 +40,20 @@ public class GuildListener {
         });
     }
 
-    private Mono<Void> handle(final GuildCreateEvent event) {
+    private Mono<Void> handleGuildCreateJoin(final GuildCreateEvent event) {
         LOGGER.info("Joined guild: {}", event.getGuild().getName());
         guildConfigManager.loadGuild(event.getGuild().getData());
+        return Mono.empty();
+    }
+
+    private Mono<Void> handleGuildDeleteLeave(final GuildDeleteEvent event) {
+        if (event.isUnavailable()) {
+            LOGGER.info("Guild unavailable: {}", event.getGuild().map(Guild::getId).orElse(null));
+            return Mono.empty();
+        }
+        var guildName = event.getGuild().map(Guild::getName).orElse("?");
+        LOGGER.info("Left guild: ({}) {}", event.getGuildId(), guildName);
+        liveFeedManager.disableFeedsInGuild(event.getGuildId().asString());
         return Mono.empty();
     }
 }

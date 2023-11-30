@@ -16,4 +16,9 @@ public class LiveFeedManager {
         liveChatFeed.onAllGuildsLoaded();
         liveConnections.onAllGuildsLoaded();
     }
+
+    public void disableFeedsInGuild(final String guildId) {
+        liveChatFeed.disableFeed(guildId);
+        liveConnections.disableFeed(guildId);
+    }
 }
