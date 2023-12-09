@@ -13,6 +13,7 @@ import vc.swagger.vc.model.SeenResponse;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 
+import javax.annotation.Nullable;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,17 +52,17 @@ public class SeenCommand extends PlayerLookupCommand {
         UUID uuid = identity.uuid();
         SeenResponse seenResponse = seenApi.seen(uuid, null);
         if (isNull(seenResponse)) return error(event, "Player has not been seen");
-        SeenResponse firstSeenResponse = seenApi.firstSeen(uuid, null);
-        if (isNull(firstSeenResponse)) return error(event, "Player has not been seen");
-        OffsetDateTime lastSeen = seenResponse.getTime();
-        OffsetDateTime firstSeen = firstSeenResponse.getTime();
         return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
                         .title("Seen")
                         .color(Color.CYAN)
-                        .addField("First seen", SHORT_DATE_TIME.format(firstSeen.toInstant()), false)
-                        .addField("Last seen", SHORT_DATE_TIME.format(lastSeen.toInstant()), false)
+                        .addField("First seen", getSeenString(seenResponse.getFirstSeen()), false)
+                        .addField("Last seen", getSeenString(seenResponse.getLastSeen()), false)
                         .thumbnail(playerLookup.getAvatarURL(uuid).toString())
                         .build());
+    }
+
+    private String getSeenString(@Nullable final OffsetDateTime seen) {
+        return seen != null ? SHORT_DATE_TIME.format(seen.toInstant()) : "Never";
     }
 }
