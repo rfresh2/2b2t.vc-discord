@@ -20,11 +20,18 @@
         <default.package>vc.swagger</default.package>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>Jitpack</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
-            <groupId>com.discord4j</groupId>
+            <groupId>com.github.rfresh2.Discord4j</groupId>
             <artifactId>discord4j-core</artifactId>
-            <version>3.3.0-RC1</version>
+            <version>33c208f6ac</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -80,7 +87,7 @@
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
-            <version>3.24.3</version>
+            <version>3.25.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
