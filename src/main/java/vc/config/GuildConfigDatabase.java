@@ -2,6 +2,7 @@ package vc.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -28,9 +29,17 @@ public class GuildConfigDatabase {
     private final Path backupPath = Paths.get("backups");
     private final Connection connection;
     private final RemoteDatabaseBackup remoteDatabaseBackup;
+    // special mode where we sync from remote and don't upload backups.
+    // intended for syncing to remote state on a new server or a local dev machine
+    private final boolean dbSync;
 
-    public GuildConfigDatabase(final RemoteDatabaseBackup remoteDatabaseBackup) {
+    public GuildConfigDatabase(
+        final RemoteDatabaseBackup remoteDatabaseBackup,
+        @Value("${DB_SYNC}") final String dbSync
+    ) {
+        this.dbSync = Boolean.parseBoolean(dbSync);
         this.remoteDatabaseBackup = remoteDatabaseBackup;
+        if (this.dbSync) this.remoteDatabaseBackup.syncFromRemote();
         try {
             final Path dbPath = Paths.get("guild-config.db");
             connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
@@ -57,7 +66,7 @@ public class GuildConfigDatabase {
             }
             var backupPath = "backups/guild-config-backup-" + DATE_FORMATTER.format(Instant.now()) + ".db";
             connection.createStatement().executeUpdate("BACKUP TO '" + backupPath + "'");
-            remoteDatabaseBackup.uploadDatabaseBackup(backupPath);
+            if (!dbSync) remoteDatabaseBackup.uploadDatabaseBackup(backupPath);
         } catch (final Exception e) {
             LOGGER.error("Error backing up guild config database", e);
         }
