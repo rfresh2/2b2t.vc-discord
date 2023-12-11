@@ -157,8 +157,7 @@
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
                             <configOptions>
-                                <dateLibrary>java8-instant</dateLibrary>
-                                <java11>true</java11>
+                                <dateLibrary>java8</dateLibrary>
                                 <generateClientAsBean>true</generateClientAsBean>
                             </configOptions>
                             <environmentVariables>
@@ -183,8 +182,7 @@
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
                             <configOptions>
-                                <dateLibrary>java8-instant</dateLibrary>
-                                <java11>true</java11>
+                                <dateLibrary>java8</dateLibrary>
                                 <generateClientAsBean>true</generateClientAsBean>
                             </configOptions>
                             <environmentVariables>
@@ -209,8 +207,7 @@
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
                             <configOptions>
-                                <dateLibrary>java8-instant</dateLibrary>
-                                <java11>true</java11>
+                                <dateLibrary>java8</dateLibrary>
                                 <generateClientAsBean>true</generateClientAsBean>
                             </configOptions>
                             <environmentVariables>
@@ -235,8 +232,7 @@
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
                             <configOptions>
-                                <dateLibrary>java8-instant</dateLibrary>
-                                <java11>true</java11>
+                                <dateLibrary>java8</dateLibrary>
                                 <generateClientAsBean>true</generateClientAsBean>
                             </configOptions>
                             <environmentVariables>
