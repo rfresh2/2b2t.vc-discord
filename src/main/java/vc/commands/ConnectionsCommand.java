@@ -45,7 +45,7 @@ public class ConnectionsCommand extends PlayerLookupCommand {
                 .map(ApplicationCommandInteractionOptionValue::asLong)
                 .map(Long::intValue)
                 .orElse(1);
-        if (page <= 1)
+        if (page <= 0)
             return error(event, "Page must be greater than 0");
         return playerNameOptional
                 .filter(Validator::isValidPlayerName)
