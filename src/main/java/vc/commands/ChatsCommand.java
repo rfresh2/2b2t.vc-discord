@@ -43,7 +43,9 @@ public class ChatsCommand extends PlayerLookupCommand {
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asLong)
                 .map(Long::intValue)
-                .orElse(0);
+                .orElse(1);
+        if (page <= 1)
+            return error(event, "Page must be greater than 0");
         return playerNameOptional
                 .filter(Validator::isValidPlayerName)
                 .flatMap(playerLookup::getPlayerIdentity)
