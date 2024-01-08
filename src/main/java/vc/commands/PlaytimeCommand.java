@@ -8,8 +8,8 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.swagger.vc.handler.PlaytimeApi;
-import vc.swagger.vc.model.PlaytimeResponse;
+import vc.openapi.vc.handler.PlaytimeApi;
+import vc.openapi.vc.model.PlaytimeResponse;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 

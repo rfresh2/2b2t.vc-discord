@@ -9,8 +9,8 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.swagger.vc.handler.ConnectionsApi;
-import vc.swagger.vc.model.ConnectionsResponse;
+import vc.openapi.vc.handler.ConnectionsApi;
+import vc.openapi.vc.model.ConnectionsResponse;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 

@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>vc</groupId>
-    <artifactId>2b-bot</artifactId>
+    <artifactId>2b2t.vc-discord</artifactId>
     <version>1.0</version>
 
     <properties>
@@ -17,7 +17,7 @@
         <swagger-annotations-version>2.2.19</swagger-annotations-version>
         <maven-plugin-version>1.0.0</maven-plugin-version>
         <junit-version>4.13.1</junit-version>
-        <default.package>vc.swagger</default.package>
+        <default.package>vc.openapi</default.package>
     </properties>
 
     <repositories>
@@ -146,8 +146,8 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>swagger/api.2b2t.vc.openapi.json</inputSpec>
-                            <output>${project.build.directory}/generated-sources/swagger/api.2b2t.vc</output>
+                            <inputSpec>openapi/api.2b2t.vc.openapi.json</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi/api.2b2t.vc</output>
                             <generatorName>java</generatorName>
                             <skipValidateSpec>true</skipValidateSpec>
                             <library>resttemplate</library>
@@ -171,8 +171,8 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>swagger/minetools-api.yaml</inputSpec>
-                            <output>${project.build.directory}/generated-sources/swagger/minetools-api</output>
+                            <inputSpec>openapi/minetools-api.yaml</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi/minetools-api</output>
                             <generatorName>java</generatorName>
                             <skipValidateSpec>true</skipValidateSpec>
                             <library>resttemplate</library>
@@ -196,8 +196,8 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>swagger/mojang-api.yaml</inputSpec>
-                            <output>${project.build.directory}/generated-sources/swagger/mojang-api</output>
+                            <inputSpec>openapi/mojang-api.yaml</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi/mojang-api</output>
                             <generatorName>java</generatorName>
                             <skipValidateSpec>true</skipValidateSpec>
                             <library>resttemplate</library>
@@ -221,8 +221,8 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>swagger/mojang-sessionserver.yaml</inputSpec>
-                            <output>${project.build.directory}/generated-sources/swagger/mojang-sessionserver</output>
+                            <inputSpec>openapi/mojang-sessionserver.yaml</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi/mojang-sessionserver</output>
                             <generatorName>java</generatorName>
                             <skipValidateSpec>true</skipValidateSpec>
                             <library>resttemplate</library>

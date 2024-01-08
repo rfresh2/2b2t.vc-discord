@@ -6,8 +6,8 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.swagger.vc.handler.QueueApi;
-import vc.swagger.vc.model.Queuelength;
+import vc.openapi.vc.handler.QueueApi;
+import vc.openapi.vc.model.Queuelength;
 
 import static java.util.Objects.isNull;
 

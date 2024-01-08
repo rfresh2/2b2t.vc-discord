@@ -6,9 +6,9 @@ import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.object.presence.Status;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
-import vc.swagger.vc.handler.QueueApi;
-import vc.swagger.vc.handler.TabListApi;
-import vc.swagger.vc.model.Queuelength;
+import vc.openapi.vc.handler.QueueApi;
+import vc.openapi.vc.handler.TabListApi;
+import vc.openapi.vc.model.Queuelength;
 
 import java.util.List;
 import java.util.Optional;

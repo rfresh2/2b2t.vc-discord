@@ -1,4 +1,4 @@
-# 2b-bot
+# 2b2t.vc-discord
 Discord bot for 2b2t data and statistics, powered by [api.2b2t.vc](https://api.2b2t.vc)
 
 # Invite
@@ -18,3 +18,5 @@ Invite link: [bot.2b2t.vc](https://bot.2b2t.vc)
 * `/playtimemonth` -> Leaderboard for top playtime in the last 30 days
 * `/tablist` -> Prints all online players right now on 2b2t
 * `/names` -> Name history for a player (no data after Mojang disabled name history API)
+* `/data` -> Dumps all data on a player as a CSV file
+* `/stats` -> Prints a player's stats on 2b2t

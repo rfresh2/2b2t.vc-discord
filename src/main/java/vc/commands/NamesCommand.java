@@ -8,8 +8,8 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.swagger.vc.handler.NamesApi;
-import vc.swagger.vc.model.Names;
+import vc.openapi.vc.handler.NamesApi;
+import vc.openapi.vc.model.Names;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 

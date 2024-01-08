@@ -1,4 +1,4 @@
-name: 2b-bot PR Build
+name: 2b2t.vc-discord PR Build
 
 on:
   pull_request:
@@ -19,5 +19,5 @@ jobs:
       - name: Elevate wrapper permissions
         run: chmod +x ./mvnw
 
-      - name: Build 2b-bot
+      - name: Build 2b2t.vc-discord
         run: ./mvnw install
