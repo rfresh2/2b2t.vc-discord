@@ -8,7 +8,7 @@ import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import vc.config.GuildConfigManager;
 import vc.config.GuildConfigRecord;
-import vc.live.dto.Connections;
+import vc.live.dto.ConnectionsRecord;
 import vc.live.dto.enums.Connectiontype;
 
 import java.time.Instant;
@@ -54,23 +54,23 @@ public class LiveConnections extends LiveFeed {
     @Override
     protected List<InputQueue> inputQueues() {
         return asList(new InputQueue<>("ConnectionsQueue",
-                                       Connections.class,
+                                       ConnectionsRecord.class,
                                        this::buildConnectionsEmbed,
                                        this::getConnectionTimestamp));
     }
 
-    protected EmbedData buildConnectionsEmbed(final Connections con) {
-        boolean isJoin = con.getConnection() == Connectiontype.JOIN;
+    protected EmbedData buildConnectionsEmbed(final ConnectionsRecord con) {
+        boolean isJoin = con.connection() == Connectiontype.JOIN;
         return EmbedCreateSpec.builder()
-            .description("**" + escape(con.getPlayerName()) + "** " + (isJoin ? "connected" : "disconnected"))
-            .footer("\u200b", avatarUrl(con.getPlayerUuid()).toString())
+            .description("**" + escape(con.playerName()) + "** " + (isJoin ? "connected" : "disconnected"))
+            .footer("\u200b", avatarUrl(con.playerUuid()).toString())
             .color(isJoin ? Color.SEA_GREEN : Color.RUBY)
-            .timestamp(Instant.ofEpochSecond(con.getTime().toEpochSecond()))
+            .timestamp(Instant.ofEpochSecond(con.time().toEpochSecond()))
             .build()
             .asRequest();
     }
 
-    protected long getConnectionTimestamp(final Connections con) {
-        return con.getTime().toEpochSecond();
+    protected long getConnectionTimestamp(final ConnectionsRecord con) {
+        return con.time().toEpochSecond();
     }
 }

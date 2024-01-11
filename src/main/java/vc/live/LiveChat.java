@@ -8,8 +8,8 @@ import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import vc.config.GuildConfigManager;
 import vc.config.GuildConfigRecord;
-import vc.live.dto.Chats;
-import vc.live.dto.Deaths;
+import vc.live.dto.ChatsRecord;
+import vc.live.dto.DeathsRecord;
 
 import java.time.Instant;
 import java.util.List;
@@ -58,35 +58,35 @@ public class LiveChat extends LiveFeed {
 
     @Override
     protected List<InputQueue> inputQueues() {
-        return asList(new InputQueue<>("ChatsQueue", Chats.class, this::getChatEmbed, this::getChatTimestamp),
-                      new InputQueue<>("DeathsQueue", Deaths.class, this::getDeathEmbed, this::getDeathTimestamp));
+        return asList(new InputQueue<>("ChatsQueue", ChatsRecord.class, this::getChatEmbed, this::getChatTimestamp),
+                      new InputQueue<>("DeathsQueue", DeathsRecord.class, this::getDeathEmbed, this::getDeathTimestamp));
     }
 
-    private EmbedData getChatEmbed(final Chats chat) {
+    private EmbedData getChatEmbed(final ChatsRecord chat) {
         return EmbedCreateSpec.builder()
-            .description(escape("**" + chat.getPlayerName() + ":** " + chat.getChat()))
-            .footer("\u200b", avatarUrl(chat.getPlayerUuid()).toString())
-            .color(chat.getChat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.BLACK)
-            .timestamp(Instant.ofEpochSecond(chat.getTime().toEpochSecond()))
+            .description(escape("**" + chat.playerName() + ":** " + chat.chat()))
+            .footer("\u200b", avatarUrl(chat.playerUuid()).toString())
+            .color(chat.chat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.BLACK)
+            .timestamp(Instant.ofEpochSecond(chat.time().toEpochSecond()))
             .build()
             .asRequest();
     }
 
-    protected long getChatTimestamp(final Chats chat) {
-        return chat.getTime().toEpochSecond();
+    protected long getChatTimestamp(final ChatsRecord chat) {
+        return chat.time().toEpochSecond();
     }
 
-    private EmbedData getDeathEmbed(final Deaths death) {
+    private EmbedData getDeathEmbed(final DeathsRecord death) {
         return EmbedCreateSpec.builder()
-            .description(escape(death.getDeathMessage().replace(death.getVictimPlayerName(), "**" + death.getVictimPlayerName() + "**")))
-            .footer("\u200b", avatarUrl(death.getVictimPlayerUuid()).toString())
+            .description(escape(death.deathMessage().replace(death.victimPlayerName(), "**" + death.victimPlayerName() + "**")))
+            .footer("\u200b", avatarUrl(death.victimPlayerUuid()).toString())
             .color(Color.RUBY)
-            .timestamp(Instant.ofEpochSecond(death.getTime().toEpochSecond()))
+            .timestamp(Instant.ofEpochSecond(death.time().toEpochSecond()))
             .build()
             .asRequest();
     }
 
-    protected long getDeathTimestamp(final Deaths death) {
-        return death.getTime().toEpochSecond();
+    protected long getDeathTimestamp(final DeathsRecord death) {
+        return death.time().toEpochSecond();
     }
 }
