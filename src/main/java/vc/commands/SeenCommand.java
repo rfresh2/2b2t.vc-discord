@@ -8,6 +8,7 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.api.model.ProfileData;
 import vc.openapi.vc.handler.SeenApi;
 import vc.openapi.vc.model.SeenResponse;
 import vc.util.PlayerLookup;
@@ -48,7 +49,7 @@ public class SeenCommand extends PlayerLookupCommand {
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolveSeen(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity) {
+    private Mono<Message> resolveSeen(final ChatInputInteractionEvent event, final ProfileData identity) {
         UUID uuid = identity.uuid();
         SeenResponse seenResponse = seenApi.seen(uuid, null);
         if (isNull(seenResponse)) return error(event, "Player has not been seen");

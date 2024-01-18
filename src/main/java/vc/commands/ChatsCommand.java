@@ -9,6 +9,7 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.api.model.ProfileData;
 import vc.openapi.vc.handler.ChatsApi;
 import vc.openapi.vc.model.ChatsResponse;
 import vc.util.PlayerLookup;
@@ -53,7 +54,7 @@ public class ChatsCommand extends PlayerLookupCommand {
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity, int page) {
+    private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
         ChatsResponse chatsResponse = chatsApi.chats(identity.uuid(), null, 25, page);
         if (chatsResponse == null || chatsResponse.getChats() == null || chatsResponse.getChats().isEmpty())
             return error(event, "No chats found");

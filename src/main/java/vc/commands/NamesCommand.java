@@ -8,6 +8,7 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.api.model.ProfileData;
 import vc.openapi.vc.handler.NamesApi;
 import vc.openapi.vc.model.Names;
 import vc.util.PlayerLookup;
@@ -45,7 +46,7 @@ public class NamesCommand extends PlayerLookupCommand {
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolveNames(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity) {
+    private Mono<Message> resolveNames(final ChatInputInteractionEvent event, final ProfileData identity) {
         List<Names> names = namesApi.names(identity.uuid(), null);
         if (isNull(names) || names.isEmpty()) return error(event, "No name history found for player");
         List<String> namesStrings = names.stream()

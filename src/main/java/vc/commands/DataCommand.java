@@ -46,7 +46,7 @@ public class DataCommand extends PlayerLookupCommand {
         if (playerDataDump == null)
             return error(event, "Unable to find player");
         return event.createFollowup()
-            .withFiles(MessageCreateFields.File.of(playerIdentityOptional.get().playerName() + ".csv", new ByteArrayInputStream(playerDataDump.getBytes())))
+            .withFiles(MessageCreateFields.File.of(playerIdentityOptional.get().name() + ".csv", new ByteArrayInputStream(playerDataDump.getBytes())))
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), playerIdentityOptional.get())
                             .title("Data Dump")
                             .addField("Data Count", ""+playerDataDump.lines().count(), true)

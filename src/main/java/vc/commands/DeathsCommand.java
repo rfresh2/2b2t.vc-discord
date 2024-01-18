@@ -9,6 +9,7 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.api.model.ProfileData;
 import vc.openapi.vc.handler.DeathsApi;
 import vc.openapi.vc.model.DeathsResponse;
 import vc.util.PlayerLookup;
@@ -54,7 +55,7 @@ public class DeathsCommand extends PlayerLookupCommand {
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolveDeaths(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity, int page) {
+    private Mono<Message> resolveDeaths(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
         DeathsResponse deathsResponse = deathsApi.deaths(identity.uuid(), null, 25, page);
         if (deathsResponse == null || deathsResponse.getDeaths() == null || deathsResponse.getDeaths().isEmpty())
             return error(event, "No deaths found for player");

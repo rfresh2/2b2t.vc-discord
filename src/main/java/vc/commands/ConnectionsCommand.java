@@ -9,6 +9,7 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.api.model.ProfileData;
 import vc.openapi.vc.handler.ConnectionsApi;
 import vc.openapi.vc.model.ConnectionsResponse;
 import vc.util.PlayerLookup;
@@ -54,7 +55,7 @@ public class ConnectionsCommand extends PlayerLookupCommand {
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity, int page) {
+    private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
         ConnectionsResponse connectionsResponse = connectionsApi.connections(identity.uuid(), null, 25, page);
         if (connectionsResponse == null || connectionsResponse.getConnections() == null || connectionsResponse.getConnections().isEmpty())
             return error(event, "No connections found for player");

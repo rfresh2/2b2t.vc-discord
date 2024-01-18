@@ -8,6 +8,7 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.api.model.ProfileData;
 import vc.openapi.vc.handler.PlaytimeApi;
 import vc.openapi.vc.model.PlaytimeResponse;
 import vc.util.PlayerLookup;
@@ -45,7 +46,7 @@ public class PlaytimeCommand extends PlayerLookupCommand {
                 .orElse(error(event, "Unable to find player"));
     }
 
-    private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final PlayerLookup.PlayerIdentity identity) {
+    private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final ProfileData identity) {
         UUID profileUUID = identity.uuid();
         PlaytimeResponse playtime = playtimeApi.playtime(profileUUID, null);
         if (isNull(playtime)) return error(event, "No playtime found");
