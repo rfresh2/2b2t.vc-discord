@@ -5,6 +5,7 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import vc.config.GuildConfigManager;
 import vc.config.GuildConfigRecord;
@@ -27,13 +28,16 @@ public class LiveChat extends LiveFeed {
                     final GatewayDiscordClient discordClient,
                     final GuildConfigManager guildConfigManager,
                     final ScheduledExecutorService executorService,
-                    final ObjectMapper objectMapper
+                    final ObjectMapper objectMapper,
+                    @Value("${LIVE_FEEDS}")
+                    final String liveFeedsEnabled
     ) {
         super(redisClient,
               discordClient,
               guildConfigManager,
               executorService,
-              objectMapper);
+              objectMapper,
+              Boolean.parseBoolean(liveFeedsEnabled));
     }
 
     @Override

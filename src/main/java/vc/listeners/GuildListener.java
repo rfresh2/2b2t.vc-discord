@@ -4,7 +4,6 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import discord4j.core.object.entity.Guild;
-import discord4j.discordjson.json.UserGuildData;
 import discord4j.rest.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,8 +11,6 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.config.GuildConfigManager;
 import vc.live.LiveFeedManager;
-
-import java.util.stream.Collectors;
 
 @Component
 public class GuildListener {
@@ -31,9 +28,6 @@ public class GuildListener {
         client.getEventDispatcher().on(GuildDeleteEvent.class, this::handleGuildDeleteLeave).subscribe();
         restClient.getGuilds().collectList().subscribe(guilds -> {
             LOGGER.info("Connected to {} guilds", guilds.size());
-            LOGGER.info("Connected to guilds: {}", guilds.stream()
-                .map(UserGuildData::name)
-                .collect(Collectors.joining("'\n'", "\n'", "'")));
             guilds.forEach(guildConfigManager::loadGuild);
             guildConfigManager.writeAllGuildConfigs();
             liveFeedManager.onAllGuildsLoaded();

@@ -54,7 +54,8 @@ public abstract class LiveFeed {
                     final GatewayDiscordClient discordClient,
                     final GuildConfigManager guildConfigManager,
                     final ScheduledExecutorService executorService,
-                    final ObjectMapper objectMapper) {
+                    final ObjectMapper objectMapper,
+                    final boolean liveFeedEnabled) {
         this.redisClient = redisClient;
         this.discordClient = discordClient;
         this.liveChannels = new ConcurrentHashMap<>();
@@ -63,10 +64,12 @@ public abstract class LiveFeed {
         this.inputQueues = new ConcurrentHashMap<>();
         this.executorService = executorService;
         this.objectMapper = objectMapper;
-        syncChannels();
-        this.processMessageQueueFuture = this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 11, SECONDS);
-        inputQueues().forEach(this::registerInputQueue);
-        this.processInputQueuesFuture = this.executorService.scheduleWithFixedDelay(this::processInputQueues, ((int) (Math.random() * 10)), 4, SECONDS);
+        if (liveFeedEnabled) {
+            syncChannels();
+            this.processMessageQueueFuture = this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 11, SECONDS);
+            inputQueues().forEach(this::registerInputQueue);
+            this.processInputQueuesFuture = this.executorService.scheduleWithFixedDelay(this::processInputQueues, ((int) (Math.random() * 10)), 4, SECONDS);
+        }
     }
 
     protected abstract boolean channelEnabledPredicate(final GuildConfigRecord guildConfigRecord);
