@@ -156,7 +156,7 @@
                             <output>${project.build.directory}/generated-sources/openapi/api.2b2t.vc</output>
                             <generatorName>java</generatorName>
                             <skipValidateSpec>true</skipValidateSpec>
-                            <library>resttemplate</library>
+                            <library>native</library>
                             <apiPackage>${default.package}.vc.handler</apiPackage>
                             <modelPackage>${default.package}.vc.model</modelPackage>
                             <invokerPackage>${default.package}.vc.handler</invokerPackage>

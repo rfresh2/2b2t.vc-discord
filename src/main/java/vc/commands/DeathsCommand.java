@@ -56,7 +56,12 @@ public class DeathsCommand extends PlayerLookupCommand {
     }
 
     private Mono<Message> resolveDeaths(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
-        DeathsResponse deathsResponse = deathsApi.deaths(identity.uuid(), null, 25, page);
+        DeathsResponse deathsResponse = null;
+        try {
+            deathsResponse = deathsApi.deaths(identity.uuid(), null, 25, page);
+        } catch (final Exception e) {
+            LOGGER.error("Failed to get deaths", e);
+        }
         if (deathsResponse == null || deathsResponse.getDeaths() == null || deathsResponse.getDeaths().isEmpty())
             return error(event, "No deaths found for player");
         List<String> deathStrings = deathsResponse.getDeaths().stream()

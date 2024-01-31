@@ -4,6 +4,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.openapi.vc.handler.PlaytimeApi;
@@ -13,10 +14,11 @@ import java.text.DecimalFormat;
 import java.util.List;
 
 import static java.util.Objects.isNull;
+import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
 public class PlaytimeTopMonthCommand implements SlashCommand {
-
+    private static final Logger LOGGER = getLogger(PlaytimeTopMonthCommand.class);
     private final PlaytimeApi playtimeApi;
     private static final DecimalFormat df = new DecimalFormat("0.00");
 
@@ -31,7 +33,12 @@ public class PlaytimeTopMonthCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        List<PlaytimeTopMonthResponse> playtimeTopMonthResponses = playtimeApi.playtimeTopMonth();
+        List<PlaytimeTopMonthResponse> playtimeTopMonthResponses = null;
+        try {
+            playtimeTopMonthResponses = playtimeApi.playtimeTopMonth();
+        } catch (final Exception e) {
+            LOGGER.error("Failed to get playtime top month", e);
+        }
         if (isNull(playtimeTopMonthResponses) || playtimeTopMonthResponses.isEmpty())
             return error(event, "Unable to resolve playtime list");
         List<String> ptList = playtimeTopMonthResponses.stream()

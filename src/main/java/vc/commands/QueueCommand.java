@@ -4,15 +4,18 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.openapi.vc.handler.QueueApi;
 import vc.openapi.vc.model.Queuelength;
 
 import static java.util.Objects.isNull;
+import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
 public class QueueCommand implements SlashCommand {
+    private static final Logger LOGGER = getLogger(QueueCommand.class);
     private final QueueApi queueApi;
 
     public QueueCommand(final QueueApi queueApi) {
@@ -26,7 +29,12 @@ public class QueueCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Queuelength queuelength = queueApi.queue();
+        Queuelength queuelength = null;
+        try {
+            queuelength = queueApi.queue();
+        } catch (final Exception e) {
+            LOGGER.error("Failed to get queue length", e);
+        }
         if (isNull(queuelength)) return error(event, "Unable to resolve queue length");
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()

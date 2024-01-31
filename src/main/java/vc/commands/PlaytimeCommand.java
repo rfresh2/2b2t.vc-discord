@@ -6,6 +6,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
@@ -18,10 +19,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static java.util.Objects.isNull;
+import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
 public class PlaytimeCommand extends PlayerLookupCommand {
-
+    private static final Logger LOGGER = getLogger(PlaytimeCommand.class);
     private final PlaytimeApi playtimeApi;
 
     public PlaytimeCommand(final PlaytimeApi playtimeApi, final PlayerLookup playerLookup) {
@@ -48,7 +50,12 @@ public class PlaytimeCommand extends PlayerLookupCommand {
 
     private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final ProfileData identity) {
         UUID profileUUID = identity.uuid();
-        PlaytimeResponse playtime = playtimeApi.playtime(profileUUID, null);
+        PlaytimeResponse playtime = null;
+        try {
+            playtime = playtimeApi.playtime(profileUUID, null);
+        } catch (final Exception e) {
+            LOGGER.error("Failed to get playtime for player: " + profileUUID, e);
+        }
         if (isNull(playtime)) return error(event, "No playtime found");
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();
         String durationStr = formatDuration(playtimeSeconds);

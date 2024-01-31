@@ -7,6 +7,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateFields;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.openapi.vc.handler.DataDumpApi;
@@ -16,8 +17,11 @@ import vc.util.Validator;
 import java.io.ByteArrayInputStream;
 import java.util.Optional;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 @Component
 public class DataCommand extends PlayerLookupCommand {
+    private static final Logger LOGGER = getLogger(DataCommand.class);
     private final DataDumpApi dataDumpApi;
 
     public DataCommand(final PlayerLookup playerLookup, final DataDumpApi dataDumpApi) {
@@ -42,7 +46,12 @@ public class DataCommand extends PlayerLookupCommand {
         var playerIdentityOptional = playerLookup.getPlayerIdentity(playerNameOptional.get());
         if (playerIdentityOptional.isEmpty())
             return error(event, "Unable to find player");
-        String playerDataDump = dataDumpApi.getPlayerDataDump(playerIdentityOptional.get().uuid(), null);
+        String playerDataDump = null;
+        try {
+            playerDataDump = dataDumpApi.getPlayerDataDump(playerIdentityOptional.get().uuid(), null);
+        } catch (final Exception e){
+            LOGGER.error("Failed to get player data dump", e);
+        }
         if (playerDataDump == null)
             return error(event, "Unable to find player");
         return event.createFollowup()

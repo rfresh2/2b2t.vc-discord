@@ -56,7 +56,12 @@ public class ConnectionsCommand extends PlayerLookupCommand {
     }
 
     private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
-        ConnectionsResponse connectionsResponse = connectionsApi.connections(identity.uuid(), null, 25, page);
+        ConnectionsResponse connectionsResponse = null;
+        try {
+            connectionsResponse = connectionsApi.connections(identity.uuid(), null, 25, page);
+        } catch (final Exception e){
+            LOGGER.error("Error processing connections response", e);
+        }
         if (connectionsResponse == null || connectionsResponse.getConnections() == null || connectionsResponse.getConnections().isEmpty())
             return error(event, "No connections found for player");
         List<String> connectionStrings = connectionsResponse.getConnections().stream()

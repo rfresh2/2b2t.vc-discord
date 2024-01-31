@@ -17,6 +17,7 @@ public class MinetoolsRestClient {
         this.restClient = RestClient.builder()
             .baseUrl("https://api.minetools.eu")
             .requestFactory(requestFactory)
+            .defaultHeader("User-Agent", "2b2t.vc-discord")
             .build();
     }
 

@@ -55,7 +55,12 @@ public class ChatsCommand extends PlayerLookupCommand {
     }
 
     private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
-        ChatsResponse chatsResponse = chatsApi.chats(identity.uuid(), null, 25, page);
+        ChatsResponse chatsResponse = null;
+        try {
+            chatsResponse = chatsApi.chats(identity.uuid(), null, 25, page);
+        } catch (final Exception e) {
+            LOGGER.error("Error processing chats response", e);
+        }
         if (chatsResponse == null || chatsResponse.getChats() == null || chatsResponse.getChats().isEmpty())
             return error(event, "No chats found");
         List<String> chatStrings = chatsResponse.getChats().stream()

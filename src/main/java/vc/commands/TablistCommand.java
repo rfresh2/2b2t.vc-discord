@@ -36,7 +36,12 @@ public class TablistCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        List<TablistEntry> onlinePlayers = tabListApi.onlinePlayers();
+        List<TablistEntry> onlinePlayers = null;
+        try {
+            onlinePlayers = tabListApi.onlinePlayers();
+        } catch (final Exception e) {
+            LOGGER.error("Failed to get tablist", e);
+        }
         if (isNull(onlinePlayers) || onlinePlayers.isEmpty()) return error(event, "Unable to resolve current tablist");
         List<String> playerNames = onlinePlayers.stream()
                 .map(TablistEntry::getPlayerName)

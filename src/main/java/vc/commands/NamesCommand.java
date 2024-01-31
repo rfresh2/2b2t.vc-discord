@@ -6,6 +6,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
@@ -19,9 +20,11 @@ import java.util.Optional;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static java.util.Objects.isNull;
+import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
 public class NamesCommand extends PlayerLookupCommand {
+    private static final Logger LOGGER = getLogger(NamesCommand.class);
     private final NamesApi namesApi;
 
     public NamesCommand(final NamesApi namesApi, final PlayerLookup playerLookup) {
@@ -47,7 +50,12 @@ public class NamesCommand extends PlayerLookupCommand {
     }
 
     private Mono<Message> resolveNames(final ChatInputInteractionEvent event, final ProfileData identity) {
-        List<Names> names = namesApi.names(identity.uuid(), null);
+        List<Names> names = null;
+        try {
+            names = namesApi.names(identity.uuid(), null);
+        } catch (final Exception e) {
+            LOGGER.error("Failed to get names for player: " + identity.uuid(), e);
+        }
         if (isNull(names) || names.isEmpty()) return error(event, "No name history found for player");
         List<String> namesStrings = names.stream()
                 .map(n -> "**" + escape(n.getName()) + "**"

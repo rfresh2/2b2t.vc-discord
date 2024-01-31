@@ -14,6 +14,7 @@ public class MojangRestClient {
         this.restClient = RestClient.builder()
             .baseUrl("https://api.mojang.com")
             .requestFactory(requestFactory)
+            .defaultHeader("User-Agent", "2b2t.vc-discord")
             .build();
     }
 

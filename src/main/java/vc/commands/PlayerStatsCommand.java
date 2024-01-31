@@ -6,18 +6,22 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.openapi.vc.handler.StatsApi;
+import vc.openapi.vc.model.PlayerStats;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 
 import java.util.Optional;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
+import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
 public class PlayerStatsCommand extends PlayerLookupCommand {
+    private static final Logger LOGGER = getLogger(PlayerStatsCommand.class);
     private final StatsApi statsApi;
 
     public PlayerStatsCommand(final PlayerLookup playerLookup, final StatsApi statsApi) {
@@ -42,7 +46,12 @@ public class PlayerStatsCommand extends PlayerLookupCommand {
         var playerIdentityOptional = playerLookup.getPlayerIdentity(playerNameOptional.get());
         if (playerIdentityOptional.isEmpty())
             return error(event, "Unable to find player");
-        var playerStats = statsApi.playerStats(playerIdentityOptional.get().uuid(), null);
+        PlayerStats playerStats = null;
+        try {
+            playerStats = statsApi.playerStats(playerIdentityOptional.get().uuid(), null);
+        } catch (final Exception e) {
+            LOGGER.error("Failed to get stats for player: " + playerIdentityOptional.get().uuid(), e);
+        }
         if (playerStats == null)
             return error(event, "Unable to find player");
         return event.createFollowup()

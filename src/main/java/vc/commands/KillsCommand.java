@@ -56,7 +56,12 @@ public class KillsCommand extends PlayerLookupCommand {
     }
 
     private Mono<Message> resolveKills(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
-        KillsResponse killsResponse = deathsApi.kills(identity.uuid(), null, 25, page);
+        KillsResponse killsResponse = null;
+        try {
+            killsResponse = deathsApi.kills(identity.uuid(), null, 25, page);
+        } catch (final Exception e) {
+            LOGGER.error("Error resolving kills", e);
+        }
         if (killsResponse == null || killsResponse.getKills() == null || killsResponse.getKills().isEmpty())
             return error(event, "No kills found for player");
         List<String> killStrings = killsResponse.getKills().stream()
