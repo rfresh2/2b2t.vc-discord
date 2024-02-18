@@ -92,6 +92,7 @@ public class TablistCommand implements SlashCommand {
             }
         }
         outputMessages.add(out.toString());
+        outputMessages.removeIf(String::isEmpty);
         try {
             outputMessages.forEach(outputMessage -> {
                 event.createFollowup().withContent("```\n" + outputMessage + "\n```").block();
