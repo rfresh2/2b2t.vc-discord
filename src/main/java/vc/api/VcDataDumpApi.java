@@ -93,16 +93,15 @@ public class VcDataDumpApi {
             if (memberVarResponseInterceptor != null) {
                 memberVarResponseInterceptor.accept(localVarResponse);
             }
-            try {
-                if (localVarResponse.statusCode()/ 100 != 2) {
-                    throw getApiException("getPlayerDataDump", localVarResponse);
-                }
-                return new ApiResponse<String>(
+            if (localVarResponse.statusCode()/ 100 != 2) {
+                throw getApiException("getPlayerDataDump", localVarResponse);
+            }
+            try (InputStream body = localVarResponse.body()) {
+                return new ApiResponse<>(
                     localVarResponse.statusCode(),
                     localVarResponse.headers().map(),
-                    new String(localVarResponse.body().readAllBytes())
+                    new String(body.readAllBytes())
                 );
-            } finally {
             }
         } catch (IOException e) {
             throw new ApiException(e);
