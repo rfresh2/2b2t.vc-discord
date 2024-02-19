@@ -50,7 +50,7 @@ public class PlayerLookup {
         } catch (final RestClientResponseException e) {
             logger.error("{} from Mojang: {}", e.getStatusCode().value(), playerName);
         } catch (final RestClientException e) {
-            logger.error("Bad status response from Mojang: {}", playerName, e);
+            logger.error("Bad status response from Mojang: {}", playerName);
         } catch (final Exception e) {
             logger.error("Mojang unexpected error: {}", playerName, e);
         }
@@ -64,7 +64,7 @@ public class PlayerLookup {
         } catch (final RestClientResponseException e) {
             logger.error("{} from MineTools: {}", e.getStatusCode().value(), playerName);
         } catch (final RestClientException e) {
-            logger.error("Bad status response from MineTools: {}", playerName, e);
+            logger.error("Bad status response from MineTools: {}", playerName);
         } catch (final Exception e) {
             logger.error("MineTools unexpected error: {}", playerName, e);
         }
