@@ -38,8 +38,8 @@ public class VcApi {
     }
 
     @Bean
-    public DataDumpApi dataDumpApi(final ApiClient apiClient) {
-        return new DataDumpApi(apiClient);
+    public VcDataDumpApi dataDumpApi(final ApiClient apiClient) {
+        return new VcDataDumpApi(apiClient);
     }
 
     @Bean

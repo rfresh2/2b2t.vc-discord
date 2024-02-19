@@ -10,7 +10,7 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.openapi.vc.handler.DataDumpApi;
+import vc.api.VcDataDumpApi;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 
@@ -22,11 +22,11 @@ import static org.slf4j.LoggerFactory.getLogger;
 @Component
 public class DataCommand extends PlayerLookupCommand {
     private static final Logger LOGGER = getLogger(DataCommand.class);
-    private final DataDumpApi dataDumpApi;
+    private final VcDataDumpApi vcDataDumpApi;
 
-    public DataCommand(final PlayerLookup playerLookup, final DataDumpApi dataDumpApi) {
+    public DataCommand(final PlayerLookup playerLookup, final VcDataDumpApi vcDataDumpApi) {
         super(playerLookup);
-        this.dataDumpApi = dataDumpApi;
+        this.vcDataDumpApi = vcDataDumpApi;
     }
 
     @Override
@@ -48,7 +48,7 @@ public class DataCommand extends PlayerLookupCommand {
             return error(event, "Unable to find player");
         String playerDataDump = null;
         try {
-            playerDataDump = dataDumpApi.getPlayerDataDump(playerIdentityOptional.get().uuid(), null);
+            playerDataDump = vcDataDumpApi.getPlayerDataDump(playerIdentityOptional.get().uuid(), null);
         } catch (final Exception e){
             LOGGER.error("Failed to get player data dump", e);
         }
