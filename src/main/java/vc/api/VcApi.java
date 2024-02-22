@@ -23,7 +23,7 @@ public class VcApi {
         final ObjectMapper objectMapper
     ) {
         return new ApiClient(httpClientBuilder, objectMapper, "https://api.2b2t.vc")
-            .setReadTimeout(Duration.ofSeconds(15))
+            .setReadTimeout(Duration.ofSeconds(30))
             .setRequestInterceptor((builder) -> builder.headers("User-Agent", "2b2t.vc-discord"));
     }
 
