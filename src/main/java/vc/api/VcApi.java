@@ -1,6 +1,7 @@
 package vc.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import vc.openapi.vc.handler.*;
@@ -20,11 +21,15 @@ public class VcApi {
     @Bean
     public ApiClient apiClient(
         final HttpClient.Builder httpClientBuilder,
-        final ObjectMapper objectMapper
+        final ObjectMapper objectMapper,
+        @Value("${API_KEY}") final String apiKey
     ) {
         return new ApiClient(httpClientBuilder, objectMapper, "https://api.2b2t.vc")
             .setReadTimeout(Duration.ofSeconds(30))
-            .setRequestInterceptor((builder) -> builder.headers("User-Agent", "2b2t.vc-discord"));
+            .setRequestInterceptor((builder) -> builder.headers(
+                "X-API-Key", apiKey,
+                "User-Agent", "2b2t.vc-discord"
+            ));
     }
 
     @Bean
