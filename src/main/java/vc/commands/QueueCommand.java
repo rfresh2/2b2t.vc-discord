@@ -49,7 +49,7 @@ public class QueueCommand implements SlashCommand {
     // probably only valid for regular queue, prio seems to move a lot faster
     // returns double representing seconds until estimated queue completion time.
     public static long getQueueWaitInSeconds(final Integer queuePos) {
-        return (long) (12.7 * (Math.pow(queuePos.doubleValue(), 1.28)));
+        return (long) (26 * (Math.pow(queuePos.doubleValue(), 1.15)));
     }
 
     public static String getEtaStringFromSeconds(final double totalSeconds) {
