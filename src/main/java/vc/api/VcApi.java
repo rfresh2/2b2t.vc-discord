@@ -1,9 +1,11 @@
 package vc.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import vc.openapi.vc.handler.*;
 
 import java.net.http.HttpClient;
@@ -19,6 +21,7 @@ public class VcApi {
     }
 
     @Bean
+    @Primary
     public ApiClient apiClient(
         final HttpClient.Builder httpClientBuilder,
         final ObjectMapper objectMapper,
@@ -30,6 +33,16 @@ public class VcApi {
                 "X-API-Key", apiKey,
                 "User-Agent", "2b2t.vc-discord"
             ));
+    }
+
+    @Bean(name = "namesApiClient")
+    public ApiClient apiClientNames(
+        final HttpClient.Builder httpClientBuilder,
+        final ObjectMapper objectMapper,
+        @Value("${API_KEY}") final String apiKey
+    ) {
+        return apiClient(httpClientBuilder, objectMapper, apiKey)
+            .setReadTimeout(Duration.ofSeconds(90));
     }
 
     @Bean
@@ -53,7 +66,7 @@ public class VcApi {
     }
 
     @Bean
-    public NamesApi namesApi(final ApiClient apiClient) {
+    public NamesApi namesApi(@Qualifier("namesApiClient") final ApiClient apiClient) {
         return new NamesApi(apiClient);
     }
 
