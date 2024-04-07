@@ -279,7 +279,7 @@ public abstract class LiveFeed {
 
     protected URL avatarUrl(final UUID uuid) {
         try {
-            return URI.create(String.format("https://minotar.net/helm/%s/64", uuid.toString().replace("-", ""))).toURL();
+            return URI.create(String.format("https://crafthead.net/helm/%s/64", uuid.toString().replace("-", ""))).toURL();
         } catch (final MalformedURLException e) {
             throw new UncheckedIOException(e);
         }
