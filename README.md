@@ -13,7 +13,9 @@ Invite link: [bot.2b2t.vc](https://bot.2b2t.vc)
 * `/chats` -> Prints a player's chat history 
 * `/connections` -> Prints a player's join/leave history 
 * `/deaths` -> Prints a player's death history
+* `/deathsmonth` -> Leaderboard for top deaths in the last 30 days
 * `/kills` -> Prints a player's kill history
+* `/killsmonth` -> Leaderboard for top kills in the last 30 days
 * `/playtime` -> Gets a player's total playtime
 * `/playtimemonth` -> Leaderboard for top playtime in the last 30 days
 * `/tablist` -> Prints all online players right now on 2b2t
