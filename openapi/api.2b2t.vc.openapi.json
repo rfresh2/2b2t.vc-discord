@@ -189,6 +189,29 @@
         }
       }
     },
+    "/players/priority": {
+      "get": {
+        "tags": [
+          "PriorityPlayers"
+        ],
+        "operationId": "priorityPlayers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PriorityPlayersResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/names": {
       "get": {
         "tags": [
@@ -620,6 +643,9 @@
           "chatsCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "prio": {
+            "type": "boolean"
           }
         }
       },
@@ -679,6 +705,18 @@
           "playtimeDays": {
             "type": "number",
             "format": "double"
+          }
+        }
+      },
+      "PriorityPlayersResponse": {
+        "type": "object",
+        "properties": {
+          "playerName": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },

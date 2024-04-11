@@ -77,7 +77,7 @@ public class PlayerStatsCommand extends PlayerLookupCommand {
                             .addField("Kills", ""+playerStats.getKillCount(), true)
                             .addField("\u200B", "\u200B", true)
                             .addField("Chats", ""+playerStats.getChatsCount(), true)
-                            .addField("\u200B", "\u200B", true)
+                            .addField("Priority Queue", Boolean.TRUE.equals(playerStats.getPrio()) ? "Yes (probably)" : "No (probably not)", true)
                             .addField("\u200B", "\u200B", true)
                             .thumbnail(playerLookup.getAvatarURL(playerIdentityOptional.get().uuid()).toString())
                             .build());
