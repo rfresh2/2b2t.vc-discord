@@ -108,11 +108,13 @@ public class PlayerLookup {
 
     public Optional<UUID> getOrResolveUuid(final UUID uuid, final String username) {
         if (uuid != null) return Optional.of(uuid);
+        if (username == null || !Validator.isValidPlayerName(username)) return Optional.empty();
         return getPlayerIdentity(username.trim()).map(ProfileData::uuid);
     }
 
     public Optional<ProfileData> getOrResolvePlayerIdentity(final UUID uuid, final String username) {
         if (uuid != null) return Optional.of(new ProfileDataImpl(username, uuid));
+        if (username == null || !Validator.isValidPlayerName(username)) return Optional.empty();
         return getPlayerIdentity(username.trim());
     }
 
