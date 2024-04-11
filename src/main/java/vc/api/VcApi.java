@@ -94,4 +94,9 @@ public class VcApi {
     public TabListApi tabListApi(final ApiClient apiClient) {
         return new TabListApi(apiClient);
     }
+
+    @Bean
+    public PriorityPlayersApi priorityPlayersApi(final ApiClient apiClient) {
+        return new PriorityPlayersApi(apiClient);
+    }
 }

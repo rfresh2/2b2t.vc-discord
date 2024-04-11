@@ -20,4 +20,5 @@ Invite link: [bot.2b2t.vc](https://bot.2b2t.vc)
 * `/playtimemonth` -> Leaderboard for top playtime in the last 30 days
 * `/tablist` -> Prints all online players right now on 2b2t
 * `/data` -> Dumps all data on a player as a CSV file
+* `/priodata` -> Dumps a JSON list of all players who currently have priority queue (probably)
 * `/stats` -> Prints a player's stats on 2b2t
