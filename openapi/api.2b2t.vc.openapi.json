@@ -14,9 +14,9 @@
         "operationId": "onlinePlayers",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "List of online players",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -25,6 +25,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data"
           }
         }
       }
@@ -56,14 +59,20 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Stats for given player",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlayerStats"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -95,14 +104,20 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "First and last time a player was seen on 2b2t",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SeenResponse"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -115,14 +130,17 @@
         "operationId": "queue",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Current queue length",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Queuelength"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data"
           }
         }
       }
@@ -154,14 +172,20 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Playtime for given player",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlaytimeResponse"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -174,9 +198,9 @@
         "operationId": "playtimeTopMonth",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Top playtime for the month",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -185,6 +209,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for player"
           }
         }
       }
@@ -197,9 +224,9 @@
         "operationId": "priorityPlayers",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Gets all players who currently have priority queue",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -208,6 +235,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data"
           }
         }
       }
@@ -239,9 +269,9 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Name history for given player",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -250,6 +280,12 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -299,14 +335,20 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Kill history for given player",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/KillsResponse"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -319,9 +361,9 @@
         "operationId": "killsTopMonth",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Top kills for the month",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -330,6 +372,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for the month"
           }
         }
       }
@@ -361,14 +406,16 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Data dump for given player",
             "content": {
-              "*/*": {
-                "schema": {
-                  "type": "string"
-                }
-              }
+              "application/csv": {}
             }
+          },
+          "204": {
+            "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -418,14 +465,20 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Death history for given player",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DeathsResponse"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -438,9 +491,9 @@
         "operationId": "deathsTopMonth",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Top deaths for the month",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -449,6 +502,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for the month"
           }
         }
       }
@@ -498,14 +554,20 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Connection history for given player",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConnectionsResponse"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -555,14 +617,20 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Chat history for given player",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChatsResponse"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -575,9 +643,9 @@
         "operationId": "onlinePlayers_1",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "List of suspected bots",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -586,6 +654,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data"
           }
         }
       }
