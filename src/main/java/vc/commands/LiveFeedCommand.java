@@ -73,7 +73,7 @@ public abstract class LiveFeedCommand implements SlashCommand {
     private boolean validateUserPermissions(final ChatInputInteractionEvent event) {
         return event.getInteraction().getMember()
             .map(member -> member.getBasePermissions().block())
-            .map(perms -> perms.contains(Permission.MANAGE_MESSAGES))
+            .map(perms -> perms.contains(Permission.MANAGE_MESSAGES) || perms.contains(Permission.ADMINISTRATOR))
             .orElse(false);
     }
 
