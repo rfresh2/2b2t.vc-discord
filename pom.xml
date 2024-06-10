@@ -31,12 +31,12 @@
         <dependency>
             <groupId>com.github.rfresh2.Discord4j</groupId>
             <artifactId>discord4j-core</artifactId>
-            <version>33c208f6ac</version>
+            <version>3f91d0f9a8</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <version>3.2.5</version>
+            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>me.paulschwarz</groupId>
