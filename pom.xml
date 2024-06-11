@@ -31,7 +31,7 @@
         <dependency>
             <groupId>com.github.rfresh2.Discord4j</groupId>
             <artifactId>discord4j-core</artifactId>
-            <version>d24c4dab46</version>
+            <version>778616c1bb</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
