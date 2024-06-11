@@ -11,6 +11,7 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.object.presence.Status;
+import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.RestClient;
 import org.openapitools.jackson.nullable.JsonNullableModule;
@@ -55,7 +56,7 @@ public class Application {
     public GatewayDiscordClient gatewayDiscordClient() {
         return DiscordClientBuilder.create(token).build()
                 .gateway()
-                .setEnabledIntents(IntentSet.nonPrivileged())
+                .setEnabledIntents(IntentSet.of(Intent.GUILDS))
                 .setInitialPresence(ignore -> ClientPresence.of(Status.ONLINE, ClientActivity.custom("/commands")))
                 .login()
                 .block();
