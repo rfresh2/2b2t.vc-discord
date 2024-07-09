@@ -34,7 +34,8 @@ public class DiscordPresenceUpdater {
     private static final List<String> statusMessages = asList(
         "/commands",
         "2b2t Chat! /livechat",
-        "2b2t is full"
+        "2b2t is full",
+        "Powered by ZenithProxy!"
     );
 
     public DiscordPresenceUpdater(final ScheduledExecutorService scheduledExecutorService, final GatewayDiscordClient discordClient, final QueueApi queueApi, final TabListApi tabListApi) {
