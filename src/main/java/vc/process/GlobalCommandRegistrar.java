@@ -24,6 +24,7 @@ public class GlobalCommandRegistrar implements ApplicationRunner {
     private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
     private final RestClient client;
+    private final List<ApplicationCommandRequest> commands = new ArrayList<>();
 
     //Use the rest client provided by our Bean
     public GlobalCommandRegistrar(RestClient client) {
@@ -42,11 +43,10 @@ public class GlobalCommandRegistrar implements ApplicationRunner {
         final long applicationId = client.getApplicationId().block();
 
         //Get our commands json from resources as command data
-        List<ApplicationCommandRequest> commands = new ArrayList<>();
+
         for (Resource resource : matcher.getResources("commands/*.json")) {
             ApplicationCommandRequest request = d4jMapper.getObjectMapper()
                 .readValue(resource.getInputStream(), ApplicationCommandRequest.class);
-
             commands.add(request);
         }
 
@@ -67,6 +67,10 @@ public class GlobalCommandRegistrar implements ApplicationRunner {
             .doOnNext(ignore -> LOGGER.info("registered command: {}", ignore.name()))
             .doOnError(e -> LOGGER.error("Failed to register global commands", e))
             .subscribe();
+    }
+
+    public List<ApplicationCommandRequest> getCommands() {
+        return commands;
     }
 }
 

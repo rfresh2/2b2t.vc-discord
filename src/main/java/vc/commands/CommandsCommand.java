@@ -3,20 +3,20 @@ package vc.commands;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.process.GlobalCommandRegistrar;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class CommandsCommand implements SlashCommand {
-    private final Collection<SlashCommand> commands;
+    List<ApplicationCommandRequest> commands;
 
-    public CommandsCommand(final Collection<SlashCommand> commands) {
-        this.commands = commands;
+    public CommandsCommand(final GlobalCommandRegistrar registrar) {
+        this.commands = registrar.getCommands();
     }
 
     @Override
@@ -26,16 +26,13 @@ public class CommandsCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        // todo: add descriptions for each command
-        //   we should be able to grab this from the json
-
-        List<String> commandNames = this.commands.stream()
-                .map(SlashCommand::getName)
+        var commandInfos = this.commands.stream()
+                .map(c -> "`/" + c.name() + "` -> " + c.description().toOptional().orElse(""))
                 .toList();
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
                         .title("Commands")
-                        .description(commandNames.stream().collect(Collectors.joining("\n/", "/", "")))
+                        .description(String.join("\n", commandInfos))
                         .color(Color.CYAN)
                         .build());
     }
