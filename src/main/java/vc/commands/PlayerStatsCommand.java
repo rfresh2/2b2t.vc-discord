@@ -50,7 +50,7 @@ public class PlayerStatsCommand extends PlayerLookupCommand {
         try {
             playerStats = statsApi.playerStats(playerIdentityOptional.get().uuid(), null);
         } catch (final Exception e) {
-            LOGGER.error("Failed to get stats for player: " + playerIdentityOptional.get().uuid(), e);
+            LOGGER.error("Failed to get stats for player: {}", playerIdentityOptional.get().uuid(), e);
         }
         if (playerStats == null)
             return error(event, "Unable to find player");
@@ -77,7 +77,7 @@ public class PlayerStatsCommand extends PlayerLookupCommand {
                             .addField("Kills", ""+playerStats.getKillCount(), true)
                             .addField("\u200B", "\u200B", true)
                             .addField("Chats", ""+playerStats.getChatsCount(), true)
-                            .addField("Priority Queue", Boolean.TRUE.equals(playerStats.getPrio()) ? "Yes (probably)" : "No (probably not)", true)
+                            .addField("Priority Queue", Boolean.TRUE.equals(playerStats.getPrio()) ? "Yes" : "No", true)
                             .addField("\u200B", "\u200B", true)
                             .thumbnail(playerLookup.getAvatarURL(playerIdentityOptional.get().uuid()).toString())
                             .build());
