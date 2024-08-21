@@ -1,8 +1,6 @@
 package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
-import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
@@ -13,11 +11,9 @@ import vc.api.model.ProfileData;
 import vc.openapi.vc.handler.SeenApi;
 import vc.openapi.vc.model.SeenResponse;
 import vc.util.PlayerLookup;
-import vc.util.Validator;
 
 import javax.annotation.Nullable;
 import java.time.OffsetDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
@@ -41,14 +37,7 @@ public class SeenCommand extends PlayerLookupCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Optional<String> playerNameOptional = event.getOption("playername")
-                .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString);
-        return playerNameOptional
-                .filter(Validator::isValidPlayerName)
-                .flatMap(playerLookup::getPlayerIdentity)
-                .map(identity -> resolveSeen(event, identity))
-                .orElse(error(event, "Unable to find player"));
+        return resolveData(event, this::resolveSeen);
     }
 
     private Mono<Message> resolveSeen(final ChatInputInteractionEvent event, final ProfileData identity) {

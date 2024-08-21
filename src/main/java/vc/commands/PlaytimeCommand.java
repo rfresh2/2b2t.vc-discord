@@ -1,8 +1,6 @@
 package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
-import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
@@ -13,9 +11,7 @@ import vc.api.model.ProfileData;
 import vc.openapi.vc.handler.PlaytimeApi;
 import vc.openapi.vc.model.PlaytimeResponse;
 import vc.util.PlayerLookup;
-import vc.util.Validator;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import static java.util.Objects.isNull;
@@ -38,14 +34,7 @@ public class PlaytimeCommand extends PlayerLookupCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Optional<String> playerNameOptional = event.getOption("playername")
-                .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString);
-        return playerNameOptional
-                .filter(Validator::isValidPlayerName)
-                .flatMap(playerLookup::getPlayerIdentity)
-                .map(identity -> resolvePlaytime(event, identity))
-                .orElse(error(event, "Unable to find player"));
+        return resolveData(event, this::resolvePlaytime);
     }
 
     private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final ProfileData identity) {
@@ -54,7 +43,7 @@ public class PlaytimeCommand extends PlayerLookupCommand {
         try {
             playtime = playtimeApi.playtime(profileUUID, null);
         } catch (final Exception e) {
-            LOGGER.error("Failed to get playtime for player: " + profileUUID, e);
+            LOGGER.error("Failed to get playtime for player: {}", profileUUID, e);
         }
         if (isNull(playtime)) return error(event, "No playtime found");
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();
@@ -73,11 +62,14 @@ public class PlaytimeCommand extends PlayerLookupCommand {
         var secondsInHour = secondsInMinute * 60L;
         var secondsInDay = secondsInHour * 24L;
         var secondsInMonth = secondsInDay * 30L; // assuming 30 days per month
+        var secondsInYear = secondsInMonth * 12L;
 
-        var months = durationInSeconds / secondsInMonth;
+        var years = durationInSeconds / secondsInYear;
+        var months = (durationInSeconds % secondsInYear) / secondsInMonth;
         var days = (durationInSeconds % secondsInMonth) / secondsInDay;
         var hours = (durationInSeconds % secondsInDay) / secondsInHour;
         final StringBuilder sb = new StringBuilder();
+        sb.append((years > 0) ? years + " year" + (years != 1 ? "s" : "") + ", " : "");
         sb.append((months > 0) ? months + " month" + (months != 1 ? "s" : "") + ", " : "");
         sb.append((days > 0) ? days + " day" + (days != 1 ? "s" : "") + ", " : "");
         sb.append(hours + " hour" + (hours != 1 ? "s" : ""));

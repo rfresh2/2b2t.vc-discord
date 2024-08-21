@@ -29,21 +29,24 @@ public class QueueCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Queuelength queuelength = null;
-        try {
-            queuelength = queueApi.queue();
-        } catch (final Exception e) {
-            LOGGER.error("Failed to get queue length", e);
-        }
-        if (isNull(queuelength)) return error(event, "Unable to resolve queue length");
-        return event.createFollowup()
+        return Mono.defer(() -> {
+            Queuelength queuelength = null;
+            try {
+                queuelength = queueApi.queue();
+            } catch (final Exception e) {
+                LOGGER.error("Failed to get queue length", e);
+            }
+            if (isNull(queuelength)) return error(event, "Unable to resolve queue length");
+            return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                        .title("2b2t Queue")
-                        .color(Color.CYAN)
-                        .addField("Prio", queuelength.getPrio().toString(), true)
-                        .addField("Regular", queuelength.getRegular().toString(), true)
-                        .addField("ETA", getEtaStringFromSeconds(getQueueWaitInSeconds(queuelength.getRegular())), true)
-                        .build());
+                                .title("2b2t Queue")
+                                .color(Color.CYAN)
+                                .addField("Prio", queuelength.getPrio().toString(), true)
+                                .addField("Regular", queuelength.getRegular().toString(), true)
+                                .addField("ETA", getEtaStringFromSeconds(getQueueWaitInSeconds(queuelength.getRegular())), true)
+                                .build());
+        });
+
     }
 
     // probably only valid for regular queue, prio seems to move a lot faster

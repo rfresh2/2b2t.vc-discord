@@ -35,33 +35,35 @@ public class PriorityPlayersCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        List<PriorityPlayersResponse> priorityPlayersResponses = null;
-        try {
-            priorityPlayersResponses = priorityPlayersApi.priorityPlayers();
-        } catch (final Throwable e) {
-            LOGGER.error("Failed to get priority players", e);
-        }
-        if (priorityPlayersResponses == null || priorityPlayersResponses.isEmpty()) {
-            return error(event, "Unable to resolve priority players");
-        }
+        return Mono.defer(() -> {
+            List<PriorityPlayersResponse> priorityPlayersResponses = null;
+            try {
+                priorityPlayersResponses = priorityPlayersApi.priorityPlayers();
+            } catch (final Throwable e) {
+                LOGGER.error("Failed to get priority players", e);
+            }
+            if (priorityPlayersResponses == null || priorityPlayersResponses.isEmpty()) {
+                return error(event, "Unable to resolve priority players");
+            }
 
-        // write players to json
-        String jsonString = null;
-        try {
-            jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(priorityPlayersResponses);
-        } catch (final Throwable e) {
-            LOGGER.error("Failed to write priority players to json", e);
-        }
-        if (jsonString == null || jsonString.isEmpty()) {
-            return error(event, "Failed to dump priority players list");
-        }
-        return event.createFollowup()
-            .withFiles(MessageCreateFields.File.of("priority_players.json", new ByteArrayInputStream(jsonString.getBytes())))
-            .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Priority Queue Players Dump")
-                            .addField("Player Count", ""+priorityPlayersResponses.size(), true)
-                            .description("JSON Generated!")
-                            .color(Color.CYAN)
-                            .build());
+            // write players to json
+            String jsonString = null;
+            try {
+                jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(priorityPlayersResponses);
+            } catch (final Throwable e) {
+                LOGGER.error("Failed to write priority players to json", e);
+            }
+            if (jsonString == null || jsonString.isEmpty()) {
+                return error(event, "Failed to dump priority players list");
+            }
+            return event.createFollowup()
+                .withFiles(MessageCreateFields.File.of("priority_players.json", new ByteArrayInputStream(jsonString.getBytes())))
+                .withEmbeds(EmbedCreateSpec.builder()
+                                .title("Priority Queue Players Dump")
+                                .addField("Player Count", ""+priorityPlayersResponses.size(), true)
+                                .description("JSON Generated!")
+                                .color(Color.CYAN)
+                                .build());
+        });
     }
 }

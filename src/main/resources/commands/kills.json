@@ -3,7 +3,7 @@
   "description": "Gets kills by a player",
   "options": [
     {
-      "name": "playername",
+      "name": "player",
       "description": "The player to get kills for",
       "type": 3,
       "required": true

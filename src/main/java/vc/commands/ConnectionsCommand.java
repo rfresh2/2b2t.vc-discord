@@ -1,8 +1,6 @@
 package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
-import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
@@ -13,10 +11,8 @@ import vc.api.model.ProfileData;
 import vc.openapi.vc.handler.ConnectionsApi;
 import vc.openapi.vc.model.ConnectionsResponse;
 import vc.util.PlayerLookup;
-import vc.util.Validator;
 
 import java.util.List;
-import java.util.Optional;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -38,21 +34,7 @@ public class ConnectionsCommand extends PlayerLookupCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Optional<String> playerNameOptional = event.getOption("playername")
-                .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString);
-        int page = event.getOption("page")
-                .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asLong)
-                .map(Long::intValue)
-                .orElse(1);
-        if (page <= 0)
-            return error(event, "Page must be greater than 0");
-        return playerNameOptional
-                .filter(Validator::isValidPlayerName)
-                .flatMap(playerLookup::getPlayerIdentity)
-                .map(identity -> resolveConnections(event, identity, page))
-                .orElse(error(event, "Unable to find player"));
+        return resolveData(event, this::resolveConnections);
     }
 
     private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final ProfileData identity, int page) {

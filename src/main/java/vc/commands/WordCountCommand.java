@@ -41,19 +41,21 @@ public class WordCountCommand implements SlashCommand {
         if (word.length() < 4) {
             return error(event, "Word must be at least 4 characters");
         }
-        int count;
-        try {
-            count = chatsApi.wordCount(word).getCount();
-        } catch (final Exception e) {
-            LOGGER.error("Error getting word count: {}", word, e);
-            return error(event, "Error getting word count");
-        }
-        return event.createFollowup()
-            .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Word Count")
-                            .color(Color.CYAN)
-                            .addField("Count", count+"", false)
-                            .addField("Word", escape(word), false)
-                            .build());
+        return Mono.defer(() -> {
+            int count;
+            try {
+                count = chatsApi.wordCount(word).getCount();
+            } catch (final Exception e) {
+                LOGGER.error("Error getting word count: {}", word, e);
+                return error(event, "Error getting word count");
+            }
+            return event.createFollowup()
+                .withEmbeds(EmbedCreateSpec.builder()
+                                .title("Word Count")
+                                .color(Color.CYAN)
+                                .addField("Count", count+"", false)
+                                .addField("Word", escape(word), false)
+                                .build());
+        });
     }
 }

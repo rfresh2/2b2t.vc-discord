@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import vc.commands.SlashCommand;
 
 import java.util.Collection;
@@ -28,7 +29,7 @@ public class SlashCommandListener {
     public SlashCommandListener(List<SlashCommand> slashCommands, GatewayDiscordClient client) {
         commands = slashCommands;
 
-        client.on(ChatInputInteractionEvent.class, this::handle).subscribe();
+        client.on(ChatInputInteractionEvent.class, this::handle).subscribeOn(Schedulers.boundedElastic()).subscribe();
     }
 
 
