@@ -635,6 +635,39 @@
         }
       }
     },
+    "/chats/word-count": {
+      "get": {
+        "tags": [
+          "Chats"
+        ],
+        "operationId": "wordCount",
+        "parameters": [
+          {
+            "name": "word",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Counts the number of times a word has appeared in chat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordCount"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The word must be at least 4 characters long."
+          }
+        }
+      }
+    },
     "/bots/month": {
       "get": {
         "tags": [
@@ -958,6 +991,15 @@
             "format": "int32"
           },
           "pageCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "WordCount": {
+        "type": "object",
+        "properties": {
+          "count": {
             "type": "integer",
             "format": "int32"
           }

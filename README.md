@@ -22,3 +22,4 @@ Invite link: [bot.2b2t.vc](https://bot.2b2t.vc)
 * `/data` -> Dumps all data on a player as a CSV file
 * `/priodata` -> Dumps a JSON list of all players who currently have priority queue (probably)
 * `/stats` -> Prints a player's stats on 2b2t
+* `/wordcount` -> Counts how many times a word has been seen in chat
