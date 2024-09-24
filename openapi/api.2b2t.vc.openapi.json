@@ -13,6 +13,9 @@
         ],
         "operationId": "onlinePlayers",
         "responses": {
+          "204": {
+            "description": "No data"
+          },
           "200": {
             "description": "List of online players",
             "content": {
@@ -25,9 +28,6 @@
                 }
               }
             }
-          },
-          "204": {
-            "description": "No data"
           }
         }
       }
@@ -68,11 +68,11 @@
               }
             }
           },
-          "204": {
-            "description": "No data for player"
-          },
           "400": {
             "description": "Bad request. Either uuid or playerName must be provided."
+          },
+          "204": {
+            "description": "No data for player"
           }
         }
       }
@@ -103,6 +103,9 @@
           }
         ],
         "responses": {
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
+          },
           "200": {
             "description": "First and last time a player was seen on 2b2t",
             "content": {
@@ -115,9 +118,6 @@
           },
           "204": {
             "description": "No data for player"
-          },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -129,6 +129,9 @@
         ],
         "operationId": "queue",
         "responses": {
+          "204": {
+            "description": "No data"
+          },
           "200": {
             "description": "Current queue length",
             "content": {
@@ -138,9 +141,26 @@
                 }
               }
             }
-          },
-          "204": {
-            "description": "No data"
+          }
+        }
+      }
+    },
+    "/queue/eta-equation": {
+      "get": {
+        "tags": [
+          "Queue"
+        ],
+        "operationId": "etaEquation",
+        "responses": {
+          "200": {
+            "description": "ETA seconds = factor * (queuePosition ^ pow)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueEtaEquation"
+                }
+              }
+            }
           }
         }
       }
@@ -171,6 +191,9 @@
           }
         ],
         "responses": {
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
+          },
           "200": {
             "description": "Playtime for given player",
             "content": {
@@ -183,9 +206,6 @@
           },
           "204": {
             "description": "No data for player"
-          },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -223,6 +243,9 @@
         ],
         "operationId": "priorityPlayers",
         "responses": {
+          "204": {
+            "description": "No data"
+          },
           "200": {
             "description": "Gets all players who currently have priority queue",
             "content": {
@@ -235,57 +258,6 @@
                 }
               }
             }
-          },
-          "204": {
-            "description": "No data"
-          }
-        }
-      }
-    },
-    "/names": {
-      "get": {
-        "tags": [
-          "Names"
-        ],
-        "operationId": "names",
-        "parameters": [
-          {
-            "name": "uuid",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "playerName",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Name history for given player",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Names"
-                  }
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No data for player"
-          },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -334,6 +306,9 @@
           }
         ],
         "responses": {
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
+          },
           "200": {
             "description": "Kill history for given player",
             "content": {
@@ -346,9 +321,6 @@
           },
           "204": {
             "description": "No data for player"
-          },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -411,11 +383,11 @@
               "application/csv": {}
             }
           },
-          "204": {
-            "description": "No data for player"
-          },
           "400": {
             "description": "Bad request. Either uuid or playerName must be provided."
+          },
+          "204": {
+            "description": "No data for player"
           }
         }
       }
@@ -474,11 +446,11 @@
               }
             }
           },
-          "204": {
-            "description": "No data for player"
-          },
           "400": {
             "description": "Bad request. Either uuid or playerName must be provided."
+          },
+          "204": {
+            "description": "No data for player"
           }
         }
       }
@@ -563,11 +535,11 @@
               }
             }
           },
-          "204": {
-            "description": "No data for player"
-          },
           "400": {
             "description": "Bad request. Either uuid or playerName must be provided."
+          },
+          "204": {
+            "description": "No data for player"
           }
         }
       }
@@ -626,11 +598,11 @@
               }
             }
           },
-          "204": {
-            "description": "No data for player"
-          },
           "400": {
             "description": "Bad request. Either uuid or playerName must be provided."
+          },
+          "204": {
+            "description": "No data for player"
           }
         }
       }
@@ -652,6 +624,9 @@
           }
         ],
         "responses": {
+          "400": {
+            "description": "Bad request. The word must be at least 4 characters long."
+          },
           "200": {
             "description": "Counts the number of times a word has appeared in chat",
             "content": {
@@ -661,9 +636,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "Bad request. The word must be at least 4 characters long."
           }
         }
       }
@@ -675,6 +647,9 @@
         ],
         "operationId": "onlinePlayers_1",
         "responses": {
+          "204": {
+            "description": "No data"
+          },
           "200": {
             "description": "List of suspected bots",
             "content": {
@@ -687,9 +662,6 @@
                 }
               }
             }
-          },
-          "204": {
-            "description": "No data"
           }
         }
       }
@@ -783,6 +755,19 @@
           }
         }
       },
+      "QueueEtaEquation": {
+        "type": "object",
+        "properties": {
+          "factor": {
+            "type": "number",
+            "format": "double"
+          },
+          "pow": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
       "PlaytimeResponse": {
         "type": "object",
         "properties": {
@@ -821,26 +806,6 @@
           "uuid": {
             "type": "string",
             "format": "uuid"
-          }
-        }
-      },
-      "Names": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "uuid": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "changedtoat": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "changedfromat": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },

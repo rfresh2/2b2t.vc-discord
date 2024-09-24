@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component;
 import vc.openapi.vc.handler.QueueApi;
 import vc.openapi.vc.handler.TabListApi;
 import vc.openapi.vc.model.Queuelength;
+import vc.util.QueueETA;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -17,8 +19,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.asList;
-import static vc.commands.QueueCommand.getEtaStringFromSeconds;
-import static vc.commands.QueueCommand.getQueueWaitInSeconds;
 
 @Component
 public class DiscordPresenceUpdater {
@@ -44,6 +44,7 @@ public class DiscordPresenceUpdater {
         this.queueApi = queueApi;
         this.tabListApi = tabListApi;
         this.scheduledExecutorService.scheduleWithFixedDelay(this::updatePresence, 1, 1, TimeUnit.MINUTES);
+        this.scheduledExecutorService.scheduleWithFixedDelay(this::updateEtaEquation, 0, 1, TimeUnit.HOURS);
     }
 
     void updatePresence() {
@@ -55,6 +56,26 @@ public class DiscordPresenceUpdater {
                 .block();
         } catch (final Exception e) {
             LOGGER.error("Error updating presence", e);
+        }
+    }
+
+    void updateEtaEquation() {
+        try {
+            if (QueueETA.INSTANCE.lastUpdate().isAfter(Instant.now().minusSeconds(30))) return;
+            var equation = queueApi.etaEquation();
+            if (equation.getFactor() == null) {
+                LOGGER.error("Null queue ETA factor: {}", equation);
+                return;
+            }
+            if (equation.getPow() == null) {
+                LOGGER.error("Null queue ETA pow: {}", equation);
+                return;
+            }
+            QueueETA.INSTANCE = new QueueETA(equation.getFactor(), equation.getPow(), Instant.now());
+            LOGGER.info("Updated queue ETA: {}", QueueETA.INSTANCE);
+        } catch (final Exception e) {
+            LOGGER.error("Failed updating queue ETA equation");
+            scheduledExecutorService.schedule(this::updateEtaEquation, 1L, TimeUnit.MINUTES);
         }
     }
 
@@ -76,7 +97,7 @@ public class DiscordPresenceUpdater {
             return Optional.of(String.format("Q: %d | Prio: %d | ETA: %s",
                                              queuelength.getRegular(),
                                              queuelength.getPrio(),
-                                             getEtaStringFromSeconds(getQueueWaitInSeconds(queuelength.getRegular()))));
+                                             QueueETA.INSTANCE.getEtaString(queuelength.getRegular() != null ? queuelength.getRegular() : 0)));
         } catch (final Exception e) {
             LOGGER.error("Error getting queue status", e);
             return Optional.empty();

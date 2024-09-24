@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.openapi.vc.handler.QueueApi;
 import vc.openapi.vc.model.Queuelength;
+import vc.util.QueueETA;
 
 import static java.util.Objects.isNull;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -43,25 +44,9 @@ public class QueueCommand implements SlashCommand {
                                 .color(Color.CYAN)
                                 .addField("Prio", queuelength.getPrio().toString(), true)
                                 .addField("Regular", queuelength.getRegular().toString(), true)
-                                .addField("ETA", getEtaStringFromSeconds(getQueueWaitInSeconds(queuelength.getRegular())), true)
+                                .addField("ETA", QueueETA.INSTANCE.getEtaString(queuelength.getRegular()), true)
                                 .build());
         });
 
-    }
-
-    // probably only valid for regular queue, prio seems to move a lot faster
-    // returns double representing seconds until estimated queue completion time.
-    public static long getQueueWaitInSeconds(final Integer queuePos) {
-        return (long) (247 * (Math.pow(queuePos.doubleValue(), 0.885)));
-    }
-
-    public static String getEtaStringFromSeconds(final double totalSeconds) {
-        final int hour = (int) (totalSeconds / 3600);
-        final int minutes = (int) ((totalSeconds / 60) % 60);
-        final int seconds = (int) (totalSeconds % 60);
-        final String hourStr = hour >= 10 ? "" + hour : "0" + hour;
-        final String minutesStr = minutes >= 10 ? "" + minutes : "0" + minutes;
-        final String secondsStr = seconds >= 10 ? "" + seconds : "0" + seconds;
-        return hourStr + ":" + minutesStr + ":" + secondsStr;
     }
 }
