@@ -5,7 +5,6 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteraction;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -13,11 +12,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import vc.commands.SlashCommand;
+import vc.config.GuildConfigManager;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -25,13 +24,13 @@ public class SlashCommandListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("CommandListener");
     private final Collection<SlashCommand> commands;
+    private final GuildConfigManager guildConfigManager;
 
-    public SlashCommandListener(List<SlashCommand> slashCommands, GatewayDiscordClient client) {
-        commands = slashCommands;
-
+    public SlashCommandListener(List<SlashCommand> slashCommands, GatewayDiscordClient client, final GuildConfigManager guildConfigManager) {
+        this.commands = slashCommands;
+        this.guildConfigManager = guildConfigManager;
         client.on(ChatInputInteractionEvent.class, this::handle).subscribeOn(Schedulers.boundedElastic()).subscribe();
     }
-
 
     public Mono<Message> handle(ChatInputInteractionEvent event) {
         //Convert our list to a flux that we can iterate through
@@ -46,16 +45,27 @@ public class SlashCommandListener {
     }
 
     private void logMessage(SlashCommand command, final ChatInputInteractionEvent event) {
-        Optional<String> username = event.getInteraction().getMember()
-                .map(User::getTag);
-        String dataOptions = event.getInteraction().getCommandInteraction()
+        try {
+            String username = event.getInteraction().getUser().getTag();
+            String dataOptions = event.getInteraction().getCommandInteraction()
                 .map(ApplicationCommandInteraction::getOptions)
                 .orElse(Collections.emptyList())
                 .stream()
-                .map(s -> s.getName() + s.getValue().map(v -> ": " + v.getRaw()).orElse(""))
-                .collect(Collectors.joining(", "));
-        LOGGER.info(username.orElse("?")
-                + " (" + event.getInteraction().getGuildId().map(Snowflake::asString).orElse("?") + ") executed command: " + command.getName()
-                + (!dataOptions.isEmpty() ? " with options: " + dataOptions : ""));
+                .map(s -> s.getName() + s.getValue().map(v -> ":" + v.getRaw()).orElse(""))
+                .collect(Collectors.joining(" "));
+            String guild = event.getInteraction().getGuildId()
+                .map(Snowflake::asString)
+                .flatMap(guildConfigManager::getGuildConfig)
+                .map(config -> "(" + config.guildId() + " - " + config.guildName() + ")")
+                .orElse("(?)");
+            LOGGER.info("{} {} executed {}{}",
+                        username,
+                        guild,
+                        command.getName(),
+                        !dataOptions.isEmpty() ? " : " + dataOptions : "");
+        } catch (final Exception e) {
+            LOGGER.warn("failed logging command", e);
+        }
+
     }
 }
