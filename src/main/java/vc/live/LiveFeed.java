@@ -60,7 +60,7 @@ public abstract class LiveFeed {
         this.discordClient = discordClient;
         this.liveChannels = new ConcurrentHashMap<>();
         this.guildConfigManager = guildConfigManager;
-        this.messageQueue = new PriorityBlockingQueue<>(200);
+        this.messageQueue = new PriorityBlockingQueue<>(1000);
         this.inputQueues = new ConcurrentHashMap<>();
         this.executorService = executorService;
         this.objectMapper = objectMapper;
