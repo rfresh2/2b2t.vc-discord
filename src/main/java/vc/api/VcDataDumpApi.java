@@ -1,10 +1,10 @@
 package vc.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import vc.openapi.vc.handler.ApiClient;
-import vc.openapi.vc.handler.ApiException;
-import vc.openapi.vc.handler.ApiResponse;
-import vc.openapi.vc.handler.Pair;
+import vc.openapi.handler.ApiClient;
+import vc.openapi.handler.ApiException;
+import vc.openapi.handler.ApiResponse;
+import vc.openapi.handler.Pair;
 
 import java.io.IOException;
 import java.io.InputStream;

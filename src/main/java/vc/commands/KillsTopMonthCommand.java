@@ -7,8 +7,8 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.openapi.vc.handler.DeathsApi;
-import vc.openapi.vc.model.DeathOrKillTopMonthResponse;
+import vc.openapi.handler.DeathsApi;
+import vc.openapi.model.DeathOrKillTopMonthResponse;
 
 import java.util.List;
 

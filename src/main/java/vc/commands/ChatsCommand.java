@@ -8,8 +8,8 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
-import vc.openapi.vc.handler.ChatsApi;
-import vc.openapi.vc.model.ChatsResponse;
+import vc.openapi.handler.ChatsApi;
+import vc.openapi.model.ChatsResponse;
 import vc.util.PlayerLookup;
 
 import java.util.List;

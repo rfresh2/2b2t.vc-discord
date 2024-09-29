@@ -9,7 +9,7 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.openapi.vc.handler.ChatsApi;
+import vc.openapi.handler.ChatsApi;
 
 import java.util.Optional;
 

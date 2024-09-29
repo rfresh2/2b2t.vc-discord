@@ -6,9 +6,9 @@ import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.object.presence.Status;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
-import vc.openapi.vc.handler.QueueApi;
-import vc.openapi.vc.handler.TabListApi;
-import vc.openapi.vc.model.Queuelength;
+import vc.openapi.handler.QueueApi;
+import vc.openapi.handler.TabListApi;
+import vc.openapi.model.Queuelength;
 import vc.util.QueueETA;
 
 import java.time.Instant;
@@ -72,7 +72,6 @@ public class DiscordPresenceUpdater {
                 return;
             }
             QueueETA.INSTANCE = new QueueETA(equation.getFactor(), equation.getPow(), Instant.now());
-            LOGGER.info("Updated queue ETA: {}", QueueETA.INSTANCE);
         } catch (final Exception e) {
             LOGGER.error("Failed updating queue ETA equation");
             scheduledExecutorService.schedule(this::updateEtaEquation, 1L, TimeUnit.MINUTES);

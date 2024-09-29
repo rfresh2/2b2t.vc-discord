@@ -7,8 +7,8 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.openapi.vc.handler.PlaytimeApi;
-import vc.openapi.vc.model.PlaytimeTopMonthResponse;
+import vc.openapi.handler.PlaytimeApi;
+import vc.openapi.model.PlaytimeTopMonthResponse;
 
 import java.text.DecimalFormat;
 import java.util.List;

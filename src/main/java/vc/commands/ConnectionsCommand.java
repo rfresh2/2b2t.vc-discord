@@ -8,8 +8,8 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
-import vc.openapi.vc.handler.ConnectionsApi;
-import vc.openapi.vc.model.ConnectionsResponse;
+import vc.openapi.handler.ConnectionsApi;
+import vc.openapi.model.ConnectionsResponse;
 import vc.util.PlayerLookup;
 
 import java.util.List;

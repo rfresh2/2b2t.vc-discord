@@ -9,8 +9,8 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.openapi.vc.handler.PriorityPlayersApi;
-import vc.openapi.vc.model.PriorityPlayersResponse;
+import vc.openapi.handler.PriorityPlayersApi;
+import vc.openapi.model.PriorityPlayersResponse;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;

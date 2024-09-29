@@ -7,8 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.openapi.vc.handler.TabListApi;
-import vc.openapi.vc.model.TablistEntry;
+import vc.openapi.handler.TabListApi;
+import vc.openapi.model.TablistEntry;
 
 import java.util.ArrayList;
 import java.util.Formatter;

@@ -165,9 +165,9 @@
                             <generatorName>java</generatorName>
                             <skipValidateSpec>true</skipValidateSpec>
                             <library>native</library>
-                            <apiPackage>${default.package}.vc.handler</apiPackage>
-                            <modelPackage>${default.package}.vc.model</modelPackage>
-                            <invokerPackage>${default.package}.vc.handler</invokerPackage>
+                            <apiPackage>${default.package}.handler</apiPackage>
+                            <modelPackage>${default.package}.model</modelPackage>
+                            <invokerPackage>${default.package}.handler</invokerPackage>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
                             <configOptions>

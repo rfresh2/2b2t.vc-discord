@@ -7,8 +7,8 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.openapi.vc.handler.QueueApi;
-import vc.openapi.vc.model.Queuelength;
+import vc.openapi.handler.QueueApi;
+import vc.openapi.model.Queuelength;
 import vc.util.QueueETA;
 
 import static java.util.Objects.isNull;

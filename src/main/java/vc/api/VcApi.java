@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import vc.openapi.vc.handler.*;
+import vc.openapi.handler.*;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
