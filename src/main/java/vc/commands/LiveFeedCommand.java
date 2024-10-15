@@ -1,6 +1,5 @@
 package vc.commands;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
@@ -28,8 +27,8 @@ public abstract class LiveFeedCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        if (!validateUserPermissions(event)) return error(event, "You must have permission: " + Permission.MANAGE_MESSAGES
-            + " to use this command");
+        if (event.getInteraction().getGuildId().isEmpty()) return error(event, "This command can only be used inside a discord server");
+        if (!validateUserPermissions(event)) return error(event, "You must have permission: " + Permission.MANAGE_MESSAGES + " to use this command");
         Optional<Boolean> enabledBoolean = event.getOption("enabled")
             .flatMap(ApplicationCommandInteractionOption::getValue)
             .map(ApplicationCommandInteractionOptionValue::asBoolean);
@@ -37,16 +36,15 @@ public abstract class LiveFeedCommand implements SlashCommand {
             .flatMap(ApplicationCommandInteractionOption::getValue)
             .map(ApplicationCommandInteractionOptionValue::asChannel);
         if (enabledBoolean.isEmpty() && channelArg.isEmpty()) return error(event, "At least 1 argument is required");
-        Optional<Snowflake> guildId = event.getInteraction().getGuildId();
-        if (guildId.isEmpty()) return error(event, "This command can only be used in a guild");
+        var guildId = event.getInteraction().getGuildId().get().asString();
         if (enabledBoolean.orElse(true) && channelArg.isEmpty()) return error(event, "Channel is required when enabling " + feedName());
         if (enabledBoolean.orElse(true)) {
             try {
                 final Channel channel = channelArg.get().block();
-                if (!testPermissions(guildId.get().asString(), channel)) {
+                if (!testPermissions(guildId, channel)) {
                     return error(event, "Bot must have permissions to send messages in: " + channel.getMention());
                 }
-                liveFeed.enableFeed(guildId.get().asString(), channel.getId().asString());
+                liveFeed.enableFeed(guildId, channel.getId().asString());
                 return event.createFollowup()
                     .withEmbeds(EmbedCreateSpec.builder()
                                     .title(feedName() + " Enabled")
@@ -58,7 +56,7 @@ public abstract class LiveFeedCommand implements SlashCommand {
             }
         } else {
             try {
-                liveFeed.disableFeed(guildId.get().asString());
+                liveFeed.disableFeed(guildId);
                 return event.createFollowup()
                     .withEmbeds(EmbedCreateSpec.builder()
                                     .title(feedName() + " Disabled")

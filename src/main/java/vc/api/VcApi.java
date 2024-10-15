@@ -34,16 +34,6 @@ public class VcApi {
             ));
     }
 
-    @Bean(name = "namesApiClient")
-    public ApiClient apiClientNames(
-        final HttpClient.Builder httpClientBuilder,
-        final ObjectMapper objectMapper,
-        @Value("${API_KEY}") final String apiKey
-    ) {
-        return apiClient(httpClientBuilder, objectMapper, apiKey)
-            .setReadTimeout(Duration.ofSeconds(90));
-    }
-
     @Bean
     public ChatsApi chatsApi(final ApiClient apiClient) {
         return new ChatsApi(apiClient);
