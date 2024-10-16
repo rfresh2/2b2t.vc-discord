@@ -10,12 +10,13 @@ import discord4j.discordjson.json.EmbedData;
 import discord4j.discordjson.json.MessageCreateRequest;
 import discord4j.rest.entity.RestChannel;
 import discord4j.rest.http.client.ClientException;
+import discord4j.rest.util.MultipartRequest;
 import org.redisson.api.RBoundedBlockingQueue;
 import org.slf4j.Logger;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.retry.RetryExhaustedException;
 import reactor.util.retry.Retry;
 import vc.config.GuildConfigManager;
 import vc.config.GuildConfigRecord;
@@ -91,7 +92,7 @@ public abstract class LiveFeed {
     record Message(EmbedData embedData, long timestamp) implements Comparable<Message> {
         @Override
         public int compareTo(final Message o) {
-            return (timestamp() < o.timestamp()) ? -1 : ((timestamp() == o.timestamp()) ? 0 : 1);
+            return Long.compare(timestamp(), o.timestamp());
         }
     }
 
@@ -206,11 +207,14 @@ public abstract class LiveFeed {
                 }
             }
             if (embeds.isEmpty()) return;
+            final MultipartRequest<MessageCreateRequest> request = MultipartRequest.ofRequest(MessageCreateRequest.builder()
+                .embeds(embeds)
+                .build());
             // todo: test if we need to use a rate limiter between sending messages to different guilds
             Flux.fromIterable(liveChannels.entrySet())
                 .parallel()
                 .runOn(Schedulers.parallel())
-                .flatMap(entry -> processSend(entry, embeds))
+                .flatMap(entry -> processSend(entry.getKey(), entry.getValue(), request))
                 .sequential()
                 .blockLast(Duration.ofSeconds(20));
         } catch (final Throwable e) {
@@ -218,23 +222,19 @@ public abstract class LiveFeed {
         }
     }
 
-    private Mono<?> processSend(final Map.Entry<String, RestChannel> entry, final List<EmbedData> embeds) {
-        final RestChannel channel = entry.getValue();
-        final String guildId = entry.getKey();
-        return channel.createMessage(
-                MessageCreateRequest.builder()
-                    .embeds(embeds)
-                    .build())
+    private Mono<?> processSend(String guildId, RestChannel channel, MultipartRequest<MessageCreateRequest> request) {
+        return channel.createMessage(request)
             .timeout(Duration.ofSeconds(3))
             // retry only on TimeoutException
             .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
                            .filter(error -> error instanceof TimeoutException)
-                           .onRetryExhaustedThrow((spec, signal) ->
-                                  new RetryExhaustedException("Retries exhausted sending message to guild: " + guildId + ", channelId: " + channel.getId().asString(), signal.failure())))
+                           .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
+                               "Retries exhausted sending message to guild: " + guildId + ", channelId: " + channel.getId().asString(),
+                               signal.failure())))
             .onErrorResume(error -> {
-                if (error instanceof RetryExhaustedException e) {
-                    handleBroadcastError(e.getCause(), guildId, channel);
-                } else
+                if (Exceptions.isRetryExhausted(error))
+                    handleBroadcastError(error.getCause(), guildId, channel);
+                else
                     handleBroadcastError(error, guildId, channel);
                return Mono.empty();
             });
