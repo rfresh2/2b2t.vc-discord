@@ -1,0 +1,18 @@
+{
+  "name": "search",
+  "description": "Searches for chats containing a given word",
+  "options": [
+    {
+      "name": "word",
+      "description": "The word to search",
+      "type": 3,
+      "required": true
+    },
+    {
+      "name": "page",
+      "description": "Results page",
+      "type": 4,
+      "required": false
+    }
+  ]
+}
