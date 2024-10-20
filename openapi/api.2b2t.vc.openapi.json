@@ -821,7 +821,7 @@
           "playerName": {
             "type": "string"
           },
-          "playerUuid": {
+          "uuid": {
             "type": "string",
             "format": "uuid"
           }
@@ -1053,12 +1053,12 @@
       "PlayerDeathOrKillCount": {
         "type": "object",
         "properties": {
+          "playerName": {
+            "type": "string"
+          },
           "uuid": {
             "type": "string",
             "format": "uuid"
-          },
-          "playerName": {
-            "type": "string"
           },
           "count": {
             "type": "integer",
