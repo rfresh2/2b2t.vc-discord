@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import vc.openapi.handler.QueueApi;
 import vc.openapi.handler.TabListApi;
-import vc.openapi.model.Queuelength;
 import vc.util.QueueETA;
 
 import java.time.Instant;
@@ -92,7 +91,7 @@ public class DiscordPresenceUpdater {
 
     Optional<String> getQueueStatus() {
         try {
-            Queuelength queuelength = queueApi.queue();
+            var queuelength = queueApi.queue();
             return Optional.of(String.format("Q: %d | Prio: %d | ETA: %s",
                                              queuelength.getRegular(),
                                              queuelength.getPrio(),
@@ -105,7 +104,7 @@ public class DiscordPresenceUpdater {
 
     Optional<String> getPlayerCount() {
         try {
-            return Optional.of(String.format("%d Players Online", tabListApi.onlinePlayers().size()));
+            return Optional.of(String.format("%d Players Online", tabListApi.onlinePlayers().getPlayers().size()));
         } catch (final Exception e) {
             LOGGER.error("Error getting player count", e);
             return Optional.empty();

@@ -13,21 +13,18 @@
         ],
         "operationId": "onlinePlayers",
         "responses": {
-          "204": {
-            "description": "No data"
-          },
           "200": {
             "description": "List of online players",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TablistEntry"
-                  }
+                  "$ref": "#/components/schemas/TablistResponse"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data"
           }
         }
       }
@@ -68,11 +65,11 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -103,9 +100,6 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "200": {
             "description": "First and last time a player was seen on 2b2t",
             "content": {
@@ -118,6 +112,9 @@
           },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -129,15 +126,35 @@
         ],
         "operationId": "queue",
         "responses": {
-          "204": {
-            "description": "No data"
-          },
           "200": {
             "description": "Current queue length",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Queuelength"
+                  "$ref": "#/components/schemas/QueueData"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No data"
+          }
+        }
+      }
+    },
+    "/queue/month": {
+      "get": {
+        "tags": [
+          "Queue"
+        ],
+        "operationId": "queueHistory",
+        "responses": {
+          "200": {
+            "description": "Queue length history for the last month",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueLengthHistory"
                 }
               }
             }
@@ -191,9 +208,6 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "200": {
             "description": "Playtime for given player",
             "content": {
@@ -206,6 +220,9 @@
           },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -222,10 +239,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PlaytimeTopMonthResponse"
-                  }
+                  "$ref": "#/components/schemas/PlaytimeMonthResponse"
                 }
               }
             }
@@ -243,21 +257,18 @@
         ],
         "operationId": "priorityPlayers",
         "responses": {
-          "204": {
-            "description": "No data"
-          },
           "200": {
             "description": "Gets all players who currently have priority queue",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PriorityPlayersResponse"
-                  }
+                  "$ref": "#/components/schemas/PriorityPlayersResponse"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data"
           }
         }
       }
@@ -287,6 +298,24 @@
             }
           },
           {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
             "name": "pageSize",
             "in": "query",
             "required": false,
@@ -306,9 +335,6 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "200": {
             "description": "Kill history for given player",
             "content": {
@@ -321,6 +347,9 @@
           },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -337,10 +366,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DeathOrKillTopMonthResponse"
-                  }
+                  "$ref": "#/components/schemas/PlayerDeathOrKillCountResponse"
                 }
               }
             }
@@ -383,11 +409,11 @@
               "application/csv": {}
             }
           },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -414,6 +440,24 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
             }
           },
           {
@@ -446,11 +490,11 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -467,10 +511,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DeathOrKillTopMonthResponse"
-                  }
+                  "$ref": "#/components/schemas/PlayerDeathOrKillCountResponse"
                 }
               }
             }
@@ -506,6 +547,24 @@
             }
           },
           {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
             "name": "pageSize",
             "in": "query",
             "required": false,
@@ -535,11 +594,11 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -566,6 +625,24 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
             }
           },
           {
@@ -598,11 +675,11 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -624,9 +701,6 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Bad request. The word must be at least 4 characters long."
-          },
           "200": {
             "description": "Counts the number of times a word has appeared in chat",
             "content": {
@@ -636,6 +710,81 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad request. The word must be between 4 and 30 characters."
+          }
+        }
+      }
+    },
+    "/chats/search": {
+      "get": {
+        "tags": [
+          "Chats"
+        ],
+        "operationId": "chatSearch",
+        "parameters": [
+          {
+            "name": "word",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Find chat messages containing a specific word",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatSearchResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No data"
+          },
+          "400": {
+            "description": "Bad request."
           }
         }
       }
@@ -647,21 +796,18 @@
         ],
         "operationId": "onlinePlayers_1",
         "responses": {
-          "204": {
-            "description": "No data"
-          },
           "200": {
             "description": "List of suspected bots",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MaxConsMonthView"
-                  }
+                  "$ref": "#/components/schemas/BotsMonthResponse"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data"
           }
         }
       }
@@ -678,6 +824,17 @@
           "playerUuid": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "TablistResponse": {
+        "type": "object",
+        "properties": {
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TablistEntry"
+            }
           }
         }
       },
@@ -738,7 +895,7 @@
           }
         }
       },
-      "Queuelength": {
+      "QueueData": {
         "type": "object",
         "properties": {
           "time": {
@@ -752,6 +909,17 @@
           "regular": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "QueueLengthHistory": {
+        "type": "object",
+        "properties": {
+          "queueData": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueueData"
+            }
           }
         }
       },
@@ -781,7 +949,7 @@
           }
         }
       },
-      "PlaytimeTopMonthResponse": {
+      "PlayerPlaytimeData": {
         "type": "object",
         "properties": {
           "uuid": {
@@ -797,7 +965,18 @@
           }
         }
       },
-      "PriorityPlayersResponse": {
+      "PlaytimeMonthResponse": {
+        "type": "object",
+        "properties": {
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerPlaytimeData"
+            }
+          }
+        }
+      },
+      "PriorityPlayer": {
         "type": "object",
         "properties": {
           "playerName": {
@@ -809,7 +988,18 @@
           }
         }
       },
-      "Deaths": {
+      "PriorityPlayersResponse": {
+        "type": "object",
+        "properties": {
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriorityPlayer"
+            }
+          }
+        }
+      },
+      "Death": {
         "type": "object",
         "properties": {
           "time": {
@@ -847,7 +1037,7 @@
           "kills": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Deaths"
+              "$ref": "#/components/schemas/Death"
             }
           },
           "total": {
@@ -860,7 +1050,7 @@
           }
         }
       },
-      "DeathOrKillTopMonthResponse": {
+      "PlayerDeathOrKillCount": {
         "type": "object",
         "properties": {
           "uuid": {
@@ -876,13 +1066,24 @@
           }
         }
       },
+      "PlayerDeathOrKillCountResponse": {
+        "type": "object",
+        "properties": {
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerDeathOrKillCount"
+            }
+          }
+        }
+      },
       "DeathsResponse": {
         "type": "object",
         "properties": {
           "deaths": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Deaths"
+              "$ref": "#/components/schemas/Death"
             }
           },
           "total": {
@@ -970,19 +1171,64 @@
           }
         }
       },
-      "MaxConsMonthView": {
+      "ChatSearchResponse": {
         "type": "object",
         "properties": {
-          "maxCons": {
+          "chats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerChat"
+            }
+          },
+          "total": {
             "type": "integer",
             "format": "int32"
           },
-          "puuid": {
+          "pageCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PlayerChat": {
+        "type": "object",
+        "properties": {
+          "playerName": {
+            "type": "string"
+          },
+          "uuid": {
             "type": "string",
             "format": "uuid"
           },
-          "pname": {
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "chat": {
             "type": "string"
+          }
+        }
+      },
+      "BotData": {
+        "type": "object",
+        "properties": {
+          "playerName": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "BotsMonthResponse": {
+        "type": "object",
+        "properties": {
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BotData"
+            }
           }
         }
       }

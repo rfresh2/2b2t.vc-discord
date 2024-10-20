@@ -40,7 +40,7 @@ public class DeathsCommand extends PlayerLookupCommand {
     private Mono<Message> resolveDeaths(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
         DeathsResponse deathsResponse = null;
         try {
-            deathsResponse = deathsApi.deaths(identity.uuid(), null, 25, page);
+            deathsResponse = deathsApi.deaths(identity.uuid(), null, null, null, 25, page);
         } catch (final Exception e) {
             LOGGER.error("Failed to get deaths", e);
         }

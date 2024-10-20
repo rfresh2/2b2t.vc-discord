@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.openapi.handler.DeathsApi;
-import vc.openapi.model.DeathOrKillTopMonthResponse;
+import vc.openapi.model.PlayerDeathOrKillCountResponse;
 
 import java.util.List;
 
@@ -30,16 +30,16 @@ public class KillsTopMonthCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        List<DeathOrKillTopMonthResponse> responses = null;
+        PlayerDeathOrKillCountResponse response = null;
         try {
-            responses = deathsApi.killsTopMonth();
+            response = deathsApi.killsTopMonth();
         } catch (final Throwable e) {
             LOGGER.error("Failed to get kills top month response", e);
         }
-        if (responses == null || responses.isEmpty()) {
+        if (response == null || response.getPlayers() == null || response.getPlayers().isEmpty()) {
             return error(event, "Unable to resolve kills list");
         }
-        List<String> deathList = responses.stream()
+        List<String> deathList = response.getPlayers().stream()
                 .map(death -> "**" + escape(death.getPlayerName()) + "**: " + death.getCount())
                 .toList();
         StringBuilder result = new StringBuilder();

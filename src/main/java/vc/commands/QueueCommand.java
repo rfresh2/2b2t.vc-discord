@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.openapi.handler.QueueApi;
-import vc.openapi.model.Queuelength;
+import vc.openapi.model.QueueData;
 import vc.util.QueueETA;
 
 import static java.util.Objects.isNull;
@@ -31,7 +31,7 @@ public class QueueCommand implements SlashCommand {
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         return Mono.defer(() -> {
-            Queuelength queuelength = null;
+            QueueData queuelength = null;
             try {
                 queuelength = queueApi.queue();
             } catch (final Exception e) {

@@ -38,8 +38,8 @@ public class WordCountCommand implements SlashCommand {
             return error(event, "No word supplied");
         }
         String word = wordOptional.get();
-        if (word.length() < 4) {
-            return error(event, "Word must be at least 4 characters");
+        if (word.length() < 4 || word.length() > 50) {
+            return error(event, "Word must be between 4 and 50 characters");
         }
         return Mono.defer(() -> {
             int count;

@@ -40,7 +40,7 @@ public class ConnectionsCommand extends PlayerLookupCommand {
     private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
         ConnectionsResponse connectionsResponse = null;
         try {
-            connectionsResponse = connectionsApi.connections(identity.uuid(), null, 25, page);
+            connectionsResponse = connectionsApi.connections(identity.uuid(), null, null, null, 25, page);
         } catch (final Exception e){
             LOGGER.error("Error processing connections response", e);
         }

@@ -13,7 +13,6 @@ import vc.openapi.handler.PriorityPlayersApi;
 import vc.openapi.model.PriorityPlayersResponse;
 
 import java.io.ByteArrayInputStream;
-import java.util.List;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -36,20 +35,20 @@ public class PriorityPlayersCommand implements SlashCommand {
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         return Mono.defer(() -> {
-            List<PriorityPlayersResponse> priorityPlayersResponses = null;
+            PriorityPlayersResponse response = null;
             try {
-                priorityPlayersResponses = priorityPlayersApi.priorityPlayers();
+                response = priorityPlayersApi.priorityPlayers();
             } catch (final Throwable e) {
                 LOGGER.error("Failed to get priority players", e);
             }
-            if (priorityPlayersResponses == null || priorityPlayersResponses.isEmpty()) {
+            if (response == null || response.getPlayers() == null || response.getPlayers().isEmpty()) {
                 return error(event, "Unable to resolve priority players");
             }
 
             // write players to json
             String jsonString = null;
             try {
-                jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(priorityPlayersResponses);
+                jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response);
             } catch (final Throwable e) {
                 LOGGER.error("Failed to write priority players to json", e);
             }
@@ -60,7 +59,7 @@ public class PriorityPlayersCommand implements SlashCommand {
                 .withFiles(MessageCreateFields.File.of("priority_players.json", new ByteArrayInputStream(jsonString.getBytes())))
                 .withEmbeds(EmbedCreateSpec.builder()
                                 .title("Priority Queue Players Dump")
-                                .addField("Player Count", ""+priorityPlayersResponses.size(), true)
+                                .addField("Player Count", ""+response.getPlayers().size(), true)
                                 .description("JSON Generated!")
                                 .color(Color.CYAN)
                                 .build());

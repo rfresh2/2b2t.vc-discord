@@ -8,12 +8,11 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.openapi.handler.PlaytimeApi;
-import vc.openapi.model.PlaytimeTopMonthResponse;
+import vc.openapi.model.PlaytimeMonthResponse;
 
 import java.text.DecimalFormat;
 import java.util.List;
 
-import static java.util.Objects.isNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
@@ -34,15 +33,15 @@ public class PlaytimeTopMonthCommand implements SlashCommand {
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         return Mono.defer(() -> {
-            List<PlaytimeTopMonthResponse> playtimeTopMonthResponses = null;
+            PlaytimeMonthResponse response = null;
             try {
-                playtimeTopMonthResponses = playtimeApi.playtimeTopMonth();
+                response = playtimeApi.playtimeTopMonth();
             } catch (final Exception e) {
                 LOGGER.error("Failed to get playtime top month", e);
             }
-            if (isNull(playtimeTopMonthResponses) || playtimeTopMonthResponses.isEmpty())
+            if (response == null || response.getPlayers() == null || response.getPlayers().isEmpty())
                 return error(event, "Unable to resolve playtime list");
-            List<String> ptList = playtimeTopMonthResponses.stream()
+            List<String> ptList = response.getPlayers().stream()
                 .map(pt -> "**" + escape(pt.getPlayerName()) + "**: " + df.format(pt.getPlaytimeDays()) + "d")
                 .toList();
             StringBuilder result = new StringBuilder();

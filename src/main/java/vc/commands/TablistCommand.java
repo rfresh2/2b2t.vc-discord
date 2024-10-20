@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.openapi.handler.TabListApi;
 import vc.openapi.model.TablistEntry;
+import vc.openapi.model.TablistResponse;
 
 import java.util.ArrayList;
 import java.util.Formatter;
@@ -16,8 +17,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static java.util.Objects.isNull;
 
 @Component
 public class TablistCommand implements SlashCommand {
@@ -36,14 +35,15 @@ public class TablistCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        List<TablistEntry> onlinePlayers = null;
+        TablistResponse response = null;
         try {
-            onlinePlayers = tabListApi.onlinePlayers();
+            response = tabListApi.onlinePlayers();
         } catch (final Exception e) {
             LOGGER.error("Failed to get tablist", e);
         }
-        if (isNull(onlinePlayers) || onlinePlayers.isEmpty()) return error(event, "Unable to resolve current tablist");
-        List<String> playerNames = onlinePlayers.stream()
+        if (response == null || response.getPlayers() == null || response.getPlayers().isEmpty())
+            return error(event, "Unable to resolve current tablist");
+        List<String> playerNames = response.getPlayers().stream()
                 .map(TablistEntry::getPlayerName)
                 .distinct()
                 .sorted(String::compareTo)

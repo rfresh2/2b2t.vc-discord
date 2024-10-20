@@ -40,7 +40,7 @@ public class KillsCommand extends PlayerLookupCommand {
     private Mono<Message> resolveKills(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
         KillsResponse killsResponse = null;
         try {
-            killsResponse = deathsApi.kills(identity.uuid(), null, 25, page);
+            killsResponse = deathsApi.kills(identity.uuid(), null, null, null, 25, page);
         } catch (final Exception e) {
             LOGGER.error("Error resolving kills", e);
         }

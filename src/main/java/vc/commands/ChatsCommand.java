@@ -39,7 +39,7 @@ public class ChatsCommand extends PlayerLookupCommand {
     private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
         ChatsResponse chatsResponse = null;
         try {
-            chatsResponse = chatsApi.chats(identity.uuid(), null, 25, page);
+            chatsResponse = chatsApi.chats(identity.uuid(), null, null, null, 25, page);
         } catch (final Exception e) {
             LOGGER.error("Error processing chats response", e);
         }
