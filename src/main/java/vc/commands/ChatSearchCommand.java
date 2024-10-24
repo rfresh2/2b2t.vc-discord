@@ -59,7 +59,7 @@ public class ChatSearchCommand implements SlashCommand {
                 return error(event, "Error during search");
             }
             var chatStrings = response.getChats().stream()
-                .map(c -> SHORT_DATE_TIME.format(c.getTime().toInstant()) + " " + escape(c.getChat()))
+                .map(c -> SHORT_DATE_TIME.format(c.getTime().toInstant()) + " **" + escape(c.getPlayerName()) + ":** " + escape(c.getChat()))
                 .toList();
             StringBuilder result = new StringBuilder();
             for (String s : chatStrings) {
