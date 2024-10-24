@@ -13,6 +13,18 @@
       "description": "Results page",
       "type": 4,
       "required": false
+    },
+    {
+      "name": "enddate",
+      "description": "End Date (YYYY-MM-DD)",
+      "type": 3,
+      "required": false
+    },
+    {
+      "name": "startdate",
+      "description": "Start Date (YYYY-MM-DD)",
+      "type": 3,
+      "required": false
     }
   ]
 }

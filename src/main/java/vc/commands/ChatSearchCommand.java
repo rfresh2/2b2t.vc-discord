@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 import vc.openapi.handler.ChatsApi;
 import vc.openapi.model.ChatSearchResponse;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
@@ -43,6 +44,17 @@ public class ChatSearchCommand implements SlashCommand {
         if (word.length() < 4 || word.length() > 50) {
             return error(event, "Word must be between 4 and 50 characters");
         }
+        LocalDate startDate;
+        LocalDate endDate;
+        try {
+            startDate = getLocalDateIfPresent(event, "startdate");
+            endDate = getLocalDateIfPresent(event, "enddate");
+            if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                return error(event, "Start Date must be before End Date");
+            }
+        } catch (Exception e) {
+            return error(event, "Invalid date. Required format: YYYY-MM-DD");
+        }
         int page = event.getOption("page")
             .flatMap(ApplicationCommandInteractionOption::getValue)
             .map(ApplicationCommandInteractionOptionValue::asLong)
@@ -53,7 +65,7 @@ public class ChatSearchCommand implements SlashCommand {
         return Mono.defer(() -> {
             ChatSearchResponse response;
             try {
-                response = chatsApi.chatSearch(word, null, null, 25, page);
+                response = chatsApi.chatSearch(word, startDate, endDate, 25, page);
             } catch (final Exception e) {
                 LOGGER.error("Error searching chats for word: {}", word, e);
                 return error(event, "Error during search");

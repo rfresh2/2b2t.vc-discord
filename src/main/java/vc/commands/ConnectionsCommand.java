@@ -12,6 +12,7 @@ import vc.openapi.handler.ConnectionsApi;
 import vc.openapi.model.ConnectionsResponse;
 import vc.util.PlayerLookup;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
@@ -37,10 +38,10 @@ public class ConnectionsCommand extends PlayerLookupCommand {
         return resolveData(event, this::resolveConnections);
     }
 
-    private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
+    private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
         ConnectionsResponse connectionsResponse = null;
         try {
-            connectionsResponse = connectionsApi.connections(identity.uuid(), null, null, null, 25, page);
+            connectionsResponse = connectionsApi.connections(identity.uuid(), null, startDate, endDate, 25, page);
         } catch (final Exception e){
             LOGGER.error("Error processing connections response", e);
         }

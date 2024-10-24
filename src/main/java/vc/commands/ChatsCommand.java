@@ -12,6 +12,7 @@ import vc.openapi.handler.ChatsApi;
 import vc.openapi.model.ChatsResponse;
 import vc.util.PlayerLookup;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
@@ -36,10 +37,10 @@ public class ChatsCommand extends PlayerLookupCommand {
         return resolveData(event, this::resolveChats);
     }
 
-    private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
+    private Mono<Message> resolveChats(final ChatInputInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
         ChatsResponse chatsResponse = null;
         try {
-            chatsResponse = chatsApi.chats(identity.uuid(), null, null, null, 25, page);
+            chatsResponse = chatsApi.chats(identity.uuid(), null, startDate, endDate, 25, page);
         } catch (final Exception e) {
             LOGGER.error("Error processing chats response", e);
         }

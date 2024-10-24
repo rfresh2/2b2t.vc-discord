@@ -12,6 +12,7 @@ import vc.openapi.handler.DeathsApi;
 import vc.openapi.model.KillsResponse;
 import vc.util.PlayerLookup;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
@@ -37,10 +38,10 @@ public class KillsCommand extends PlayerLookupCommand {
         return resolveData(event, this::resolveKills);
     }
 
-    private Mono<Message> resolveKills(final ChatInputInteractionEvent event, final ProfileData identity, int page) {
+    private Mono<Message> resolveKills(final ChatInputInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
         KillsResponse killsResponse = null;
         try {
-            killsResponse = deathsApi.kills(identity.uuid(), null, null, null, 25, page);
+            killsResponse = deathsApi.kills(identity.uuid(), null, startDate, endDate, 25, page);
         } catch (final Exception e) {
             LOGGER.error("Error resolving kills", e);
         }
