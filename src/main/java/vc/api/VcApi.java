@@ -1,6 +1,7 @@
 package vc.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,8 +35,18 @@ public class VcApi {
             ));
     }
 
+    @Bean(name = "chatsApiClient")
+    public ApiClient apiClientNames(
+        final HttpClient.Builder httpClientBuilder,
+        final ObjectMapper objectMapper,
+        @Value("${API_KEY}") final String apiKey
+    ) {
+        return apiClient(httpClientBuilder, objectMapper, apiKey)
+            .setReadTimeout(Duration.ofSeconds(60));
+    }
+
     @Bean
-    public ChatsApi chatsApi(final ApiClient apiClient) {
+    public ChatsApi chatsApi(@Qualifier("chatsApiClient") final ApiClient apiClient) {
         return new ChatsApi(apiClient);
     }
 
