@@ -162,12 +162,9 @@ public abstract class LiveFeed {
             .ifPresentOrElse(guildConfigRecord -> {
                 final GuildConfigRecord newRecord = disableRecordInternal(guildConfigRecord);
                 this.guildConfigManager.updateGuildConfig(newRecord);
-                this.liveChannels.remove(guildId);
                 LOGGER.info("Disabled {} for guild {}, {}", feedName(), guildId, guildConfigRecord.guildName());
-            }, () -> {
-                this.liveChannels.remove(guildId);
-                throw new RuntimeException("Guild config not found");
-            });
+            }, () -> LOGGER.info("Guild: {} config not found while disabling {} feed", guildId, feedName()));
+        this.liveChannels.remove(guildId);
     }
 
     public void enableFeed(final String guildId, final String channelId) {

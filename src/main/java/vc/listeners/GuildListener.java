@@ -46,7 +46,7 @@ public class GuildListener {
             return Mono.empty();
         }
         var guildName = event.getGuild().map(Guild::getName).orElse("?");
-        LOGGER.info("Left guild: ({}) {}", event.getGuildId(), guildName);
+        LOGGER.info("Left guild: ({}) {}", event.getGuildId().asString(), guildName);
         liveFeedManager.disableFeedsInGuild(event.getGuildId().asString());
         return Mono.empty();
     }
