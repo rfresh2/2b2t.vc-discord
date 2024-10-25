@@ -1,6 +1,9 @@
 package vc.commands;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
@@ -19,13 +22,15 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class ConnectionsCommand extends PlayerLookupCommand {
+public class ConnectionsCommand extends PlayerLookupCommand implements PaginatedButtonListener {
     private static final Logger LOGGER = getLogger(ConnectionsCommand.class);
     private final ConnectionsApi connectionsApi;
+    private final ObjectMapper objectMapper;
 
-    public ConnectionsCommand(final ConnectionsApi connectionsApi, final PlayerLookup playerLookup) {
+    public ConnectionsCommand(final ConnectionsApi connectionsApi, final PlayerLookup playerLookup, final ObjectMapper objectMapper) {
         super(playerLookup);
         this.connectionsApi = connectionsApi;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -38,7 +43,7 @@ public class ConnectionsCommand extends PlayerLookupCommand {
         return resolveData(event, this::resolveConnections);
     }
 
-    private Mono<Message> resolveConnections(final ChatInputInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
+    private Mono<Message> resolveConnections(final DeferrableInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
         ConnectionsResponse connectionsResponse = null;
         try {
             connectionsResponse = connectionsApi.connections(identity.uuid(), null, startDate, endDate, 25, page);
@@ -78,6 +83,12 @@ public class ConnectionsCommand extends PlayerLookupCommand {
                             .addField("Current Page", ""+page, true)
                             .addField("Page Count", ""+connectionsResponse.getPageCount(), true)
                             .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
-                            .build());
+                            .build())
+            .withComponents(getButtonRow(objectMapper, getName(), connectionsResponse.getPageCount(), page, identity, startDate, endDate));
+    }
+
+    @Override
+    public Mono<Message> handleButton(final ButtonInteractionEvent event) {
+        return paginatedPlayerLookupButtonHandler(event, objectMapper, getName(), playerLookup, this::resolveConnections, this::error);
     }
 }

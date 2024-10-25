@@ -1,6 +1,7 @@
 package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
@@ -22,7 +23,7 @@ public interface SlashCommand {
 
     Mono<Message> handle(ChatInputInteractionEvent event);
 
-    default Mono<Message> error(ChatInputInteractionEvent event, final String message) {
+    default Mono<Message> error(DeferrableInteractionEvent event, final String message) {
         return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
                         .title("Error")

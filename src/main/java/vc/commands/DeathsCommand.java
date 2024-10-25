@@ -1,6 +1,9 @@
 package vc.commands;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
@@ -19,13 +22,15 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class DeathsCommand extends PlayerLookupCommand {
+public class DeathsCommand extends PlayerLookupCommand implements PaginatedButtonListener {
     private static final Logger LOGGER = getLogger(DeathsCommand.class);
     private final DeathsApi deathsApi;
+    private final ObjectMapper objectMapper;
 
-    public DeathsCommand(final DeathsApi deathsApi, final PlayerLookup playerLookup) {
+    public DeathsCommand(final DeathsApi deathsApi, final PlayerLookup playerLookup, final ObjectMapper objectMapper) {
         super(playerLookup);
         this.deathsApi = deathsApi;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -38,7 +43,7 @@ public class DeathsCommand extends PlayerLookupCommand {
         return resolveData(event, this::resolveDeaths);
     }
 
-    private Mono<Message> resolveDeaths(final ChatInputInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
+    private Mono<Message> resolveDeaths(final DeferrableInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
         DeathsResponse deathsResponse = null;
         try {
             deathsResponse = deathsApi.deaths(identity.uuid(), null, startDate, endDate, 25, page);
@@ -78,6 +83,12 @@ public class DeathsCommand extends PlayerLookupCommand {
                             .addField("Page", ""+page, true)
                             .addField("Page Count", ""+deathsResponse.getPageCount(), true)
                             .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
-                            .build());
+                            .build())
+            .withComponents(getButtonRow(objectMapper, getName(), deathsResponse.getPageCount(), page, identity, startDate, endDate));
+    }
+
+    @Override
+    public Mono<Message> handleButton(final ButtonInteractionEvent event) {
+        return paginatedPlayerLookupButtonHandler(event, objectMapper, getName(), playerLookup, this::resolveDeaths, this::error);
     }
 }

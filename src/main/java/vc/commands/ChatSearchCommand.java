@@ -1,6 +1,9 @@
 package vc.commands;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
@@ -9,6 +12,7 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.api.model.ProfileDataImpl;
 import vc.openapi.handler.ChatsApi;
 import vc.openapi.model.ChatSearchResponse;
 
@@ -19,12 +23,14 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class ChatSearchCommand implements SlashCommand {
+public class ChatSearchCommand implements SlashCommand, PaginatedButtonListener {
     private static final Logger LOGGER = getLogger(ChatSearchCommand.class);
     private final ChatsApi chatsApi;
+    private final ObjectMapper objectMapper;
 
-    public ChatSearchCommand(final ChatsApi chatsApi) {
+    public ChatSearchCommand(final ChatsApi chatsApi, final ObjectMapper objectMapper) {
         this.chatsApi = chatsApi;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -62,6 +68,10 @@ public class ChatSearchCommand implements SlashCommand {
             .orElse(1);
         if (page <= 0)
             return error(event, "Page must be greater than 0");
+        return resolve(event, word, page, startDate, endDate);
+    }
+
+    public Mono<Message> resolve(DeferrableInteractionEvent event, String word, int page, LocalDate startDate, LocalDate endDate) {
         return Mono.defer(() -> {
             ChatSearchResponse response;
             try {
@@ -100,7 +110,16 @@ public class ChatSearchCommand implements SlashCommand {
                                 .addField("Total", ""+response.getTotal(), true)
                                 .addField("Current Page", ""+page, true)
                                 .addField("Total Pages", ""+response.getPageCount(), true)
-                                .build());
+                                .build())
+                .withComponents(getButtonRow(objectMapper, getName(), response.getPageCount(), page,
+                                             // stuff the word into the profile data's player name field bc im lazy xdd
+                                             new ProfileDataImpl(word, null), startDate, endDate));
         });
+    }
+
+    @Override
+    public Mono<Message> handleButton(final ButtonInteractionEvent event) {
+        var args = decodeButtonId(objectMapper, getName(), event.getCustomId());
+        return resolve(event, args.playerName(), args.page(), args.startDate(), args.endDate());
     }
 }
