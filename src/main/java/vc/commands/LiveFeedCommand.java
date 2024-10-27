@@ -13,8 +13,6 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import vc.live.LiveFeed;
 
-import java.util.Optional;
-
 public abstract class LiveFeedCommand implements SlashCommand {
     private final Logger LOGGER = LoggerFactory.getLogger(getClass().getSimpleName());
     private final LiveFeed liveFeed;
@@ -29,31 +27,34 @@ public abstract class LiveFeedCommand implements SlashCommand {
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         if (event.getInteraction().getGuildId().isEmpty()) return error(event, "This command can only be used inside a discord server");
         if (!validateUserPermissions(event)) return error(event, "You must have permission: " + Permission.MANAGE_MESSAGES + " to use this command");
-        Optional<Boolean> enabledBoolean = event.getOption("enabled")
-            .flatMap(ApplicationCommandInteractionOption::getValue)
-            .map(ApplicationCommandInteractionOptionValue::asBoolean);
-        Optional<Mono<Channel>> channelArg = event.getOption("channel")
-            .flatMap(ApplicationCommandInteractionOption::getValue)
-            .map(ApplicationCommandInteractionOptionValue::asChannel);
-        if (enabledBoolean.isEmpty() && channelArg.isEmpty()) return error(event, "At least 1 argument is required");
+        var enableOption = event.getOption("enable");
+        var isEnableSubCommand = enableOption.isPresent();
+        var isDisableSubCommand = event.getOption("disable").isPresent();
+        if (isEnableSubCommand && isDisableSubCommand) return error(event, "Cannot enable and disable at the same time");
+        if (!isEnableSubCommand && !isDisableSubCommand) return error(event, "Must specify either enable or disable");
         var guildId = event.getInteraction().getGuildId().get().asString();
-        if (enabledBoolean.orElse(true) && channelArg.isEmpty()) return error(event, "Channel is required when enabling " + feedName());
-        if (enabledBoolean.orElse(true)) {
-            try {
-                final Channel channel = channelArg.get().block();
-                if (!testPermissions(guildId, channel)) {
-                    return error(event, "Bot must have permissions to send messages in: " + channel.getMention());
-                }
-                liveFeed.enableFeed(guildId, channel.getId().asString());
-                return event.createFollowup()
-                    .withEmbeds(EmbedCreateSpec.builder()
-                                    .title(feedName() + " Enabled")
-                                    .color(Color.CYAN)
-                                    .addField("Channel", channel.getMention(), true)
-                                    .build());
-            } catch (final Throwable e) {
-                return error(event, "Unable to enable " + feedName() + ": " + e.getMessage());
-            }
+        if (isEnableSubCommand) {
+            return enableOption
+                .flatMap(sub -> sub.getOption("channel"))
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asChannel)
+                .map(channelMono -> channelMono.flatMap(channel -> {
+                    if (channel == null) return error(event, "Channel is required when enabling " + feedName());
+                    try {
+                        if (!testPermissions(guildId, channel)) {
+                            return error(event, "Bot must have permissions to send messages in: " + channel.getMention());
+                        }
+                        liveFeed.enableFeed(guildId, channel.getId().asString());
+                        return event.createFollowup()
+                            .withEmbeds(EmbedCreateSpec.builder()
+                                            .title(feedName() + " Enabled")
+                                            .color(Color.CYAN)
+                                            .addField("Channel", channel.getMention(), true)
+                                            .build());
+                    } catch (final Throwable e) {
+                        return error(event, "Unable to enable " + feedName() + ": " + e.getMessage());
+                    }}))
+                .orElseGet(() -> error(event, "Channel is required when enabling " + feedName()));
         } else {
             try {
                 liveFeed.disableFeed(guildId);

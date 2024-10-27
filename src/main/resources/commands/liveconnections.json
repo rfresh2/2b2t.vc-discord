@@ -3,16 +3,22 @@
   "description": "Configures the live connections feature",
   "options": [
     {
-      "name": "enabled",
-      "description": "Enable/disable live connections",
-      "type": 5,
-      "required": false
+      "name": "enable",
+      "description": "Enable LiveConnections",
+      "type": 1,
+      "options": [
+        {
+          "name": "channel",
+          "description": "Channel",
+          "type": 7,
+          "required": true
+        }
+      ]
     },
     {
-      "name": "channel",
-      "description": "Live connections channel",
-      "type": 7,
-      "required": false
+      "name": "disable",
+      "description": "Disable LiveConnections",
+      "type": 1
     }
   ]
 }
