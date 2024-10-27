@@ -45,7 +45,8 @@ public class SlashCommandListener {
         }
         return event.deferReply()
             .doOnSuccess(msg -> logMessage(command, event))
-            .then(Mono.defer(() -> command.handle(event)));
+            .then(Mono.defer(() -> command.handle(event)))
+            .doOnError(e -> LOGGER.error("Error handling command", e));
     }
 
     public Mono<Message> handleButtonInteraction(ButtonInteractionEvent event) {
@@ -55,11 +56,12 @@ public class SlashCommandListener {
             return event.reply("Button handler not found for id: " + event.getCustomId()).dematerialize();
         }
         return event.deferReply()
-            .doOnSuccess(v -> logButton(listener, event))
-            .then(Mono.defer(() -> listener.handleButton(event)));
+            .doOnSuccess(v -> logButton(event))
+            .then(Mono.defer(() -> listener.handleButton(event)))
+            .doOnError(e -> LOGGER.error("Error handling button", e));
     }
 
-    private void logButton(final PaginatedButtonListener listener, final ButtonInteractionEvent event) {
+    private void logButton(final ButtonInteractionEvent event) {
         try {
             String username = event.getInteraction().getUser().getTag();
             String guild = event.getInteraction().getGuildId()
