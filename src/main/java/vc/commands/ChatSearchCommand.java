@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
-import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
@@ -13,6 +11,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileDataImpl;
+import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ChatsApi;
 import vc.openapi.model.ChatSearchResponse;
 
@@ -40,9 +39,7 @@ public class ChatSearchCommand implements SlashCommand, PaginatedButtonListener 
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Optional<String> wordOptional = event.getOption("word")
-            .flatMap(ApplicationCommandInteractionOption::getValue)
-            .map(ApplicationCommandInteractionOptionValue::asString);
+        Optional<String> wordOptional = event.getOptionAsString("word");
         if (wordOptional.isEmpty()) {
             return error(event, "No word supplied");
         }
@@ -61,9 +58,7 @@ public class ChatSearchCommand implements SlashCommand, PaginatedButtonListener 
         } catch (Exception e) {
             return error(event, "Invalid date. Required format: YYYY-MM-DD");
         }
-        int page = event.getOption("page")
-            .flatMap(ApplicationCommandInteractionOption::getValue)
-            .map(ApplicationCommandInteractionOptionValue::asLong)
+        int page = event.getOptionAsLong("page")
             .map(Long::intValue)
             .orElse(1);
         if (page <= 0)
@@ -73,13 +68,16 @@ public class ChatSearchCommand implements SlashCommand, PaginatedButtonListener 
 
     public Mono<Message> resolve(DeferrableInteractionEvent event, String word, int page, LocalDate startDate, LocalDate endDate) {
         return Mono.defer(() -> {
-            ChatSearchResponse response;
+            ChatSearchResponse response = null;
             try {
                 response = chatsApi.chatSearch(word, startDate, endDate, 25, page);
             } catch (final Exception e) {
-                LOGGER.error("Error searching chats for word: {}", word, e);
-                return error(event, "Error during search");
+                if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+                    LOGGER.error("Error searching for word: {}", word, e);
+                }
             }
+            if (response == null || response.getChats() == null || response.getChats().isEmpty())
+                return error(event, "No chats found");
             var chatStrings = response.getChats().stream()
                 .map(c -> SHORT_DATE_TIME.format(c.getTime().toInstant()) + " **" + escape(c.getPlayerName()) + ":** " + escape(c.getChat()))
                 .toList();

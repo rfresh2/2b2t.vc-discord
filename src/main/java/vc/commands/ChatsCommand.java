@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ChatsApi;
 import vc.openapi.model.ChatsResponse;
 import vc.util.PlayerLookup;
@@ -48,7 +49,9 @@ public class ChatsCommand extends PlayerLookupCommand implements PaginatedButton
         try {
             chatsResponse = chatsApi.chats(identity.uuid(), null, startDate, endDate, 25, page);
         } catch (final Exception e) {
-            LOGGER.error("Error processing chats response", e);
+            if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+                LOGGER.error("Error processing chats response", e);
+            }
         }
         if (chatsResponse == null || chatsResponse.getChats() == null || chatsResponse.getChats().isEmpty())
             return error(event, "No chats found");

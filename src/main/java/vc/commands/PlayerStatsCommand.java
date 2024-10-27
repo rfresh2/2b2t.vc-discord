@@ -1,14 +1,13 @@
 package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
-import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.openapi.handler.ApiException;
 import vc.openapi.handler.StatsApi;
 import vc.openapi.model.PlayerStats;
 import vc.util.PlayerLookup;
@@ -36,9 +35,7 @@ public class PlayerStatsCommand extends PlayerLookupCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Optional<String> playerNameOptional = event.getOption("player")
-            .flatMap(ApplicationCommandInteractionOption::getValue)
-            .map(ApplicationCommandInteractionOptionValue::asString);
+        Optional<String> playerNameOptional = event.getOptionAsString("player");
         if (playerNameOptional.isEmpty())
             return error(event, "No player name provided");
         if (!Validator.isValidPlayerName(playerNameOptional.get()))
@@ -50,10 +47,12 @@ public class PlayerStatsCommand extends PlayerLookupCommand {
         try {
             playerStats = statsApi.playerStats(playerIdentityOptional.get().uuid(), null);
         } catch (final Exception e) {
-            LOGGER.error("Failed to get stats for player: {}", playerIdentityOptional.get().uuid(), e);
+            if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+                LOGGER.error("Failed to get stats for player: {}", playerIdentityOptional.get().uuid(), e);
+            }
         }
         if (playerStats == null)
-            return error(event, "Unable to find player");
+            return error(event, "No data found");
         return event.createFollowup()
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), playerIdentityOptional.get())
                             .title("Player Stats")

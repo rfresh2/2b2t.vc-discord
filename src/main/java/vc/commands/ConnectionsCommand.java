@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ConnectionsApi;
 import vc.openapi.model.ConnectionsResponse;
 import vc.util.PlayerLookup;
@@ -47,8 +48,10 @@ public class ConnectionsCommand extends PlayerLookupCommand implements Paginated
         ConnectionsResponse connectionsResponse = null;
         try {
             connectionsResponse = connectionsApi.connections(identity.uuid(), null, startDate, endDate, 25, page);
-        } catch (final Exception e){
-            LOGGER.error("Error processing connections response", e);
+        } catch (final Exception e) {
+            if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+                LOGGER.error("Error processing connections response", e);
+            }
         }
         if (connectionsResponse == null || connectionsResponse.getConnections() == null || connectionsResponse.getConnections().isEmpty())
             return error(event, "No connections found for player");

@@ -1,17 +1,14 @@
 package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
-import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ChatsApi;
-
-import java.util.Optional;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -31,9 +28,7 @@ public class WordCountCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Optional<String> wordOptional = event.getOption("word")
-            .flatMap(ApplicationCommandInteractionOption::getValue)
-            .map(ApplicationCommandInteractionOptionValue::asString);
+        var wordOptional = event.getOptionAsString("word");
         if (wordOptional.isEmpty()) {
             return error(event, "No word supplied");
         }
@@ -42,12 +37,16 @@ public class WordCountCommand implements SlashCommand {
             return error(event, "Word must be between 4 and 50 characters");
         }
         return Mono.defer(() -> {
-            int count;
+            Integer count = null;
             try {
                 count = chatsApi.wordCount(word).getCount();
             } catch (final Exception e) {
-                LOGGER.error("Error getting word count: {}", word, e);
-                return error(event, "Error getting word count");
+                if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+                    LOGGER.error("Error getting word count: {}", word, e);
+                }
+            }
+            if (count == null) {
+                return error(event, "No word occurrences found");
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()

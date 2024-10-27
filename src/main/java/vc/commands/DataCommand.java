@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.VcDataDumpApi;
 import vc.api.model.ProfileData;
+import vc.openapi.handler.ApiException;
 import vc.util.PlayerLookup;
 
 import java.io.ByteArrayInputStream;
@@ -41,10 +42,12 @@ public class DataCommand extends PlayerLookupCommand {
         try {
             playerDataDump = vcDataDumpApi.getPlayerDataDump(playerIdentity.uuid(), null);
         } catch (final Exception e){
-            LOGGER.error("Failed to get player data dump", e);
+            if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+                LOGGER.error("Failed to get player data dump", e);
+            }
         }
         if (playerDataDump == null)
-            return error(event, "Unable to find player");
+            return error(event, "No data found");
         return event.createFollowup()
             .withFiles(MessageCreateFields.File.of(playerIdentity.name() + ".csv", new ByteArrayInputStream(playerDataDump.getBytes())))
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), playerIdentity)

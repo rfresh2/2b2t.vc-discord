@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.openapi.handler.ApiException;
 import vc.openapi.handler.PlaytimeApi;
 import vc.openapi.model.PlaytimeResponse;
 import vc.util.PlayerLookup;
@@ -43,7 +44,9 @@ public class PlaytimeCommand extends PlayerLookupCommand {
         try {
             playtime = playtimeApi.playtime(profileUUID, null);
         } catch (final Exception e) {
-            LOGGER.error("Failed to get playtime for player: {}", profileUUID, e);
+            if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+                LOGGER.error("Failed to get playtime for player: {}", profileUUID, e);
+            }
         }
         if (isNull(playtime)) return error(event, "No playtime found");
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();

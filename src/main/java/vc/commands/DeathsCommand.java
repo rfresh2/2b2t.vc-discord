@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.openapi.handler.ApiException;
 import vc.openapi.handler.DeathsApi;
 import vc.openapi.model.DeathsResponse;
 import vc.util.PlayerLookup;
@@ -48,7 +49,9 @@ public class DeathsCommand extends PlayerLookupCommand implements PaginatedButto
         try {
             deathsResponse = deathsApi.deaths(identity.uuid(), null, startDate, endDate, 25, page);
         } catch (final Exception e) {
-            LOGGER.error("Failed to get deaths", e);
+            if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+                LOGGER.error("Failed to get deaths", e);
+            }
         }
         if (deathsResponse == null || deathsResponse.getDeaths() == null || deathsResponse.getDeaths().isEmpty())
             return error(event, "No deaths found for player");

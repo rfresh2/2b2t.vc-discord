@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.openapi.handler.ApiException;
 import vc.openapi.handler.SeenApi;
 import vc.openapi.model.SeenResponse;
 import vc.util.PlayerLookup;
@@ -46,7 +47,9 @@ public class SeenCommand extends PlayerLookupCommand {
         try {
             seenResponse = seenApi.seen(uuid, null);
         } catch (final Exception e) {
-            LOGGER.error("Failed to get seen for player: " + uuid, e);
+            if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+                LOGGER.error("Failed to get seen for player: {}", uuid, e);
+            }
         }
         if (isNull(seenResponse)) return error(event, "Player has not been seen");
         return event.createFollowup()

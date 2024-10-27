@@ -1,8 +1,6 @@
 package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
-import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import reactor.core.publisher.Mono;
@@ -33,9 +31,7 @@ public abstract class PlayerLookupCommand implements SlashCommand {
     }
 
     Mono<Message> resolveData(ChatInputInteractionEvent event, SimpleResolveFunction resolveFunction) {
-        Optional<String> playerNameOptional = event.getOption("player")
-            .flatMap(ApplicationCommandInteractionOption::getValue)
-            .map(ApplicationCommandInteractionOptionValue::asString);
+        Optional<String> playerNameOptional = event.getOptionAsString("player");
         if (playerNameOptional.isEmpty()) {
             return error(event, "No player name");
         }
@@ -59,9 +55,7 @@ public abstract class PlayerLookupCommand implements SlashCommand {
     }
 
     Mono<Message> resolveData(ChatInputInteractionEvent event, PaginatedResolveFunction resolveFunction) {
-        Optional<String> playerNameOptional = event.getOption("player")
-            .flatMap(ApplicationCommandInteractionOption::getValue)
-            .map(ApplicationCommandInteractionOptionValue::asString);
+        var playerNameOptional = event.getOptionAsString("player");
         if (playerNameOptional.isEmpty()) {
             return error(event, "No player name");
         }
@@ -80,9 +74,7 @@ public abstract class PlayerLookupCommand implements SlashCommand {
         } catch (Exception e) {
             return error(event, "Invalid date. Required format: YYYY-MM-DD");
         }
-        int page = event.getOption("page")
-            .flatMap(ApplicationCommandInteractionOption::getValue)
-            .map(ApplicationCommandInteractionOptionValue::asLong)
+        int page = event.getOptionAsLong("page")
             .map(Long::intValue)
             .orElse(1);
         if (page <= 0)

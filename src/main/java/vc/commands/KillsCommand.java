@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.openapi.handler.ApiException;
 import vc.openapi.handler.DeathsApi;
 import vc.openapi.model.KillsResponse;
 import vc.util.PlayerLookup;
@@ -48,7 +49,9 @@ public class KillsCommand extends PlayerLookupCommand implements PaginatedButton
         try {
             killsResponse = deathsApi.kills(identity.uuid(), null, startDate, endDate, 25, page);
         } catch (final Exception e) {
-            LOGGER.error("Error resolving kills", e);
+            if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+                LOGGER.error("Error resolving kills", e);
+            }
         }
         if (killsResponse == null || killsResponse.getKills() == null || killsResponse.getKills().isEmpty())
             return error(event, "No kills found for player");
