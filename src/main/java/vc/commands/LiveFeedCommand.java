@@ -6,6 +6,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.Color;
 import discord4j.rest.util.Permission;
 import org.slf4j.Logger;
@@ -78,12 +79,20 @@ public abstract class LiveFeedCommand implements SlashCommand {
 
     private boolean testPermissions(final String guildId, final Channel channel) {
         try {
-            channel.getRestChannel().createMessage(EmbedCreateSpec.builder()
-                                                       .description(feedName() + " message permissions test")
-                                                       .color(Color.CYAN)
-                                                       .build().asRequest())
+            var embed = EmbedCreateSpec.builder()
+                .description("✔ " + feedName() + " Permissions Test Success! ✔")
+                .color(Color.MEDIUM_SEA_GREEN)
+                .build().asRequest();
+            channel.getRestChannel().createMessage(embed)
                 .block();
             return true;
+        } catch (final ClientException clientException) {
+            if (clientException.getStatus().code() == 403) {
+                LOGGER.warn("Missing permissions for feed: {}, guild: {}, in channel: {}", feedName(), guildId, channel.getId().asString());
+                return false;
+            } else {
+                LOGGER.warn("Failed testing permissions for feed: {}, guild: {}, in channel: {} - [{}] {}", feedName(), guildId, channel.getId().asString(), clientException.getStatus().code(), clientException.getMessage());
+            }
         } catch (final Throwable e) {
             LOGGER.warn("Failed testing permissions for feed: {}, guild: {}, in channel: {}", feedName(), guildId, channel.getId().asString(), e);
         }
