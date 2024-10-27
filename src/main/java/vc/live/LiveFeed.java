@@ -159,8 +159,11 @@ public abstract class LiveFeed {
                     .block();
                 liveChannels.put(config.guildId(), channel);
             } catch (final Exception e) {
-                LOGGER.error("Error getting channel: {} for guild: {}", liveChannelId(config), config.guildId(), e);
-//                disableFeed(config.guildId());
+                LOGGER.error("Error getting channel: {} for guild: {} - {}", liveChannelId(config), config.guildId(), e.getMessage());
+                if (e instanceof ClientException clientException && clientException.getStatus().code() == 404) {
+                    LOGGER.info("Disabling {} for guild: {} due to missing channel", feedName(), config.guildId());
+                    disableFeed(config.guildId());
+                }
             }
         }
     }
