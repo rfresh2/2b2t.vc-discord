@@ -149,12 +149,20 @@ public abstract class LiveFeed {
 
     public void syncChannels() {
         liveChannels.clear();
-        guildConfigManager.getAllGuildConfigs().stream()
-            .filter(this::channelEnabledPredicate)
-            .forEach(config -> liveChannels.put(config.guildId(), discordClient
-                .getChannelById(Snowflake.of(liveChannelId(config)))
-                .map(Channel::getRestChannel)
-                .block()));
+        var allConfigs = guildConfigManager.getAllGuildConfigs();
+        for (var config : allConfigs) {
+            if (!channelEnabledPredicate(config)) continue;
+            try {
+                var channel = discordClient
+                    .getChannelById(Snowflake.of(liveChannelId(config)))
+                    .map(Channel::getRestChannel)
+                    .block();
+                liveChannels.put(config.guildId(), channel);
+            } catch (final Exception e) {
+                LOGGER.error("Error getting channel: {} for guild: {}", liveChannelId(config), config.guildId(), e);
+//                disableFeed(config.guildId());
+            }
+        }
     }
 
     public void disableFeed(final String guildId) {
