@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileDataImpl;
+import vc.commands.buttons.ButtonCommand;
+import vc.commands.buttons.PaginatedButtonHandler;
 import vc.commands.options.ChatInteractionOptionResolver;
 import vc.commands.options.PaginatedOption;
 import vc.commands.options.TimeRangeOption;
@@ -26,15 +28,17 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class ChatSearchCommand implements SlashCommand, PaginatedButtonListener {
+public class ChatSearchCommand implements SlashCommand, ButtonCommand {
     private static final Logger LOGGER = getLogger(ChatSearchCommand.class);
     private final ChatsApi chatsApi;
     private final ObjectMapper objectMapper;
     private final ChatInteractionOptionResolver resolver;
+    private final PaginatedButtonHandler buttonHandler;
 
-    public ChatSearchCommand(final ChatsApi chatsApi, final ObjectMapper objectMapper) {
+    public ChatSearchCommand(final ChatsApi chatsApi, final ObjectMapper objectMapper, final PaginatedButtonHandler buttonHandler) {
         this.chatsApi = chatsApi;
         this.objectMapper = objectMapper;
+        this.buttonHandler = buttonHandler;
         this.resolver = new ChatInteractionOptionResolver()
             .registerTrait(new PaginatedOption())
             .registerTrait(new TimeRangeOption());
@@ -106,15 +110,15 @@ public class ChatSearchCommand implements SlashCommand, PaginatedButtonListener 
                                 .addField("Current Page", ""+page, true)
                                 .addField("Total Pages", ""+response.getPageCount(), true)
                                 .build())
-                .withComponents(getButtonRow(objectMapper, getName(), response.getPageCount(), page,
-                                             // stuff the word into the profile data's player name field bc im lazy xdd
-                                             new ProfileDataImpl(word, null), startDate, endDate));
+                .withComponents(buttonHandler.getButtonRow(objectMapper, getName(), response.getPageCount(), page,
+                                                           // stuff the word into the profile data's player name field bc im lazy xdd
+                                                           new ProfileDataImpl(word, null), startDate, endDate));
         });
     }
 
     @Override
     public Mono<Message> handleButton(final ButtonInteractionEvent event) {
-        var args = decodeButtonId(objectMapper, getName(), event.getCustomId());
+        var args = buttonHandler.decodeButtonId(objectMapper, getName(), event.getCustomId());
         return resolve(event, args.playerName(), args.page(), args.startDate(), args.endDate());
     }
 }

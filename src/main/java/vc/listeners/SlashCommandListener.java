@@ -11,8 +11,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import vc.commands.PaginatedButtonListener;
 import vc.commands.SlashCommand;
+import vc.commands.buttons.ButtonCommand;
+import vc.commands.buttons.PaginatedButtonHandler;
 import vc.config.GuildConfigManager;
 
 import java.util.Collections;
@@ -24,14 +25,14 @@ import java.util.stream.Collectors;
 public class SlashCommandListener {
     private static final Logger LOGGER = LoggerFactory.getLogger("CommandListener");
     private final Map<String, SlashCommand> commandMap;
-    private final Map<String, PaginatedButtonListener> buttonListenerMap;
+    private final Map<String, ButtonCommand> buttonListenerMap;
     private final GuildConfigManager guildConfigManager;
 
     public SlashCommandListener(List<SlashCommand> slashCommands, GatewayDiscordClient client, final GuildConfigManager guildConfigManager) {
         this.commandMap = slashCommands.stream().collect(Collectors.toMap(SlashCommand::getName, c -> c));
         this.buttonListenerMap = slashCommands.stream()
-            .filter(c -> c instanceof PaginatedButtonListener)
-            .collect(Collectors.toMap(SlashCommand::getName, c -> (PaginatedButtonListener) c));
+            .filter(c -> c instanceof ButtonCommand)
+            .collect(Collectors.toMap(SlashCommand::getName, c -> (ButtonCommand) c));
         this.guildConfigManager = guildConfigManager;
         client.on(ChatInputInteractionEvent.class, this::handleChatInteraction).subscribeOn(Schedulers.boundedElastic()).subscribe();
         client.on(ButtonInteractionEvent.class, this::handleButtonInteraction).subscribeOn(Schedulers.boundedElastic()).subscribe();
@@ -50,7 +51,7 @@ public class SlashCommandListener {
     }
 
     public Mono<Message> handleButtonInteraction(ButtonInteractionEvent event) {
-        var listener = buttonListenerMap.get(event.getCustomId().split(PaginatedButtonListener.ID_PREFIX_DELIMITER)[0]);
+        var listener = buttonListenerMap.get(event.getCustomId().split(PaginatedButtonHandler.ID_PREFIX_DELIMITER)[0]);
         if (listener == null) {
             LOGGER.error("Button handler not found for id: {}", event.getCustomId());
             return event.reply("Button handler not found for id: " + event.getCustomId()).dematerialize();

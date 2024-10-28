@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.commands.buttons.ButtonCommand;
+import vc.commands.buttons.PaginatedButtonHandler;
 import vc.commands.options.ChatInteractionOptionResolver;
 import vc.commands.options.PaginatedOption;
 import vc.commands.options.PlayerLookupOption;
@@ -28,14 +30,15 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class KillsCommand implements SlashCommand, PaginatedButtonListener {
+public class KillsCommand implements SlashCommand, ButtonCommand {
     private static final Logger LOGGER = getLogger(KillsCommand.class);
     private final DeathsApi deathsApi;
     private final ObjectMapper objectMapper;
     private final ChatInteractionOptionResolver resolver;
     private final PlayerLookup playerLookup;
+    private final PaginatedButtonHandler buttonHandler;
 
-    public KillsCommand(final DeathsApi deathsApi, final PlayerLookup playerLookup, final ObjectMapper objectMapper) {
+    public KillsCommand(final DeathsApi deathsApi, final PlayerLookup playerLookup, final ObjectMapper objectMapper, final PaginatedButtonHandler buttonHandler) {
         this.deathsApi = deathsApi;
         this.playerLookup = playerLookup;
         this.objectMapper = objectMapper;
@@ -43,6 +46,7 @@ public class KillsCommand implements SlashCommand, PaginatedButtonListener {
             .registerTrait(new PaginatedOption())
             .registerTrait(new PlayerLookupOption(playerLookup))
             .registerTrait(new TimeRangeOption());
+        this.buttonHandler = buttonHandler;
     }
 
     @Override
@@ -102,11 +106,11 @@ public class KillsCommand implements SlashCommand, PaginatedButtonListener {
                             .addField("Page Count", ""+killsResponse.getPageCount(), true)
                             .thumbnail(identity.getAvatarURL())
                             .build())
-            .withComponents(getButtonRow(objectMapper, getName(), killsResponse.getPageCount(), page, identity, startDate, endDate));
+            .withComponents(buttonHandler.getButtonRow(objectMapper, getName(), killsResponse.getPageCount(), page, identity, startDate, endDate));
     }
 
     @Override
     public Mono<Message> handleButton(final ButtonInteractionEvent event) {
-        return paginatedPlayerLookupButtonHandler(event, objectMapper, getName(), playerLookup, this::resolveKills, this::error);
+        return buttonHandler.defaultButtonHandler(event, objectMapper, getName(), playerLookup, this::resolveKills, this::error);
     }
 }

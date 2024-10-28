@@ -1,4 +1,4 @@
-package vc.commands;
+package vc.commands.buttons;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
@@ -9,8 +9,11 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.discordjson.possible.Possible;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.commands.PaginatedCommandArgs;
 import vc.util.PlayerLookup;
 
 import java.time.LocalDate;
@@ -18,25 +21,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-// todo: I think we can codify this better by thinking more about the command inheritance structure
-//  e.g. PaginatedCommand as a base class with standard behavior
-//  Need to design how PlayerLookup traits are structured too as those need to also be on non-paginated commands
-public interface PaginatedButtonListener {
-    Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PaginatedButtonListener.class);
-    String ID_PREFIX_DELIMITER = ":";
+@Component
+public class PaginatedButtonHandler {
+    public static final Logger LOGGER = LoggerFactory.getLogger(PaginatedButtonHandler.class);
+    public static final String ID_PREFIX_DELIMITER = ":";
 
-    Mono<Message> handleButton(ButtonInteractionEvent event);
-
-    @FunctionalInterface
-    interface CommandResolver {
-        Mono<Message> resolve(DeferrableInteractionEvent event, ProfileData identity, int page, LocalDate startDate, LocalDate endDate);
-    }
-
-    interface ErrorResolver {
-        Mono<Message> error(DeferrableInteractionEvent event, String message);
-    }
-
-    default Mono<Message> paginatedPlayerLookupButtonHandler(ButtonInteractionEvent event, ObjectMapper objectMapper, String commandName, PlayerLookup playerLookup, CommandResolver resolver, ErrorResolver errorResolver) {
+    public Mono<Message> defaultButtonHandler(ButtonInteractionEvent event, ObjectMapper objectMapper, String commandName, PlayerLookup playerLookup, CommandResolver resolver, ErrorResolver errorResolver) {
         var args = decodeButtonId(objectMapper, commandName, event.getCustomId());
         return Mono.defer(() -> {
             Optional<ProfileData> playerIdentityOptional = playerLookup.getPlayerIdentity(args.playerName());
@@ -48,20 +38,17 @@ public interface PaginatedButtonListener {
         });
     }
 
-    default Possible<List<ActionRow>> getButtonRow(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
-        return getButtons(objectMapper, commandName, totalPageCount, page, identity, startDate, endDate)
-            .map(buttons -> List.of(ActionRow.of(buttons)));
+    @FunctionalInterface
+    public interface CommandResolver {
+        Mono<Message> resolve(DeferrableInteractionEvent event, ProfileData identity, int page, LocalDate startDate, LocalDate endDate);
     }
 
-    default void addButtonSafe(String encodedId, ReactionEmoji emoji, List<Button> out) {
-        if (encodedId.length() > 100) {
-            LOGGER.warn("Button ID too long: {}", encodedId);
-            return;
-        }
-        out.add(Button.secondary(encodedId, emoji));
+    @FunctionalInterface
+    public interface ErrorResolver {
+        Mono<Message> error(DeferrableInteractionEvent event, String message);
     }
 
-    default Possible<List<Button>> getButtons(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
+    public Possible<List<Button>> getButtons(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
         List<Button> buttons = new ArrayList<>();
         if (page > 1) {
             var firstPageArgs = new PaginatedCommandArgs(identity.name(), 1, startDate, endDate);
@@ -82,7 +69,20 @@ public interface PaginatedButtonListener {
         return buttons.isEmpty() ? Possible.absent() : Possible.of(buttons);
     }
 
-    default String encodeButtonId(ObjectMapper objectMapper, String commandName, PaginatedCommandArgs args) {
+    public Possible<List<ActionRow>> getButtonRow(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
+        return getButtons(objectMapper, commandName, totalPageCount, page, identity, startDate, endDate)
+            .map(buttons -> List.of(ActionRow.of(buttons)));
+    }
+
+    public void addButtonSafe(String encodedId, ReactionEmoji emoji, List<Button> out) {
+        if (encodedId.length() > 100) {
+            LOGGER.warn("Button ID too long: {}", encodedId);
+            return;
+        }
+        out.add(Button.secondary(encodedId, emoji));
+    }
+
+    public String encodeButtonId(ObjectMapper objectMapper, String commandName, PaginatedCommandArgs args) {
         try {
             return commandName + ID_PREFIX_DELIMITER + objectMapper.writeValueAsString(args);
         } catch (Exception e) {
@@ -90,7 +90,7 @@ public interface PaginatedButtonListener {
         }
     }
 
-    default PaginatedCommandArgs decodeButtonId(ObjectMapper objectMapper, String commandName, String id) {
+    public PaginatedCommandArgs decodeButtonId(ObjectMapper objectMapper, String commandName, String id) {
         try {
             var json = id.substring(commandName.length() + ID_PREFIX_DELIMITER.length());
             return objectMapper.readValue(json, PaginatedCommandArgs.class);

@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.commands.buttons.ButtonCommand;
+import vc.commands.buttons.PaginatedButtonHandler;
 import vc.commands.options.*;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ChatsApi;
@@ -25,14 +27,15 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class ChatsCommand implements SlashCommand, PaginatedButtonListener {
+public class ChatsCommand implements SlashCommand, ButtonCommand {
     private static final Logger LOGGER = getLogger(ChatsCommand.class);
     private final ChatsApi chatsApi;
     private final ObjectMapper objectMapper;
     private final ChatInteractionOptionResolver resolver;
     private final PlayerLookup playerLookup;
+    private final PaginatedButtonHandler buttonHandler;
 
-    public ChatsCommand(final ChatsApi chatsApi, final PlayerLookup playerLookup, final ObjectMapper objectMapper) {
+    public ChatsCommand(final ChatsApi chatsApi, final PlayerLookup playerLookup, final ObjectMapper objectMapper, final PaginatedButtonHandler buttonHandler) {
         this.chatsApi = chatsApi;
         this.objectMapper = objectMapper;
         this.playerLookup = playerLookup;
@@ -40,6 +43,7 @@ public class ChatsCommand implements SlashCommand, PaginatedButtonListener {
             .registerTrait(new PaginatedOption())
             .registerTrait(new PlayerLookupOption(playerLookup))
             .registerTrait(new TimeRangeOption());
+        this.buttonHandler = buttonHandler;
     }
 
     @Override
@@ -100,11 +104,11 @@ public class ChatsCommand implements SlashCommand, PaginatedButtonListener {
                             .addField("Total Pages", ""+chatsResponse.getPageCount(), true)
                             .thumbnail(identity.getAvatarURL())
                             .build())
-            .withComponents(getButtonRow(objectMapper, getName(), chatsResponse.getPageCount(), page, identity, startDate, endDate));
+            .withComponents(buttonHandler.getButtonRow(objectMapper, getName(), chatsResponse.getPageCount(), page, identity, startDate, endDate));
     }
 
     @Override
     public Mono<Message> handleButton(final ButtonInteractionEvent event) {
-        return paginatedPlayerLookupButtonHandler(event, objectMapper, getName(), playerLookup, this::resolveChats, this::error);
+        return buttonHandler.defaultButtonHandler(event, objectMapper, getName(), playerLookup, this::resolveChats, this::error);
     }
 }
