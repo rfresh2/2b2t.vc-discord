@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.commands.options.*;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ChatsApi;
 import vc.openapi.model.ChatsResponse;
@@ -24,15 +25,21 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class ChatsCommand extends PlayerLookupCommand implements PaginatedButtonListener {
+public class ChatsCommand implements SlashCommand, PaginatedButtonListener {
     private static final Logger LOGGER = getLogger(ChatsCommand.class);
     private final ChatsApi chatsApi;
     private final ObjectMapper objectMapper;
+    private final ChatInteractionOptionResolver resolver;
+    private final PlayerLookup playerLookup;
 
     public ChatsCommand(final ChatsApi chatsApi, final PlayerLookup playerLookup, final ObjectMapper objectMapper) {
-        super(playerLookup);
         this.chatsApi = chatsApi;
         this.objectMapper = objectMapper;
+        this.playerLookup = playerLookup;
+        this.resolver = new ChatInteractionOptionResolver()
+            .registerTrait(new PaginatedOption())
+            .registerTrait(new PlayerLookupOption(playerLookup))
+            .registerTrait(new TimeRangeOption());
     }
 
     @Override
@@ -42,7 +49,9 @@ public class ChatsCommand extends PlayerLookupCommand implements PaginatedButton
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        return resolveData(event, this::resolveChats);
+        ChatInputInteractionCommandContext ctx = resolver.execute(event);
+        if (ctx.errorSet) return error(event, ctx.errorMessage);
+        return resolveChats(event, ctx.profileData, ctx.page, ctx.startDate, ctx.endDate);
     }
 
     private Mono<Message> resolveChats(final DeferrableInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
@@ -78,7 +87,7 @@ public class ChatsCommand extends PlayerLookupCommand implements PaginatedButton
                                 .title("Chats")
                                 .color(Color.CYAN)
                                 .description("No chats found")
-                                .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                                .thumbnail(identity.getAvatarURL())
                                 .build());
         }
         return event.createFollowup()
@@ -89,7 +98,7 @@ public class ChatsCommand extends PlayerLookupCommand implements PaginatedButton
                             .addField("Total", ""+chatsResponse.getTotal(), true)
                             .addField("Current Page", ""+page, true)
                             .addField("Total Pages", ""+chatsResponse.getPageCount(), true)
-                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                            .thumbnail(identity.getAvatarURL())
                             .build())
             .withComponents(getButtonRow(objectMapper, getName(), chatsResponse.getPageCount(), page, identity, startDate, endDate));
     }

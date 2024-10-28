@@ -13,9 +13,6 @@ import vc.api.MojangRestClient;
 import vc.api.model.ProfileData;
 import vc.api.model.ProfileDataImpl;
 
-import java.io.UncheckedIOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
@@ -94,18 +91,6 @@ public class PlayerLookup {
         return Optional.empty();
     }
 
-    public URL getAvatarURL(UUID uuid) {
-        return getAvatarURL(uuid.toString().replace("-", ""));
-    }
-
-    public URL getAvatarURL(String playerName) {
-        try {
-            return new URL(String.format("https://crafthead.net/helm/%s/64", playerName));
-        } catch (MalformedURLException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
     public Optional<UUID> getOrResolveUuid(final UUID uuid, final String username) {
         if (uuid != null) return Optional.of(uuid);
         if (username == null || !Validator.isValidPlayerName(username)) return Optional.empty();
@@ -116,9 +101,5 @@ public class PlayerLookup {
         if (uuid != null) return Optional.of(new ProfileDataImpl(username, uuid));
         if (username == null || !Validator.isValidPlayerName(username)) return Optional.empty();
         return getPlayerIdentity(username.trim());
-    }
-
-    public String getNameMCLink(UUID uuid) {
-        return "https://namemc.com/profile/" + uuid.toString();
     }
 }

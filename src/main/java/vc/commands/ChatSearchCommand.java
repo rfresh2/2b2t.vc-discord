@@ -12,6 +12,9 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileDataImpl;
+import vc.commands.options.ChatInteractionOptionResolver;
+import vc.commands.options.PaginatedOption;
+import vc.commands.options.TimeRangeOption;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ChatsApi;
 import vc.openapi.model.ChatSearchResponse;
@@ -27,10 +30,14 @@ public class ChatSearchCommand implements SlashCommand, PaginatedButtonListener 
     private static final Logger LOGGER = getLogger(ChatSearchCommand.class);
     private final ChatsApi chatsApi;
     private final ObjectMapper objectMapper;
+    private final ChatInteractionOptionResolver resolver;
 
     public ChatSearchCommand(final ChatsApi chatsApi, final ObjectMapper objectMapper) {
         this.chatsApi = chatsApi;
         this.objectMapper = objectMapper;
+        this.resolver = new ChatInteractionOptionResolver()
+            .registerTrait(new PaginatedOption())
+            .registerTrait(new TimeRangeOption());
     }
 
     @Override
@@ -48,23 +55,9 @@ public class ChatSearchCommand implements SlashCommand, PaginatedButtonListener 
         if (word.length() < 4 || word.length() > 50) {
             return error(event, "Word must be between 4 and 50 characters");
         }
-        LocalDate startDate;
-        LocalDate endDate;
-        try {
-            startDate = getLocalDateIfPresent(event, "startdate");
-            endDate = getLocalDateIfPresent(event, "enddate");
-            if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-                return error(event, "Start Date must be before End Date");
-            }
-        } catch (Exception e) {
-            return error(event, "Invalid date. Required format: YYYY-MM-DD");
-        }
-        int page = event.getOptionAsLong("page")
-            .map(Long::intValue)
-            .orElse(1);
-        if (page <= 0)
-            return error(event, "Page must be greater than 0");
-        return resolve(event, word, page, startDate, endDate);
+        var ctx = resolver.execute(event);
+        if (ctx.errorSet) return error(event, ctx.errorMessage);
+        return resolve(event, word, ctx.page, ctx.startDate, ctx.endDate);
     }
 
     public Mono<Message> resolve(DeferrableInteractionEvent event, String word, int page, LocalDate startDate, LocalDate endDate) {

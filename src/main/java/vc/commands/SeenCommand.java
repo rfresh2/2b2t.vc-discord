@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.commands.options.ChatInteractionOptionResolver;
+import vc.commands.options.PlayerLookupOption;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.SeenApi;
 import vc.openapi.model.SeenResponse;
@@ -23,13 +25,15 @@ import static java.util.Objects.isNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class SeenCommand extends PlayerLookupCommand {
+public class SeenCommand implements SlashCommand {
     private static final Logger LOGGER = getLogger(SeenCommand.class);
     private final SeenApi seenApi;
+    private final ChatInteractionOptionResolver resolver;
 
     public SeenCommand(final SeenApi seenApi, final PlayerLookup playerLookup) {
-        super(playerLookup);
         this.seenApi = seenApi;
+        this.resolver = new ChatInteractionOptionResolver()
+            .registerTrait(new PlayerLookupOption(playerLookup));
     }
 
     @Override
@@ -39,7 +43,9 @@ public class SeenCommand extends PlayerLookupCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        return resolveData(event, this::resolveSeen);
+        var ctx = resolver.execute(event);
+        if (ctx.errorSet) return error(event, ctx.errorMessage);
+        return resolveSeen(event, ctx.profileData);
     }
 
     private Mono<Message> resolveSeen(final ChatInputInteractionEvent event, final ProfileData identity) {
@@ -62,7 +68,7 @@ public class SeenCommand extends PlayerLookupCommand {
                         .color(Color.CYAN)
                         .addField("First seen", getSeenString(seenResponse.getFirstSeen()), false)
                         .addField("Last seen", getSeenString(seenResponse.getLastSeen()), false)
-                        .thumbnail(playerLookup.getAvatarURL(uuid).toString())
+                        .thumbnail(identity.getAvatarURL())
                         .build());
     }
 

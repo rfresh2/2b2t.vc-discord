@@ -12,6 +12,10 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.commands.options.ChatInteractionOptionResolver;
+import vc.commands.options.PaginatedOption;
+import vc.commands.options.PlayerLookupOption;
+import vc.commands.options.TimeRangeOption;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.DeathsApi;
 import vc.openapi.model.KillsResponse;
@@ -24,15 +28,21 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class KillsCommand extends PlayerLookupCommand implements PaginatedButtonListener {
+public class KillsCommand implements SlashCommand, PaginatedButtonListener {
     private static final Logger LOGGER = getLogger(KillsCommand.class);
     private final DeathsApi deathsApi;
     private final ObjectMapper objectMapper;
+    private final ChatInteractionOptionResolver resolver;
+    private final PlayerLookup playerLookup;
 
     public KillsCommand(final DeathsApi deathsApi, final PlayerLookup playerLookup, final ObjectMapper objectMapper) {
-        super(playerLookup);
         this.deathsApi = deathsApi;
+        this.playerLookup = playerLookup;
         this.objectMapper = objectMapper;
+        this.resolver = new ChatInteractionOptionResolver()
+            .registerTrait(new PaginatedOption())
+            .registerTrait(new PlayerLookupOption(playerLookup))
+            .registerTrait(new TimeRangeOption());
     }
 
     @Override
@@ -42,7 +52,8 @@ public class KillsCommand extends PlayerLookupCommand implements PaginatedButton
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        return resolveData(event, this::resolveKills);
+        var ctx = resolver.execute(event);
+        return resolveKills(event, ctx.profileData, ctx.page, ctx.startDate, ctx.endDate);
     }
 
     private Mono<Message> resolveKills(final DeferrableInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
@@ -78,7 +89,7 @@ public class KillsCommand extends PlayerLookupCommand implements PaginatedButton
                                 .title("Kills")
                                 .color(Color.CYAN)
                                 .description("No kills found")
-                                .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                                .thumbnail(identity.getAvatarURL())
                                 .build());
         }
         return event.createFollowup()
@@ -89,7 +100,7 @@ public class KillsCommand extends PlayerLookupCommand implements PaginatedButton
                             .addField("Total", ""+killsResponse.getTotal(), true)
                             .addField("Page", ""+page, true)
                             .addField("Page Count", ""+killsResponse.getPageCount(), true)
-                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                            .thumbnail(identity.getAvatarURL())
                             .build())
             .withComponents(getButtonRow(objectMapper, getName(), killsResponse.getPageCount(), page, identity, startDate, endDate));
     }

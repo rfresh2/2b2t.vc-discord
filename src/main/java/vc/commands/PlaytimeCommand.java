@@ -9,24 +9,26 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.commands.options.ChatInteractionOptionResolver;
+import vc.commands.options.PlayerLookupOption;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.PlaytimeApi;
 import vc.openapi.model.PlaytimeResponse;
 import vc.util.PlayerLookup;
 
-import java.util.UUID;
-
 import static java.util.Objects.isNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class PlaytimeCommand extends PlayerLookupCommand {
+public class PlaytimeCommand implements SlashCommand {
     private static final Logger LOGGER = getLogger(PlaytimeCommand.class);
     private final PlaytimeApi playtimeApi;
+    private final ChatInteractionOptionResolver resolver;
 
     public PlaytimeCommand(final PlaytimeApi playtimeApi, final PlayerLookup playerLookup) {
-        super(playerLookup);
         this.playtimeApi = playtimeApi;
+        this.resolver = new ChatInteractionOptionResolver()
+            .registerTrait(new PlayerLookupOption(playerLookup));
     }
 
     @Override
@@ -36,20 +38,21 @@ public class PlaytimeCommand extends PlayerLookupCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        return resolveData(event, this::resolvePlaytime);
+        var ctx = resolver.execute(event);
+        if (ctx.errorSet) return error(event, ctx.errorMessage);
+        return resolvePlaytime(event, ctx.profileData);
     }
 
     private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final ProfileData identity) {
-        UUID profileUUID = identity.uuid();
         PlaytimeResponse playtime = null;
         try {
-            playtime = playtimeApi.playtime(profileUUID, null);
+            playtime = playtimeApi.playtime(identity.uuid(), null);
         } catch (final Exception e) {
             if (e instanceof ApiException apiException
                 && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
                 // fall through
             } else {
-                LOGGER.error("Failed to get playtime for player: {}", profileUUID, e);
+                LOGGER.error("Failed to get playtime for player: {}", identity.uuid(), e);
             }
         }
         if (isNull(playtime)) return error(event, "No playtime found");
@@ -60,7 +63,7 @@ public class PlaytimeCommand extends PlayerLookupCommand {
                         .title("Playtime")
                         .color(Color.CYAN)
                         .description(durationStr)
-                        .thumbnail(playerLookup.getAvatarURL(profileUUID).toString())
+                        .thumbnail(identity.getAvatarURL())
                         .build());
     }
 

@@ -5,10 +5,8 @@ import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
-import org.springframework.lang.Nullable;
 import reactor.core.publisher.Mono;
-
-import java.time.LocalDate;
+import vc.api.model.ProfileData;
 
 /**
  * A simple interface defining our slash command class contract.
@@ -34,14 +32,10 @@ public interface SlashCommand {
         return message.replaceAll("_", "\\\\_");
     }
 
-    // throws runtime exception if date is present but format is invalid
-    default @Nullable LocalDate getLocalDateIfPresent(ChatInputInteractionEvent event, String argName) {
-        var inputOptional = event.getOptionAsString(argName);
-        if (inputOptional.isEmpty()) return null;
-        try {
-            return LocalDate.parse(inputOptional.get());
-        } catch (Exception e) {
-            throw new RuntimeException("Failed parsing date: " + inputOptional.get());
-        }
+    default EmbedCreateSpec.Builder populateIdentity(final EmbedCreateSpec.Builder builder, ProfileData identity) {
+        return builder
+            .addField("Player", "[" + identity.name() + "](" + identity.getNameMCLink(identity.uuid()) + ")", true)
+            .addField("\u200B", "\u200B", true)
+            .addField("\u200B", "\u200B", true);
     }
 }

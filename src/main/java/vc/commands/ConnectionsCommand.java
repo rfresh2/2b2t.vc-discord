@@ -12,6 +12,10 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
+import vc.commands.options.ChatInteractionOptionResolver;
+import vc.commands.options.PaginatedOption;
+import vc.commands.options.PlayerLookupOption;
+import vc.commands.options.TimeRangeOption;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ConnectionsApi;
 import vc.openapi.model.ConnectionsResponse;
@@ -24,15 +28,21 @@ import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class ConnectionsCommand extends PlayerLookupCommand implements PaginatedButtonListener {
+public class ConnectionsCommand implements SlashCommand, PaginatedButtonListener {
     private static final Logger LOGGER = getLogger(ConnectionsCommand.class);
     private final ConnectionsApi connectionsApi;
     private final ObjectMapper objectMapper;
+    private final ChatInteractionOptionResolver resolver;
+    private final PlayerLookup playerLookup;
 
     public ConnectionsCommand(final ConnectionsApi connectionsApi, final PlayerLookup playerLookup, final ObjectMapper objectMapper) {
-        super(playerLookup);
         this.connectionsApi = connectionsApi;
         this.objectMapper = objectMapper;
+        this.playerLookup = playerLookup;
+        this.resolver = new ChatInteractionOptionResolver()
+            .registerTrait(new PaginatedOption())
+            .registerTrait(new PlayerLookupOption(playerLookup))
+            .registerTrait(new TimeRangeOption());
     }
 
     @Override
@@ -42,7 +52,9 @@ public class ConnectionsCommand extends PlayerLookupCommand implements Paginated
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        return resolveData(event, this::resolveConnections);
+        var ctx = this.resolver.execute(event);
+        if (ctx.errorSet) return error(event, ctx.errorMessage);
+        return resolveConnections(event, ctx.profileData, ctx.page, ctx.startDate, ctx.endDate);
     }
 
     private Mono<Message> resolveConnections(final DeferrableInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
@@ -78,7 +90,7 @@ public class ConnectionsCommand extends PlayerLookupCommand implements Paginated
                                 .title("Connections")
                                 .color(Color.CYAN)
                                 .description("No connections found")
-                                .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                                .thumbnail(identity.getAvatarURL())
                                 .build());
         }
         return event.createFollowup()
@@ -89,7 +101,7 @@ public class ConnectionsCommand extends PlayerLookupCommand implements Paginated
                             .addField("Total", ""+connectionsResponse.getTotal(), true)
                             .addField("Current Page", ""+page, true)
                             .addField("Page Count", ""+connectionsResponse.getPageCount(), true)
-                            .thumbnail(playerLookup.getAvatarURL(identity.uuid()).toString())
+                            .thumbnail(identity.getAvatarURL())
                             .build())
             .withComponents(getButtonRow(objectMapper, getName(), connectionsResponse.getPageCount(), page, identity, startDate, endDate));
     }

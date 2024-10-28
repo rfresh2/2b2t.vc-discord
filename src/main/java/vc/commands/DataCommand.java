@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.VcDataDumpApi;
 import vc.api.model.ProfileData;
+import vc.commands.options.ChatInteractionOptionResolver;
+import vc.commands.options.PlayerLookupOption;
 import vc.openapi.handler.ApiException;
 import vc.util.PlayerLookup;
 
@@ -19,13 +21,15 @@ import java.io.ByteArrayInputStream;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class DataCommand extends PlayerLookupCommand {
+public class DataCommand implements SlashCommand {
     private static final Logger LOGGER = getLogger(DataCommand.class);
     private final VcDataDumpApi vcDataDumpApi;
+    private final ChatInteractionOptionResolver resolver;
 
     public DataCommand(final PlayerLookup playerLookup, final VcDataDumpApi vcDataDumpApi) {
-        super(playerLookup);
         this.vcDataDumpApi = vcDataDumpApi;
+        this.resolver = new ChatInteractionOptionResolver()
+            .registerTrait(new PlayerLookupOption(playerLookup));
     }
 
     @Override
@@ -35,7 +39,8 @@ public class DataCommand extends PlayerLookupCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        return resolveData(event, this::resolvePlayerDataDump);
+        var ctx = this.resolver.execute(event);
+        return resolvePlayerDataDump(event, ctx.profileData);
     }
 
     public Mono<Message> resolvePlayerDataDump(ChatInputInteractionEvent event, ProfileData playerIdentity) {
@@ -59,7 +64,7 @@ public class DataCommand extends PlayerLookupCommand {
                             .addField("Data Count", ""+playerDataDump.lines().count(), true)
                             .description("CSV Generated!")
                             .color(Color.CYAN)
-                            .thumbnail(playerLookup.getAvatarURL(playerIdentity.uuid()).toString())
+                            .thumbnail(playerIdentity.getAvatarURL())
                             .build());
     }
 }

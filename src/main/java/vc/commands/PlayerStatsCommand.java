@@ -8,25 +8,26 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import vc.commands.options.ChatInteractionOptionResolver;
+import vc.commands.options.PlayerLookupOption;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.StatsApi;
 import vc.openapi.model.PlayerStats;
 import vc.util.PlayerLookup;
-import vc.util.Validator;
-
-import java.util.Optional;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
-public class PlayerStatsCommand extends PlayerLookupCommand {
+public class PlayerStatsCommand implements SlashCommand {
     private static final Logger LOGGER = getLogger(PlayerStatsCommand.class);
     private final StatsApi statsApi;
+    private final ChatInteractionOptionResolver resolver;
 
     public PlayerStatsCommand(final PlayerLookup playerLookup, final StatsApi statsApi) {
-        super(playerLookup);
         this.statsApi = statsApi;
+        this.resolver = new ChatInteractionOptionResolver()
+            .registerTrait(new PlayerLookupOption(playerLookup));
     }
 
     @Override
@@ -36,29 +37,24 @@ public class PlayerStatsCommand extends PlayerLookupCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        Optional<String> playerNameOptional = event.getOptionAsString("player");
-        if (playerNameOptional.isEmpty())
-            return error(event, "No player name provided");
-        if (!Validator.isValidPlayerName(playerNameOptional.get()))
-            return error(event, "Invalid player name");
-        var playerIdentityOptional = playerLookup.getPlayerIdentity(playerNameOptional.get());
-        if (playerIdentityOptional.isEmpty())
-            return error(event, "Unable to find player");
+        var ctx = resolver.execute(event);
+        if (ctx.errorSet) return error(event, ctx.errorMessage);
+        var identity = ctx.profileData;
         PlayerStats playerStats = null;
         try {
-            playerStats = statsApi.playerStats(playerIdentityOptional.get().uuid(), null);
+            playerStats = statsApi.playerStats(identity.uuid(), null);
         } catch (final Exception e) {
             if (e instanceof ApiException apiException
                 && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
                 // fall through
             } else {
-                LOGGER.error("Failed to get stats for player: {}", playerIdentityOptional.get().uuid(), e);
+                LOGGER.error("Failed to get stats for player: {}", identity.uuid(), e);
             }
         }
         if (playerStats == null)
             return error(event, "No data found");
         return event.createFollowup()
-            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), playerIdentityOptional.get())
+            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
                             .title("Player Stats")
                             .color(Color.CYAN)
                             .addField("Joins", ""+playerStats.getJoinCount(), true)
@@ -82,7 +78,7 @@ public class PlayerStatsCommand extends PlayerLookupCommand {
                             .addField("Chats", ""+playerStats.getChatsCount(), true)
                             .addField("Priority Queue", Boolean.TRUE.equals(playerStats.getPrio()) ? "Yes" : "No", true)
                             .addField("\u200B", "\u200B", true)
-                            .thumbnail(playerLookup.getAvatarURL(playerIdentityOptional.get().uuid()).toString())
+                            .thumbnail(identity.getAvatarURL())
                             .build());
     }
 
