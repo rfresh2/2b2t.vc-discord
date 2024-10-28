@@ -1,6 +1,7 @@
 package vc.commands;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
@@ -49,7 +50,10 @@ public class DeathsCommand extends PlayerLookupCommand implements PaginatedButto
         try {
             deathsResponse = deathsApi.deaths(identity.uuid(), null, startDate, endDate, 25, page);
         } catch (final Exception e) {
-            if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+            if (e instanceof ApiException apiException
+                && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
+                // fall through
+            } else {
                 LOGGER.error("Failed to get deaths", e);
             }
         }

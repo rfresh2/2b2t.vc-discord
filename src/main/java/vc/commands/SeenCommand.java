@@ -1,5 +1,6 @@
 package vc.commands;
 
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
@@ -47,7 +48,10 @@ public class SeenCommand extends PlayerLookupCommand {
         try {
             seenResponse = seenApi.seen(uuid, null);
         } catch (final Exception e) {
-            if (!(e instanceof ApiException apiException) || apiException.getCode() != 204) {
+            if (e instanceof ApiException apiException
+                && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
+                // fall through
+            } else {
                 LOGGER.error("Failed to get seen for player: {}", uuid, e);
             }
         }
