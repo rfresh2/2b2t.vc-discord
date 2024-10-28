@@ -61,13 +61,18 @@ public class SeenCommand implements SlashCommand {
                 LOGGER.error("Failed to get seen for player: {}", uuid, e);
             }
         }
-        if (isNull(seenResponse)) return error(event, "Player has not been seen");
-        return event.createFollowup()
+        if (isNull(seenResponse))
+            return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                        .title("Seen")
+                                .color(Color.RUBY)
+                                .description("Never Seen")
+                                .thumbnail(identity.getAvatarURL())
+                                .build());
+        return event.createFollowup()
+                .withEmbeds(populateIdentity(EmbedCreateSpec.builder()
+                                                 .addField("First seen", getSeenString(seenResponse.getFirstSeen()), false)
+                                                 .addField("Last seen", getSeenString(seenResponse.getLastSeen()), false), identity)
                         .color(Color.CYAN)
-                        .addField("First seen", getSeenString(seenResponse.getFirstSeen()), false)
-                        .addField("Last seen", getSeenString(seenResponse.getLastSeen()), false)
                         .thumbnail(identity.getAvatarURL())
                         .build());
     }

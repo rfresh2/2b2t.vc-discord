@@ -43,10 +43,10 @@ public class DataCommand implements SlashCommand {
         return resolvePlayerDataDump(event, ctx.profileData);
     }
 
-    public Mono<Message> resolvePlayerDataDump(ChatInputInteractionEvent event, ProfileData playerIdentity) {
+    public Mono<Message> resolvePlayerDataDump(ChatInputInteractionEvent event, ProfileData identity) {
         String playerDataDump = null;
         try {
-            playerDataDump = vcDataDumpApi.getPlayerDataDump(playerIdentity.uuid(), null);
+            playerDataDump = vcDataDumpApi.getPlayerDataDump(identity.uuid(), null);
         } catch (final Exception e){
             if (e instanceof ApiException apiException
                 && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
@@ -56,15 +56,19 @@ public class DataCommand implements SlashCommand {
             }
         }
         if (playerDataDump == null)
-            return error(event, "No data found");
+            return event.createFollowup()
+                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                                .color(Color.RUBY)
+                                .description("No Data")
+                                .thumbnail(identity.getAvatarURL())
+                                .build());
         return event.createFollowup()
-            .withFiles(MessageCreateFields.File.of(playerIdentity.name() + ".csv", new ByteArrayInputStream(playerDataDump.getBytes())))
-            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), playerIdentity)
-                            .title("Data Dump")
+            .withFiles(MessageCreateFields.File.of(identity.name() + ".csv", new ByteArrayInputStream(playerDataDump.getBytes())))
+            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
                             .addField("Data Count", ""+playerDataDump.lines().count(), true)
                             .description("CSV Generated!")
                             .color(Color.CYAN)
-                            .thumbnail(playerIdentity.getAvatarURL())
+                            .thumbnail(identity.getAvatarURL())
                             .build());
     }
 }

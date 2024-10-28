@@ -52,10 +52,14 @@ public class PlayerStatsCommand implements SlashCommand {
             }
         }
         if (playerStats == null)
-            return error(event, "No data found");
+            return event.createFollowup()
+                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                                .color(Color.RUBY)
+                                .description("No Data")
+                                .thumbnail(identity.getAvatarURL())
+                                .build());
         return event.createFollowup()
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                            .title("Player Stats")
                             .color(Color.CYAN)
                             .addField("Joins", ""+playerStats.getJoinCount(), true)
                             .addField("Leaves", ""+playerStats.getLeaveCount(), true)

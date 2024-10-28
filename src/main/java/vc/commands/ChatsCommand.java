@@ -21,7 +21,7 @@ import vc.openapi.model.ChatsResponse;
 import vc.util.PlayerLookup;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -71,32 +71,27 @@ public class ChatsCommand implements SlashCommand, ButtonCommand {
             }
         }
         if (chatsResponse == null || chatsResponse.getChats() == null || chatsResponse.getChats().isEmpty())
-            return error(event, "No chats found");
-        List<String> chatStrings = chatsResponse.getChats().stream()
-                .map(c -> SHORT_DATE_TIME.format(c.getTime().toInstant()) + " " + escape(c.getChat()))
-                .toList();
-        StringBuilder result = new StringBuilder();
-        for (String s : chatStrings) {
-            if (result.length() + s.length() > 4090) {
-                LOGGER.warn("Chat message too long, truncating: {}", s);
-                break;
-            }
-            result.append(s).append("\n");
-        }
-        if (!result.isEmpty()) {
-            result = new StringBuilder(result.substring(0, result.length() - 1));
-        } else {
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                .title("Chats")
-                                .color(Color.CYAN)
+                                .color(Color.RUBY)
                                 .description("No chats found")
                                 .thumbnail(identity.getAvatarURL())
                                 .build());
-        }
+        final StringBuilder result = new StringBuilder();
+        final AtomicBoolean truncated = new AtomicBoolean(false);
+        chatsResponse.getChats().stream()
+            .map(c -> SHORT_DATE_TIME.format(c.getTime().toInstant()) + " " + escape(c.getChat()))
+            .forEachOrdered(s -> {
+                if (result.length() + s.length() + 1 > 4090) {
+                    truncated.set(true);
+                    return;
+                }
+                result.append(s).append("\n");
+            });
+        if (!result.isEmpty()) result.deleteCharAt(result.length() - 1); // cut off the last newline
+        if (truncated.get()) LOGGER.warn("Truncated chat response");
         return event.createFollowup()
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                            .title("Chats")
                             .color(Color.CYAN)
                             .description(result.toString())
                             .addField("Total", ""+chatsResponse.getTotal(), true)

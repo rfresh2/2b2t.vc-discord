@@ -24,7 +24,7 @@ import vc.openapi.model.DeathsResponse;
 import vc.util.PlayerLookup;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -74,32 +74,27 @@ public class DeathsCommand implements SlashCommand, ButtonCommand {
             }
         }
         if (deathsResponse == null || deathsResponse.getDeaths() == null || deathsResponse.getDeaths().isEmpty())
-            return error(event, "No deaths found for player");
-        List<String> deathStrings = deathsResponse.getDeaths().stream()
-                .map(k -> SHORT_DATE_TIME.format(k.getTime().toInstant()) + " " + escape(k.getDeathMessage()))
-                .toList();
-        StringBuilder result = new StringBuilder();
-        for (String s : deathStrings) {
-            if (result.length() + s.length() > 4090) {
-                LOGGER.warn("Message too long, truncating: {}", s);
-                break;
-            }
-            result.append(s).append("\n");
-        }
-        if (result.length() > 0) {
-            result = new StringBuilder(result.substring(0, result.length() - 1));
-        } else {
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                .title("Deaths")
-                                .color(Color.CYAN)
+                                .color(Color.RUBY)
                                 .description("No deaths found")
                                 .thumbnail(identity.getAvatarURL())
                                 .build());
-        }
+        final StringBuilder result = new StringBuilder();
+        final AtomicBoolean truncated = new AtomicBoolean(false);
+        deathsResponse.getDeaths().stream()
+            .map(k -> SHORT_DATE_TIME.format(k.getTime().toInstant()) + " " + escape(k.getDeathMessage()))
+            .forEachOrdered(s -> {
+                if (result.length() + s.length() + 1 > 4090) {
+                    truncated.set(true);
+                    return;
+                }
+                result.append(s).append("\n");
+            });
+        if (!result.isEmpty()) result.deleteCharAt(result.length() - 1); // cut off the last newline
+        if (truncated.get()) LOGGER.warn("Truncated deaths response");
         return event.createFollowup()
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                            .title("Deaths")
                             .color(Color.CYAN)
                             .description(result.toString())
                             .addField("Total", ""+deathsResponse.getTotal(), true)

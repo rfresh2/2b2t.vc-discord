@@ -40,7 +40,6 @@ public class QueueCommand implements SlashCommand {
             if (isNull(queuelength)) return error(event, "Unable to resolve queue length");
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                                .title("2b2t Queue")
                                 .color(Color.CYAN)
                                 .addField("Prio", queuelength.getPrio().toString(), true)
                                 .addField("Regular", queuelength.getRegular().toString(), true)

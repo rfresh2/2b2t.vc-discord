@@ -58,7 +58,6 @@ public class PriorityPlayersCommand implements SlashCommand {
             return event.createFollowup()
                 .withFiles(MessageCreateFields.File.of("priority_players.json", new ByteArrayInputStream(jsonString.getBytes())))
                 .withEmbeds(EmbedCreateSpec.builder()
-                                .title("Priority Queue Players Dump")
                                 .addField("Player Count", ""+response.getPlayers().size(), true)
                                 .description("JSON Generated!")
                                 .color(Color.CYAN)

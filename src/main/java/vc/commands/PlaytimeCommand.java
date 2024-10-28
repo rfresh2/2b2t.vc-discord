@@ -55,12 +55,17 @@ public class PlaytimeCommand implements SlashCommand {
                 LOGGER.error("Failed to get playtime for player: {}", identity.uuid(), e);
             }
         }
-        if (isNull(playtime)) return error(event, "No playtime found");
+        if (isNull(playtime))
+            return event.createFollowup()
+                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                                .color(Color.RUBY)
+                                .description("Never Played")
+                                .thumbnail(identity.getAvatarURL())
+                                .build());
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();
         String durationStr = formatDuration(playtimeSeconds);
         return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                        .title("Playtime")
                         .color(Color.CYAN)
                         .description(durationStr)
                         .thumbnail(identity.getAvatarURL())

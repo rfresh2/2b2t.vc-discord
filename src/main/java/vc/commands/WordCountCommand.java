@@ -50,7 +50,7 @@ public class WordCountCommand implements SlashCommand {
                 }
             }
             if (count == null) {
-                return error(event, "No word occurrences found");
+                return error(event, "No chats containing this word were found. That's pretty rare!");
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()

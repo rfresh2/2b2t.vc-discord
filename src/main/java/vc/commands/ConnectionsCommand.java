@@ -24,7 +24,7 @@ import vc.openapi.model.ConnectionsResponse;
 import vc.util.PlayerLookup;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -74,32 +74,28 @@ public class ConnectionsCommand implements SlashCommand, ButtonCommand {
             }
         }
         if (connectionsResponse == null || connectionsResponse.getConnections() == null || connectionsResponse.getConnections().isEmpty())
-            return error(event, "No connections found for player");
-        List<String> connectionStrings = connectionsResponse.getConnections().stream()
-                .map(c -> c.getConnection().getValue() + " " + SHORT_DATE_TIME.format(c.getTime().toInstant()))
-                .toList();
-        StringBuilder result = new StringBuilder();
-        for (String s : connectionStrings) {
-            if (result.length() + s.length() > 4090) {
-                LOGGER.warn("Message too long, truncating: {}", s);
-                break;
-            }
-            result.append(s).append("\n");
-        }
-        if (result.length() > 0) {
-            result = new StringBuilder(result.substring(0, result.length() - 1));
-        } else {
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                .title("Connections")
-                                .color(Color.CYAN)
+                                .color(Color.RUBY)
                                 .description("No connections found")
                                 .thumbnail(identity.getAvatarURL())
                                 .build());
-        }
+
+        final StringBuilder result = new StringBuilder();
+        final AtomicBoolean truncated = new AtomicBoolean(false);
+        connectionsResponse.getConnections().stream()
+            .map(c -> c.getConnection().getValue() + " " + SHORT_DATE_TIME.format(c.getTime().toInstant()))
+            .forEachOrdered(s -> {
+                if (result.length() + s.length() + 1 > 4090) {
+                    truncated.set(true);
+                    return;
+                }
+                result.append(s).append("\n");
+            });
+        if (!result.isEmpty()) result.deleteCharAt(result.length() - 1); // cut off the last newline
+        if (truncated.get()) LOGGER.warn("Truncated connections response");
         return event.createFollowup()
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                            .title("Connections")
                             .color(Color.CYAN)
                             .description(result.toString())
                             .addField("Total", ""+connectionsResponse.getTotal(), true)

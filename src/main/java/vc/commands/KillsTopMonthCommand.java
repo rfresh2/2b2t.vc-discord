@@ -10,8 +10,6 @@ import reactor.core.publisher.Mono;
 import vc.openapi.handler.DeathsApi;
 import vc.openapi.model.PlayerDeathOrKillCountResponse;
 
-import java.util.List;
-
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
@@ -39,28 +37,23 @@ public class KillsTopMonthCommand implements SlashCommand {
         if (response == null || response.getPlayers() == null || response.getPlayers().isEmpty()) {
             return error(event, "Unable to resolve kills list");
         }
-        List<String> deathList = response.getPlayers().stream()
-                .map(death -> "**" + escape(death.getPlayerName()) + "**: " + death.getCount())
-                .toList();
         StringBuilder result = new StringBuilder();
-        for (int i = 0, deathListSize = Math.min(50, deathList.size()); i < deathListSize; i++) {
-            final String s = deathList.get(i);
+        for (int i = 0, deathListSize = Math.min(50, response.getPlayers().size()); i < deathListSize; i++) {
+            var player = response.getPlayers().get(i);
+            var s = "**" + escape(player.getPlayerName()) + "**: " + player.getCount();
             if (result.length() + s.length() > 4090) {
                 break;
             }
-            result.append("*#" + (i+1) + ":* ").append(s).append("\n");
+            result.append("*#").append(i + 1).append(":* ").append(s).append("\n");
         }
-        String resultString = result.toString();
-        if (resultString.length() > 0) {
-            resultString = resultString.substring(0, resultString.length() - 1);
-        } else {
-            return error(event, "No kills data found");
+        if (!result.isEmpty()) {
+            result.deleteCharAt(result.length() - 1);
         }
         return event.createFollowup()
             .withEmbeds(EmbedCreateSpec.builder()
                             .title("Top Kills Count (30 days)")
                             .color(Color.CYAN)
-                            .description(resultString)
+                            .description(result.toString())
                             .build());
     }
 }

@@ -17,7 +17,7 @@ public class PlayerLookupOption implements ChatInteractionOption {
     public void apply(final ChatInteractionOptionContext context) {
         var playerNameOptional = context.event.getOptionAsString("player");
         if (playerNameOptional.isEmpty()) {
-            context.setError("No player name");
+            context.setError("Player name option must be set");
             return;
         }
         String playerName = playerNameOptional.get();
@@ -27,7 +27,7 @@ public class PlayerLookupOption implements ChatInteractionOption {
         }
         Optional<ProfileData> playerIdentity = playerLookup.getPlayerIdentity(playerName);
         if (playerIdentity.isEmpty()) {
-            context.setError("Player not found");
+            context.setError("No player with this name exists");
             return;
         }
         context.profileData = playerIdentity.get();

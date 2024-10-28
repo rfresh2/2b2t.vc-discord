@@ -11,7 +11,6 @@ import vc.openapi.handler.PlaytimeApi;
 import vc.openapi.model.PlaytimeMonthResponse;
 
 import java.text.DecimalFormat;
-import java.util.List;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -41,28 +40,23 @@ public class PlaytimeTopMonthCommand implements SlashCommand {
             }
             if (response == null || response.getPlayers() == null || response.getPlayers().isEmpty())
                 return error(event, "Unable to resolve playtime list");
-            List<String> ptList = response.getPlayers().stream()
-                .map(pt -> "**" + escape(pt.getPlayerName()) + "**: " + df.format(pt.getPlaytimeDays()) + "d")
-                .toList();
             StringBuilder result = new StringBuilder();
-            for (int i = 0, ptListSize = Math.min(50, ptList.size()); i < ptListSize; i++) {
-                final String s = ptList.get(i);
+            for (int i = 0, ptListSize = Math.min(50, response.getPlayers().size()); i < ptListSize; i++) {
+                var player = response.getPlayers().get(i);
+                var s = "**" + escape(player.getPlayerName()) + "**: " + df.format(player.getPlaytimeDays()) + "d";
                 if (result.length() + s.length() > 4090) {
                     break;
                 }
-                result.append("*#" + (i+1) + ":* ").append(s).append("\n");
+                result.append("*#").append(i + 1).append(":* ").append(s).append("\n");
             }
-            String resultString = result.toString();
-            if (resultString.length() > 0) {
-                resultString = resultString.substring(0, resultString.length() - 1);
-            } else {
-                return error(event, "No playtime data found");
+            if (!result.isEmpty()) {
+                result.deleteCharAt(result.length() - 1);
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
                                 .title("Top Playtime (30 days)")
                                 .color(Color.CYAN)
-                                .description(resultString)
+                                .description(result.toString())
                                 .build());
         });
     }

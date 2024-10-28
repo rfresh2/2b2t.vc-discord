@@ -1,4 +1,4 @@
-package vc.commands;
+package vc.commands.buttons;
 
 import org.springframework.lang.Nullable;
 

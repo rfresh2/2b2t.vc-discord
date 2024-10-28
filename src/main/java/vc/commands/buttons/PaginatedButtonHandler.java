@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
-import vc.commands.PaginatedCommandArgs;
 import vc.util.PlayerLookup;
 
 import java.time.LocalDate;
