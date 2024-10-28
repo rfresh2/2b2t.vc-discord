@@ -33,7 +33,7 @@ public class SeenCommand implements SlashCommand {
     public SeenCommand(final SeenApi seenApi, final PlayerLookup playerLookup) {
         this.seenApi = seenApi;
         this.resolver = new ChatInteractionOptionResolver()
-            .registerTrait(new PlayerLookupOption(playerLookup));
+            .registerOption(new PlayerLookupOption(playerLookup));
     }
 
     @Override
@@ -43,7 +43,7 @@ public class SeenCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        var ctx = resolver.execute(event);
+        var ctx = resolver.resolveOptions(event);
         if (ctx.errorSet) return error(event, ctx.errorMessage);
         return resolveSeen(event, ctx.profileData);
     }

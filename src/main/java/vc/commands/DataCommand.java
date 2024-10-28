@@ -29,7 +29,7 @@ public class DataCommand implements SlashCommand {
     public DataCommand(final PlayerLookup playerLookup, final VcDataDumpApi vcDataDumpApi) {
         this.vcDataDumpApi = vcDataDumpApi;
         this.resolver = new ChatInteractionOptionResolver()
-            .registerTrait(new PlayerLookupOption(playerLookup));
+            .registerOption(new PlayerLookupOption(playerLookup));
     }
 
     @Override
@@ -39,7 +39,7 @@ public class DataCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        var ctx = this.resolver.execute(event);
+        var ctx = this.resolver.resolveOptions(event);
         return resolvePlayerDataDump(event, ctx.profileData);
     }
 

@@ -40,8 +40,8 @@ public class ChatSearchCommand implements SlashCommand, ButtonCommand {
         this.objectMapper = objectMapper;
         this.buttonHandler = buttonHandler;
         this.resolver = new ChatInteractionOptionResolver()
-            .registerTrait(new PaginatedOption())
-            .registerTrait(new TimeRangeOption());
+            .registerOption(new PaginatedOption())
+            .registerOption(new TimeRangeOption());
     }
 
     @Override
@@ -59,7 +59,7 @@ public class ChatSearchCommand implements SlashCommand, ButtonCommand {
         if (word.length() < 4 || word.length() > 50) {
             return error(event, "Word must be between 4 and 50 characters");
         }
-        var ctx = resolver.execute(event);
+        var ctx = resolver.resolveOptions(event);
         if (ctx.errorSet) return error(event, ctx.errorMessage);
         return resolve(event, word, ctx.page, ctx.startDate, ctx.endDate);
     }

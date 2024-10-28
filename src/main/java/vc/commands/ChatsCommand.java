@@ -40,9 +40,9 @@ public class ChatsCommand implements SlashCommand, ButtonCommand {
         this.objectMapper = objectMapper;
         this.playerLookup = playerLookup;
         this.resolver = new ChatInteractionOptionResolver()
-            .registerTrait(new PaginatedOption())
-            .registerTrait(new PlayerLookupOption(playerLookup))
-            .registerTrait(new TimeRangeOption());
+            .registerOption(new PaginatedOption())
+            .registerOption(new PlayerLookupOption(playerLookup))
+            .registerOption(new TimeRangeOption());
         this.buttonHandler = buttonHandler;
     }
 
@@ -53,7 +53,7 @@ public class ChatsCommand implements SlashCommand, ButtonCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        ChatInputInteractionCommandContext ctx = resolver.execute(event);
+        ChatInputInteractionCommandContext ctx = resolver.resolveOptions(event);
         if (ctx.errorSet) return error(event, ctx.errorMessage);
         return resolveChats(event, ctx.profileData, ctx.page, ctx.startDate, ctx.endDate);
     }

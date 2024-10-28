@@ -27,7 +27,7 @@ public class PlayerStatsCommand implements SlashCommand {
     public PlayerStatsCommand(final PlayerLookup playerLookup, final StatsApi statsApi) {
         this.statsApi = statsApi;
         this.resolver = new ChatInteractionOptionResolver()
-            .registerTrait(new PlayerLookupOption(playerLookup));
+            .registerOption(new PlayerLookupOption(playerLookup));
     }
 
     @Override
@@ -37,7 +37,7 @@ public class PlayerStatsCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        var ctx = resolver.execute(event);
+        var ctx = resolver.resolveOptions(event);
         if (ctx.errorSet) return error(event, ctx.errorMessage);
         var identity = ctx.profileData;
         PlayerStats playerStats = null;

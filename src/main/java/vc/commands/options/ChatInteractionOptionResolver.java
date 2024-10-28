@@ -6,18 +6,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ChatInteractionOptionResolver {
-    private final List<ChatInteractionOptionInstance> traits = new ArrayList<>();
+    private final List<ChatInteractionOptionInstance> optionInstances = new ArrayList<>();
 
-    public ChatInteractionOptionResolver registerTrait(ChatInteractionOptionInstance trait) {
-        traits.add(trait);
+    public ChatInteractionOptionResolver registerOption(ChatInteractionOptionInstance optionInstance) {
+        optionInstances.add(optionInstance);
         return this;
     }
 
-    public ChatInputInteractionCommandContext execute(ChatInputInteractionEvent event) {
+    public ChatInputInteractionCommandContext resolveOptions(ChatInputInteractionEvent event) {
         var ctx = new ChatInputInteractionCommandContext(event);
-        for (ChatInteractionOptionInstance trait : traits) {
+        for (ChatInteractionOptionInstance optionInstance : optionInstances) {
             if (ctx.errorSet) break;
-            trait.apply(ctx);
+            optionInstance.apply(ctx);
         }
         return ctx;
     }

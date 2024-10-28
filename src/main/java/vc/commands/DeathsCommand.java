@@ -43,9 +43,9 @@ public class DeathsCommand implements SlashCommand, ButtonCommand {
         this.playerLookup = playerLookup;
         this.objectMapper = objectMapper;
         this.resolver = new ChatInteractionOptionResolver()
-            .registerTrait(new PaginatedOption())
-            .registerTrait(new PlayerLookupOption(playerLookup))
-            .registerTrait(new TimeRangeOption());
+            .registerOption(new PaginatedOption())
+            .registerOption(new PlayerLookupOption(playerLookup))
+            .registerOption(new TimeRangeOption());
         this.buttonHandler = buttonHandler;
     }
 
@@ -56,7 +56,7 @@ public class DeathsCommand implements SlashCommand, ButtonCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        var ctx = resolver.execute(event);
+        var ctx = resolver.resolveOptions(event);
         if (ctx.errorSet) return error(event, ctx.errorMessage);
         return resolveDeaths(event, ctx.profileData, ctx.page, ctx.startDate, ctx.endDate);
     }

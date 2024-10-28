@@ -28,7 +28,7 @@ public class PlaytimeCommand implements SlashCommand {
     public PlaytimeCommand(final PlaytimeApi playtimeApi, final PlayerLookup playerLookup) {
         this.playtimeApi = playtimeApi;
         this.resolver = new ChatInteractionOptionResolver()
-            .registerTrait(new PlayerLookupOption(playerLookup));
+            .registerOption(new PlayerLookupOption(playerLookup));
     }
 
     @Override
@@ -38,7 +38,7 @@ public class PlaytimeCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        var ctx = resolver.execute(event);
+        var ctx = resolver.resolveOptions(event);
         if (ctx.errorSet) return error(event, ctx.errorMessage);
         return resolvePlaytime(event, ctx.profileData);
     }
