@@ -6,27 +6,15 @@ import vc.util.Validator;
 
 import java.util.Optional;
 
-public class PlayerLookupOption implements ChatInteractionOptionInstance {
+public class PlayerLookupOption implements ChatInteractionOption {
     private final PlayerLookup playerLookup;
 
     public PlayerLookupOption(final PlayerLookup playerLookup) {
         this.playerLookup = playerLookup;
     }
 
-    /**
-     * Extract player name from interaction event
-     * perform ProfileData lookup
-     * return ProfileData
-     *
-     * decorate output embed with player profile data
-     *
-     * return error if player name is not found
-     * return error if invalid player name
-     * return error if profile data lookup fails
-     */
-
     @Override
-    public void apply(final ChatInputInteractionCommandContext context) {
+    public void apply(final ChatInteractionOptionContext context) {
         var playerNameOptional = context.event.getOptionAsString("player");
         if (playerNameOptional.isEmpty()) {
             context.setError("No player name");

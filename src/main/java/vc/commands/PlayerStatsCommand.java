@@ -38,7 +38,7 @@ public class PlayerStatsCommand implements SlashCommand {
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         var ctx = resolver.resolveOptions(event);
-        if (ctx.errorSet) return error(event, ctx.errorMessage);
+        if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
         var identity = ctx.profileData;
         PlayerStats playerStats = null;
         try {

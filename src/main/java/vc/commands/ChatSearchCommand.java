@@ -60,7 +60,7 @@ public class ChatSearchCommand implements SlashCommand, ButtonCommand {
             return error(event, "Word must be between 4 and 50 characters");
         }
         var ctx = resolver.resolveOptions(event);
-        if (ctx.errorSet) return error(event, ctx.errorMessage);
+        if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
         return resolve(event, word, ctx.page, ctx.startDate, ctx.endDate);
     }
 

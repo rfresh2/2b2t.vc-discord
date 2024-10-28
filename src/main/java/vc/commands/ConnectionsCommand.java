@@ -57,7 +57,7 @@ public class ConnectionsCommand implements SlashCommand, ButtonCommand {
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         var ctx = this.resolver.resolveOptions(event);
-        if (ctx.errorSet) return error(event, ctx.errorMessage);
+        if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
         return resolveConnections(event, ctx.profileData, ctx.page, ctx.startDate, ctx.endDate);
     }
 

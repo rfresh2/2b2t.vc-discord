@@ -5,9 +5,9 @@ import org.springframework.lang.Nullable;
 
 import java.time.LocalDate;
 
-public class TimeRangeOption implements ChatInteractionOptionInstance {
+public class TimeRangeOption implements ChatInteractionOption {
     @Override
-    public void apply(final ChatInputInteractionCommandContext context) {
+    public void apply(final ChatInteractionOptionContext context) {
         LocalDate startDate;
         LocalDate endDate;
         try {

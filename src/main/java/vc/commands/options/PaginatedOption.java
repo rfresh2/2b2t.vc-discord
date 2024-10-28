@@ -1,16 +1,8 @@
 package vc.commands.options;
 
-public class PaginatedOption implements ChatInteractionOptionInstance {
-    /**
-     * Extract page argument from ChatInputInteractionEvent
-     * return page int
-     * decorate output embed with page number
-     *
-     * Validate page > 0 and return error message if invalid
-     */
-
+public class PaginatedOption implements ChatInteractionOption {
     @Override
-    public void apply(final ChatInputInteractionCommandContext context) {
+    public void apply(final ChatInteractionOptionContext context) {
         var pageArg = context.event.getOptionAsLong("page")
             .map(Long::intValue)
             .orElse(1);

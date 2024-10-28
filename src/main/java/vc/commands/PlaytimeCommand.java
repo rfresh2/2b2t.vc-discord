@@ -39,7 +39,7 @@ public class PlaytimeCommand implements SlashCommand {
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         var ctx = resolver.resolveOptions(event);
-        if (ctx.errorSet) return error(event, ctx.errorMessage);
+        if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
         return resolvePlaytime(event, ctx.profileData);
     }
 
