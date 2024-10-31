@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 public class SlashCommandListener {
@@ -83,6 +84,7 @@ public class SlashCommandListener {
                 .map(ApplicationCommandInteraction::getOptions)
                 .orElse(Collections.emptyList())
                 .stream()
+                .flatMap(o -> Stream.concat(Stream.of(o), o.getOptions().stream()))
                 .map(s -> s.getName() + s.getValue().map(v -> ":" + v.getRaw()).orElse(""))
                 .collect(Collectors.joining(" "));
             String guild = event.getInteraction().getGuildId()

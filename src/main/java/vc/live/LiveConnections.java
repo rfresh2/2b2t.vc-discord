@@ -12,7 +12,6 @@ import vc.config.GuildConfigRecord;
 import vc.live.dto.ConnectionsRecord;
 import vc.live.dto.enums.Connectiontype;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -70,7 +69,7 @@ public class LiveConnections extends LiveFeed {
             .description("**" + escape(con.playerName()) + "** " + (isJoin ? "connected" : "disconnected"))
             .footer("\u200b", avatarUrl(con.playerUuid()).toString())
             .color(isJoin ? Color.SEA_GREEN : Color.RUBY)
-            .timestamp(Instant.ofEpochSecond(con.time().toEpochSecond()))
+            .timestamp(con.time().toInstant())
             .build()
             .asRequest();
     }

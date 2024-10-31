@@ -12,7 +12,6 @@ import vc.config.GuildConfigRecord;
 import vc.live.dto.ChatsRecord;
 import vc.live.dto.DeathsRecord;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -71,7 +70,7 @@ public class LiveChat extends LiveFeed {
             .description(escape("**" + chat.playerName() + ":** " + chat.chat()))
             .footer("\u200b", avatarUrl(chat.playerUuid()).toString())
             .color(chat.chat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.BLACK)
-            .timestamp(Instant.ofEpochSecond(chat.time().toEpochSecond()))
+            .timestamp(chat.time().toInstant())
             .build()
             .asRequest();
     }
@@ -85,7 +84,7 @@ public class LiveChat extends LiveFeed {
             .description(escape(death.deathMessage().replace(death.victimPlayerName(), "**" + death.victimPlayerName() + "**")))
             .footer("\u200b", avatarUrl(death.victimPlayerUuid()).toString())
             .color(Color.RUBY)
-            .timestamp(Instant.ofEpochSecond(death.time().toEpochSecond()))
+            .timestamp(death.time().toInstant())
             .build()
             .asRequest();
     }
