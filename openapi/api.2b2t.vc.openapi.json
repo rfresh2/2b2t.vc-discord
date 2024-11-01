@@ -227,6 +227,29 @@
         }
       }
     },
+    "/playtime/top": {
+      "get": {
+        "tags": [
+          "Playtime"
+        ],
+        "operationId": "playtimeTopAllTime",
+        "responses": {
+          "200": {
+            "description": "Top playtime all time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaytimeAllTimeResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No data"
+          }
+        }
+      }
+    },
     "/playtime/top/month": {
       "get": {
         "tags": [
@@ -245,7 +268,7 @@
             }
           },
           "204": {
-            "description": "No data for player"
+            "description": "No data"
           }
         }
       }
@@ -949,7 +972,34 @@
           }
         }
       },
-      "PlayerPlaytimeData": {
+      "PlayerPlaytimeSecondsData": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "playerName": {
+            "type": "string"
+          },
+          "playtimeSeconds": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PlaytimeAllTimeResponse": {
+        "type": "object",
+        "properties": {
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerPlaytimeSecondsData"
+            }
+          }
+        }
+      },
+      "PlayerPlaytimeDaysData": {
         "type": "object",
         "properties": {
           "uuid": {
@@ -971,7 +1021,7 @@
           "players": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PlayerPlaytimeData"
+              "$ref": "#/components/schemas/PlayerPlaytimeDaysData"
             }
           }
         }

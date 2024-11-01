@@ -16,6 +16,9 @@ import vc.openapi.handler.PlaytimeApi;
 import vc.openapi.model.PlaytimeResponse;
 import vc.util.PlayerLookup;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static java.util.Objects.isNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -83,11 +86,11 @@ public class PlaytimeCommand implements SlashCommand {
         var months = (durationInSeconds % secondsInYear) / secondsInMonth;
         var days = (durationInSeconds % secondsInMonth) / secondsInDay;
         var hours = (durationInSeconds % secondsInDay) / secondsInHour;
-        final StringBuilder sb = new StringBuilder();
-        sb.append((years > 0) ? years + " year" + (years != 1 ? "s" : "") + ", " : "");
-        sb.append((months > 0) ? months + " month" + (months != 1 ? "s" : "") + ", " : "");
-        sb.append((days > 0) ? days + " day" + (days != 1 ? "s" : "") + ", " : "");
-        sb.append(hours + " hour" + (hours != 1 ? "s" : ""));
-        return sb.toString();
+        List<String> entries = new ArrayList<>(4);
+        if (years > 0) entries.add(years + " year" + (years != 1 ? "s" : ""));
+        if (months > 0) entries.add(months + " month" + (months != 1 ? "s" : ""));
+        if (days > 0) entries.add(days + " day" + (days != 1 ? "s" : ""));
+        if (hours > 0) entries.add(hours + " hour" + (hours != 1 ? "s" : ""));
+        return String.join(", ", entries);
     }
 }
