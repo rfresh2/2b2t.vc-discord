@@ -88,7 +88,7 @@ public class ChatSearchCommand implements SlashCommand, ButtonCommand {
             final StringBuilder result = new StringBuilder();
             final AtomicBoolean truncated = new AtomicBoolean(false);
             response.getChats().stream()
-                .map(c -> SHORT_DATE_TIME.format(c.getTime().toInstant()) + " " + escape(c.getChat()))
+                .map(c -> SHORT_DATE_TIME.format(c.getTime().toInstant()) + " **" + escape(c.getPlayerName()) + "**: " + escape(c.getChat()))
                 .forEachOrdered(s -> {
                     if (result.length() + s.length() + 1 > 4090) {
                         truncated.set(true);
