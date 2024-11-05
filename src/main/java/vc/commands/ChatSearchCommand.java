@@ -21,6 +21,7 @@ import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ChatsApi;
 import vc.openapi.model.ChatSearchResponse;
 
+import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,11 +72,20 @@ public class ChatSearchCommand implements SlashCommand, ButtonCommand {
             try {
                 response = chatsApi.chatSearch(word, startDate, endDate, 25, page);
             } catch (final Exception e) {
-                if (e instanceof ApiException apiException
-                    && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
-                    // fall through
+                if (e instanceof ApiException apiException) {
+                    if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
+                        return event.createFollowup()
+                            .withEmbeds(EmbedCreateSpec.builder()
+                                            .color(Color.RUBY)
+                                            .description("No chats containing this word were found. That's pretty rare!")
+                                            .build());
+                    } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
+                        LOGGER.error("Timeout searching for word: {}", word, httpTimeoutException);
+                        return error(event, "Timeout searching for word. Try again in a minute");
+                    }
                 } else {
                     LOGGER.error("Error searching for word: {}", word, e);
+                    throw new RuntimeException(e);
                 }
             }
             if (response == null || response.getChats() == null || response.getChats().isEmpty())

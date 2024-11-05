@@ -23,6 +23,7 @@ import vc.openapi.handler.DeathsApi;
 import vc.openapi.model.DeathsResponse;
 import vc.util.PlayerLookup;
 
+import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -66,11 +67,21 @@ public class DeathsCommand implements SlashCommand, ButtonCommand {
         try {
             deathsResponse = deathsApi.deaths(identity.uuid(), null, startDate, endDate, 25, page);
         } catch (final Exception e) {
-            if (e instanceof ApiException apiException
-                && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
-                // fall through
+            if (e instanceof ApiException apiException) {
+                if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
+                    return event.createFollowup()
+                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                                        .color(Color.RUBY)
+                                        .description("No deaths found")
+                                        .thumbnail(identity.getAvatarURL())
+                                        .build());
+                } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
+                    LOGGER.error("Timeout searching for deaths: {}", identity.uuid(), httpTimeoutException);
+                    return error(event, "Timeout searching for deaths. Try again in a minute");
+                }
             } else {
                 LOGGER.error("Failed to get deaths", e);
+                throw new RuntimeException(e);
             }
         }
         if (deathsResponse == null || deathsResponse.getDeaths() == null || deathsResponse.getDeaths().isEmpty())

@@ -17,6 +17,7 @@ import vc.openapi.model.SeenResponse;
 import vc.util.PlayerLookup;
 
 import javax.annotation.Nullable;
+import java.net.http.HttpTimeoutException;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -54,11 +55,21 @@ public class SeenCommand implements SlashCommand {
         try {
             seenResponse = seenApi.seen(uuid, null);
         } catch (final Exception e) {
-            if (e instanceof ApiException apiException
-                && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
-                // fall through
+            if (e instanceof ApiException apiException) {
+                if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
+                    return event.createFollowup()
+                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                                        .color(Color.RUBY)
+                                        .description("Never Seen")
+                                        .thumbnail(identity.getAvatarURL())
+                                        .build());
+                } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
+                    LOGGER.error("Timeout getting seen for: {}", identity.uuid(), httpTimeoutException);
+                    return error(event, "Timeout getting seen data. Try again in a minute");
+                }
             } else {
                 LOGGER.error("Failed to get seen for player: {}", uuid, e);
+                throw new RuntimeException(e);
             }
         }
         if (isNull(seenResponse))
@@ -70,11 +81,11 @@ public class SeenCommand implements SlashCommand {
                                 .build());
         return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder()
-                                                 .addField("First seen", getSeenString(seenResponse.getFirstSeen()), false)
-                                                 .addField("Last seen", getSeenString(seenResponse.getLastSeen()), false), identity)
-                        .color(Color.CYAN)
-                        .thumbnail(identity.getAvatarURL())
-                        .build());
+                                 .addField("First seen", getSeenString(seenResponse.getFirstSeen()), false)
+                                 .addField("Last seen", getSeenString(seenResponse.getLastSeen()), false), identity)
+                                .color(Color.CYAN)
+                                .thumbnail(identity.getAvatarURL())
+                                .build());
     }
 
     private String getSeenString(@Nullable final OffsetDateTime seen) {

@@ -20,6 +20,7 @@ import vc.openapi.handler.ChatsApi;
 import vc.openapi.model.ChatsResponse;
 import vc.util.PlayerLookup;
 
+import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -63,11 +64,21 @@ public class ChatsCommand implements SlashCommand, ButtonCommand {
         try {
             chatsResponse = chatsApi.chats(identity.uuid(), null, startDate, endDate, 25, page);
         } catch (final Exception e) {
-            if (e instanceof ApiException apiException
-                && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
-                // fall through
+            if (e instanceof ApiException apiException) {
+                if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
+                    return event.createFollowup()
+                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                                        .color(Color.RUBY)
+                                        .description("No chats found")
+                                        .thumbnail(identity.getAvatarURL())
+                                        .build());
+                } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
+                    LOGGER.error("Timeout searching for chats: {}", identity.uuid(), httpTimeoutException);
+                    return error(event, "Timeout searching for chats. Try again in a minute");
+                }
             } else {
-                LOGGER.error("Error processing chats response", e);
+                LOGGER.error("Error searching for chats: {}", identity.uuid(), e);
+                throw new RuntimeException(e);
             }
         }
         if (chatsResponse == null || chatsResponse.getChats() == null || chatsResponse.getChats().isEmpty())

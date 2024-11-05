@@ -16,6 +16,7 @@ import vc.openapi.handler.PlaytimeApi;
 import vc.openapi.model.PlaytimeResponse;
 import vc.util.PlayerLookup;
 
+import java.net.http.HttpTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,11 +52,21 @@ public class PlaytimeCommand implements SlashCommand {
         try {
             playtime = playtimeApi.playtime(identity.uuid(), null);
         } catch (final Exception e) {
-            if (e instanceof ApiException apiException
-                && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
-                // fall through
+            if (e instanceof ApiException apiException) {
+                if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
+                    return event.createFollowup()
+                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                                        .color(Color.RUBY)
+                                        .description("Never Played")
+                                        .thumbnail(identity.getAvatarURL())
+                                        .build());
+                } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
+                    LOGGER.error("Timeout searching for playtime: {}", identity.uuid(), httpTimeoutException);
+                    return error(event, "Timeout getting playtime. Try again in a minute");
+                }
             } else {
                 LOGGER.error("Failed to get playtime for player: {}", identity.uuid(), e);
+                throw new RuntimeException(e);
             }
         }
         if (isNull(playtime))

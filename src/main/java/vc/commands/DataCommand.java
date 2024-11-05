@@ -17,6 +17,7 @@ import vc.openapi.handler.ApiException;
 import vc.util.PlayerLookup;
 
 import java.io.ByteArrayInputStream;
+import java.net.http.HttpTimeoutException;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -47,12 +48,22 @@ public class DataCommand implements SlashCommand {
         String playerDataDump = null;
         try {
             playerDataDump = vcDataDumpApi.getPlayerDataDump(identity.uuid(), null);
-        } catch (final Exception e){
-            if (e instanceof ApiException apiException
-                && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
-                // fall through
+        } catch (final Exception e) {
+            if (e instanceof ApiException apiException) {
+                if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
+                    return event.createFollowup()
+                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                                        .color(Color.RUBY)
+                                        .description("No Data")
+                                        .thumbnail(identity.getAvatarURL())
+                                        .build());
+                } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
+                    LOGGER.error("Timeout searching for data dump: {}", identity.uuid(), httpTimeoutException);
+                    return error(event, "Timeout searching for data. Try again in a minute");
+                }
             } else {
                 LOGGER.error("Failed to get player data dump", e);
+                throw new RuntimeException(e);
             }
         }
         if (playerDataDump == null)

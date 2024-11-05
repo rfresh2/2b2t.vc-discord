@@ -15,6 +15,8 @@ import vc.openapi.handler.StatsApi;
 import vc.openapi.model.PlayerStats;
 import vc.util.PlayerLookup;
 
+import java.net.http.HttpTimeoutException;
+
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -44,11 +46,21 @@ public class PlayerStatsCommand implements SlashCommand {
         try {
             playerStats = statsApi.playerStats(identity.uuid(), null);
         } catch (final Exception e) {
-            if (e instanceof ApiException apiException
-                && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
-                // fall through
+            if (e instanceof ApiException apiException) {
+                if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
+                    return event.createFollowup()
+                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                                        .color(Color.RUBY)
+                                        .description("No Data")
+                                        .thumbnail(identity.getAvatarURL())
+                                        .build());
+                } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
+                    LOGGER.error("Timeout getting stats for: {}", identity.uuid(), httpTimeoutException);
+                    return error(event, "Timeout getting stats. Try again in a minute");
+                }
             } else {
                 LOGGER.error("Failed to get stats for player: {}", identity.uuid(), e);
+                throw new RuntimeException(e);
             }
         }
         if (playerStats == null)

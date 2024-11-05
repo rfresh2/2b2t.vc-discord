@@ -11,6 +11,8 @@ import reactor.core.publisher.Mono;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ChatsApi;
 
+import java.net.http.HttpTimeoutException;
+
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component
@@ -42,11 +44,20 @@ public class WordCountCommand implements SlashCommand {
             try {
                 count = chatsApi.wordCount(word).getCount();
             } catch (final Exception e) {
-                if (e instanceof ApiException apiException
-                    && (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204)) {
-                    // fall through
+                if (e instanceof ApiException apiException) {
+                    if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
+                        return event.createFollowup()
+                            .withEmbeds(EmbedCreateSpec.builder()
+                                            .color(Color.RUBY)
+                                            .description("No chats containing this word were found. That's pretty rare!")
+                                            .build());
+                    } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
+                        LOGGER.error("Timeout searching for word: {}", word, httpTimeoutException);
+                        return error(event, "Timeout searching for word. Try again in a minute");
+                    }
                 } else {
                     LOGGER.error("Error getting word count: {}", word, e);
+                    throw new RuntimeException(e);
                 }
             }
             if (count == null) {
