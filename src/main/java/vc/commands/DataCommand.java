@@ -41,6 +41,7 @@ public class DataCommand implements SlashCommand {
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         var ctx = this.resolver.resolveOptions(event);
+        if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
         return resolvePlayerDataDump(event, ctx.profileData);
     }
 

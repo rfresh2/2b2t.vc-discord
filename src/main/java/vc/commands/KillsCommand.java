@@ -58,6 +58,7 @@ public class KillsCommand implements SlashCommand, ButtonCommand {
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         var ctx = resolver.resolveOptions(event);
+        if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
         return resolveKills(event, ctx.profileData, ctx.page, ctx.startDate, ctx.endDate);
     }
 
