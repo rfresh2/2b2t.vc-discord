@@ -163,7 +163,7 @@
                             <inputSpec>openapi/api.2b2t.vc.openapi.json</inputSpec>
                             <output>${project.build.directory}/generated-sources/openapi/api.2b2t.vc</output>
                             <generatorName>java</generatorName>
-                            <skipValidateSpec>true</skipValidateSpec>
+                            <skipValidateSpec>false</skipValidateSpec>
                             <library>native</library>
                             <apiPackage>${default.package}.handler</apiPackage>
                             <modelPackage>${default.package}.model</modelPackage>
@@ -174,9 +174,6 @@
                                 <dateLibrary>java8</dateLibrary>
                                 <generateClientAsBean>true</generateClientAsBean>
                             </configOptions>
-                            <environmentVariables>
-                                <models/>
-                            </environmentVariables>
                         </configuration>
                     </execution>
                 </executions>

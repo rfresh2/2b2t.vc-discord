@@ -1,5 +1,10 @@
 {
   "openapi": "3.0.1",
+  "info": {
+    "title": "2b2t.vc API",
+    "description": "2b2t Data And Statistics",
+    "version": "1.0.0"
+  },
   "servers": [
     {
       "url": "https://api.2b2t.vc"
