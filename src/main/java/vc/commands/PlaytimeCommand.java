@@ -102,6 +102,10 @@ public class PlaytimeCommand implements SlashCommand {
         if (months > 0) entries.add(months + " month" + (months != 1 ? "s" : ""));
         if (days > 0) entries.add(days + " day" + (days != 1 ? "s" : ""));
         if (hours > 0) entries.add(hours + " hour" + (hours != 1 ? "s" : ""));
+        if (entries.isEmpty()) {
+            var minutes = (double) durationInSeconds / (double)secondsInMinute;
+            return String.format("%.2f minutes", minutes);
+        }
         return String.join(", ", entries);
     }
 }

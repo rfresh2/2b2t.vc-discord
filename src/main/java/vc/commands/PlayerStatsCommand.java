@@ -16,6 +16,8 @@ import vc.openapi.model.PlayerStats;
 import vc.util.PlayerLookup;
 
 import java.net.http.HttpTimeoutException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -103,14 +105,21 @@ public class PlayerStatsCommand implements SlashCommand {
         var secondsInHour = secondsInMinute * 60L;
         var secondsInDay = secondsInHour * 24L;
         var secondsInMonth = secondsInDay * 30L; // assuming 30 days per month
+        var secondsInYear = secondsInMonth * 12L;
 
-        var months = durationInSeconds / secondsInMonth;
+        var years = durationInSeconds / secondsInYear;
+        var months = (durationInSeconds % secondsInYear) / secondsInMonth;
         var days = (durationInSeconds % secondsInMonth) / secondsInDay;
         var hours = (durationInSeconds % secondsInDay) / secondsInHour;
-        final StringBuilder sb = new StringBuilder();
-        sb.append((months > 0) ? months + " month" + (months != 1 ? "s" : "") + ", " : "");
-        sb.append((days > 0) ? days + " day" + (days != 1 ? "s" : "") + ", " : "");
-        sb.append(hours + " hour" + (hours != 1 ? "s" : ""));
-        return sb.toString();
+        List<String> entries = new ArrayList<>(4);
+        if (years > 0) entries.add(years + " year" + (years != 1 ? "s" : ""));
+        if (months > 0) entries.add(months + " month" + (months != 1 ? "s" : ""));
+        if (days > 0) entries.add(days + " day" + (days != 1 ? "s" : ""));
+        if (hours > 0) entries.add(hours + " hour" + (hours != 1 ? "s" : ""));
+        if (entries.isEmpty()) {
+            var minutes = (double) durationInSeconds / (double)secondsInMinute;
+            return String.format("%.2f minutes", minutes);
+        }
+        return String.join(", ", entries);
     }
 }
