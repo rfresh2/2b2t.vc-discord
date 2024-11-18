@@ -16,6 +16,7 @@ import vc.commands.buttons.ButtonCommand;
 import vc.commands.buttons.PaginatedButtonHandler;
 import vc.config.GuildConfigManager;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -40,45 +41,53 @@ public class SlashCommandListener {
     }
 
     public Mono<Message> handleChatInteraction(ChatInputInteractionEvent event) {
+        Instant beforeTime = Instant.now();
         var command = commandMap.get(event.getCommandName());
         if (command == null) {
             LOGGER.error("Command not found: {}", event.getCommandName());
             return event.reply("Command not found").dematerialize();
         }
         return event.deferReply()
-            .doOnSuccess(msg -> logMessage(command, event))
+            .doOnSuccess(msg -> logMessage(command, event, beforeTime))
             .then(Mono.defer(() -> command.handle(event)))
             .doOnError(e -> LOGGER.error("Error handling command", e));
     }
 
     public Mono<Message> handleButtonInteraction(ButtonInteractionEvent event) {
+        Instant beforeTime = Instant.now();
         var listener = buttonListenerMap.get(event.getCustomId().split(PaginatedButtonHandler.ID_PREFIX_DELIMITER)[0]);
         if (listener == null) {
             LOGGER.error("Button handler not found for id: {}", event.getCustomId());
             return event.reply("Button handler not found for id: " + event.getCustomId()).dematerialize();
         }
         return event.deferReply()
-            .doOnSuccess(v -> logButton(event))
+            .doOnSuccess(v -> logButton(event, beforeTime))
             .then(Mono.defer(() -> listener.handleButton(event)))
             .doOnError(e -> LOGGER.error("Error handling button", e));
     }
 
-    private void logButton(final ButtonInteractionEvent event) {
+    private void logButton(final ButtonInteractionEvent event, final Instant beforeTime) {
         try {
+            Instant afterTime = Instant.now();
             String username = event.getInteraction().getUser().getTag();
             String guild = event.getInteraction().getGuildId()
                 .map(Snowflake::asString)
                 .flatMap(guildConfigManager::getGuildConfig)
                 .map(config -> "(" + config.guildId() + " - " + config.guildName() + ")")
                 .orElse("(?)");
-            LOGGER.info("{} {} clicked button: {}", username, guild, event.getCustomId());
+            LOGGER.info("[{}ms] {} {} clicked button: {}",
+                        afterTime.toEpochMilli() - beforeTime.toEpochMilli(),
+                        username,
+                        guild,
+                        event.getCustomId());
         } catch (final Exception e) {
             LOGGER.warn("failed logging button", e);
         }
     }
 
-    private void logMessage(SlashCommand command, final ChatInputInteractionEvent event) {
+    private void logMessage(SlashCommand command, final ChatInputInteractionEvent event, final Instant beforeTime) {
         try {
+            Instant afterTime = Instant.now();
             String username = event.getInteraction().getUser().getTag();
             String dataOptions = event.getInteraction().getCommandInteraction()
                 .map(ApplicationCommandInteraction::getOptions)
@@ -92,7 +101,8 @@ public class SlashCommandListener {
                 .flatMap(guildConfigManager::getGuildConfig)
                 .map(config -> "(" + config.guildId() + " - " + config.guildName() + ")")
                 .orElse("(?)");
-            LOGGER.info("{} {} executed {}{}",
+            LOGGER.info("[{}ms] {} {} executed {}{}",
+                        afterTime.toEpochMilli() - beforeTime.toEpochMilli(),
                         username,
                         guild,
                         command.getName(),
@@ -100,6 +110,5 @@ public class SlashCommandListener {
         } catch (final Exception e) {
             LOGGER.warn("failed logging command", e);
         }
-
     }
 }
