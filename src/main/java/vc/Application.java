@@ -27,6 +27,7 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -38,6 +39,8 @@ public class Application {
     @Value("${BOT_TOKEN}")
     String token;
     private static final Logger LOGGER = getLogger("Application");
+    private GatewayDiscordClient gatewayDiscordClient;
+    private ScheduledExecutorService scheduledExecutorService;
 
     public static void main(String[] args) {
         new SpringApplicationBuilder(Application.class)
@@ -54,12 +57,13 @@ public class Application {
 
     @Bean
     public GatewayDiscordClient gatewayDiscordClient() {
-        return DiscordClientBuilder.create(token).build()
+        this.gatewayDiscordClient = DiscordClientBuilder.create(token).build()
                 .gateway()
                 .setEnabledIntents(IntentSet.of(Intent.GUILDS))
                 .setInitialPresence(ignore -> ClientPresence.of(Status.ONLINE, ClientActivity.custom("/commands")))
                 .login()
                 .block();
+        return this.gatewayDiscordClient;
     }
 
     @Bean
@@ -91,12 +95,28 @@ public class Application {
         mapper.registerModule(new JsonNullableModule());
         return mapper;
     }
+
     @Bean
     public ScheduledExecutorService scheduledExecutorService() {
-        return Executors.newScheduledThreadPool(4, new ThreadFactoryBuilder()
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(4, new ThreadFactoryBuilder()
                 .setDaemon(true)
                 .setNameFormat("scheduled-%d")
                 .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught exception in scheduled thread: {}", t.getName(), e))
             .build());
+        return this.scheduledExecutorService;
+    }
+
+    @PreDestroy
+    public void onDestroy() {
+        try {
+            if (this.gatewayDiscordClient != null) {
+                this.gatewayDiscordClient.logout().block();
+            }
+            if (this.scheduledExecutorService != null) {
+                this.scheduledExecutorService.shutdownNow();
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error during shutdown", e);
+        }
     }
 }

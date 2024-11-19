@@ -2,6 +2,7 @@ package vc.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +21,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 @Component
-public class GuildConfigDatabase {
+public class GuildConfigDatabase implements DisposableBean {
     private static final Logger LOGGER = LoggerFactory.getLogger(GuildConfigDatabase.class);
     // backups older than this date will be deleted
     private static final Duration ROLLING_BACKUP_DURATION = Duration.ofDays(7);
@@ -48,10 +49,10 @@ public class GuildConfigDatabase {
             LOGGER.error("Error initializing guild config database connection", e);
             throw new RuntimeException(e);
         }
-        Runtime.getRuntime().addShutdownHook(new Thread(this::close));
     }
 
-    private void close() {
+    @Override
+    public void destroy() {
         try {
             connection.close();
         } catch (final Exception e) {

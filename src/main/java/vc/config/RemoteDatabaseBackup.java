@@ -4,6 +4,7 @@ import io.minio.*;
 import io.minio.messages.Item;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,7 @@ import java.nio.file.Paths;
 import java.util.stream.StreamSupport;
 
 @Component
-public class RemoteDatabaseBackup {
+public class RemoteDatabaseBackup implements DisposableBean {
     private static final Logger LOGGER = LoggerFactory.getLogger("RemoteDatabaseBackup");
     private final String bucketName;
     private final MinioClient minioClient;
@@ -103,6 +104,15 @@ public class RemoteDatabaseBackup {
         } catch (final Exception e) {
             LOGGER.error("Error downloading database backup: {}", backupPath, e);
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void destroy() {
+        try {
+            minioClient.close();
+        } catch (final Exception e) {
+            LOGGER.error("Error closing Minio client", e);
         }
     }
 }
