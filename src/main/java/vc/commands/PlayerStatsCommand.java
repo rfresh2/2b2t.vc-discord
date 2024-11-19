@@ -118,6 +118,9 @@ public class PlayerStatsCommand implements SlashCommand {
         if (hours > 0) entries.add(hours + " hour" + (hours != 1 ? "s" : ""));
         if (entries.isEmpty()) {
             var minutes = (double) durationInSeconds / (double)secondsInMinute;
+            if (minutes == 0.0) {
+                return "0 minutes";
+            }
             return String.format("%.2f minutes", minutes);
         }
         return String.join(", ", entries);
