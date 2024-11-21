@@ -36,13 +36,13 @@ public class VcApi {
     }
 
     @Bean(name = "chatsApiClient")
-    public ApiClient apiClientNames(
+    public ApiClient apiClientChats(
         final HttpClient.Builder httpClientBuilder,
         final ObjectMapper objectMapper,
         @Value("${API_KEY}") final String apiKey
     ) {
         return apiClient(httpClientBuilder, objectMapper, apiKey)
-            .setReadTimeout(Duration.ofSeconds(60));
+            .setReadTimeout(Duration.ofSeconds(90));
     }
 
     @Bean
