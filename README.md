@@ -17,7 +17,7 @@ Invite link: [bot.2b2t.vc](https://bot.2b2t.vc)
 * `/kills` -> Prints a player's kill history
 * `/killsmonth` -> Leaderboard for top kills in the last 30 days
 * `/playtime` -> Gets a player's total playtime
-* `playtimetop` -> Leaderboard for all time top playtime on 2b2t
+* `/playtimetop` -> Leaderboard for all time top playtime on 2b2t
 * `/playtimemonth` -> Leaderboard for top playtime in the last 30 days
 * `/tablist` -> Prints all online players right now on 2b2t
 * `/data` -> Dumps all data on a player as a CSV file
