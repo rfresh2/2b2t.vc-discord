@@ -43,6 +43,7 @@ public class Application {
     private ScheduledExecutorService scheduledExecutorService;
 
     public static void main(String[] args) {
+        System.setProperty("reactor.schedulers.defaultBoundedElasticOnVirtualThreads", "true");
         new SpringApplicationBuilder(Application.class)
             .build()
             .run(args);
@@ -98,7 +99,7 @@ public class Application {
 
     @Bean
     public ScheduledExecutorService scheduledExecutorService() {
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(4, new ThreadFactoryBuilder()
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(2, new ThreadFactoryBuilder()
                 .setDaemon(true)
                 .setNameFormat("scheduled-%d")
                 .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught exception in scheduled thread: {}", t.getName(), e))

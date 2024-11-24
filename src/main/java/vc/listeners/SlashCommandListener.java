@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import vc.commands.SlashCommand;
 import vc.commands.buttons.ButtonCommand;
 import vc.commands.buttons.PaginatedButtonHandler;
@@ -36,8 +35,8 @@ public class SlashCommandListener {
             .filter(c -> c instanceof ButtonCommand)
             .collect(Collectors.toMap(SlashCommand::getName, c -> (ButtonCommand) c));
         this.guildConfigManager = guildConfigManager;
-        client.on(ChatInputInteractionEvent.class, this::handleChatInteraction).subscribeOn(Schedulers.boundedElastic()).subscribe();
-        client.on(ButtonInteractionEvent.class, this::handleButtonInteraction).subscribeOn(Schedulers.boundedElastic()).subscribe();
+        client.on(ChatInputInteractionEvent.class, this::handleChatInteraction).subscribe();
+        client.on(ButtonInteractionEvent.class, this::handleButtonInteraction).subscribe();
     }
 
     public Mono<Message> handleChatInteraction(ChatInputInteractionEvent event) {
