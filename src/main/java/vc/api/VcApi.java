@@ -42,7 +42,7 @@ public class VcApi {
         @Value("${API_KEY}") final String apiKey
     ) {
         return apiClient(httpClientBuilder, objectMapper, apiKey)
-            .setReadTimeout(Duration.ofSeconds(90));
+            .setReadTimeout(Duration.ofSeconds(60));
     }
 
     @Bean

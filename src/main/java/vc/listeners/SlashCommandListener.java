@@ -47,9 +47,9 @@ public class SlashCommandListener {
             return event.reply("Command not found").dematerialize();
         }
         return event.deferReply()
-            .doOnSuccess(msg -> logMessage(command, event, beforeTime))
             .then(Mono.defer(() -> command.handle(event)))
-            .doOnError(e -> LOGGER.error("Error handling command", e));
+            .doOnSuccess(msg -> logMessage(command, event, beforeTime, null))
+            .doOnError(e -> logMessage(command, event, beforeTime, e));
     }
 
     public Mono<Message> handleButtonInteraction(ButtonInteractionEvent event) {
@@ -60,12 +60,12 @@ public class SlashCommandListener {
             return event.reply("Button handler not found for id: " + event.getCustomId()).dematerialize();
         }
         return event.deferReply()
-            .doOnSuccess(v -> logButton(event, beforeTime))
             .then(Mono.defer(() -> listener.handleButton(event)))
-            .doOnError(e -> LOGGER.error("Error handling button", e));
+            .doOnSuccess(v -> logButton(event, beforeTime, null))
+            .doOnError(e -> logButton(event, beforeTime, e));
     }
 
-    private void logButton(final ButtonInteractionEvent event, final Instant beforeTime) {
+    private void logButton(final ButtonInteractionEvent event, final Instant beforeTime, final Throwable error) {
         try {
             Instant afterTime = Instant.now();
             String username = event.getInteraction().getUser().getTag();
@@ -79,12 +79,15 @@ public class SlashCommandListener {
                         username,
                         guild,
                         event.getCustomId());
+            if (error != null) {
+                LOGGER.error("Error handling button", error);
+            }
         } catch (final Exception e) {
             LOGGER.warn("failed logging button", e);
         }
     }
 
-    private void logMessage(SlashCommand command, final ChatInputInteractionEvent event, final Instant beforeTime) {
+    private void logMessage(SlashCommand command, final ChatInputInteractionEvent event, final Instant beforeTime, Throwable error) {
         try {
             Instant afterTime = Instant.now();
             String username = event.getInteraction().getUser().getTag();
@@ -106,6 +109,9 @@ public class SlashCommandListener {
                         guild,
                         command.getName(),
                         !dataOptions.isEmpty() ? " : " + dataOptions : "");
+            if (error != null) {
+                LOGGER.error("Error executing command", error);
+            }
         } catch (final Exception e) {
             LOGGER.warn("failed logging command", e);
         }
