@@ -44,7 +44,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <version>3.4.1</version>
+            <version>3.4.2</version>
         </dependency>
         <dependency>
             <groupId>me.paulschwarz</groupId>
@@ -95,7 +95,7 @@
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
-            <version>3.43.0</version>
+            <version>3.44.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
@@ -145,7 +145,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.4.1</version>
+                <version>3.4.2</version>
                 <executions>
                     <execution>
                         <configuration>
