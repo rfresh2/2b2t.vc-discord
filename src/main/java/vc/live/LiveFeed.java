@@ -66,10 +66,13 @@ public abstract class LiveFeed {
         this.executorService = executorService;
         this.objectMapper = objectMapper;
         if (liveFeedEnabled) {
+            LOGGER.info("Starting {} live feed", getClass().getSimpleName());
             syncChannels();
             this.processMessageQueueFuture = this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 11, SECONDS);
             inputQueues().forEach(this::registerInputQueue);
             this.processInputQueuesFuture = this.executorService.scheduleWithFixedDelay(this::processInputQueues, ((int) (Math.random() * 10)), 4, SECONDS);
+        } else {
+            LOGGER.info("Live feed {} disabled", getClass().getSimpleName());
         }
     }
 
