@@ -3,6 +3,7 @@ package vc.live;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Lists;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.entity.channel.Channel;
@@ -16,7 +17,6 @@ import org.slf4j.Logger;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 import vc.config.GuildConfigManager;
 import vc.config.GuildConfigRecord;
@@ -221,19 +221,19 @@ public abstract class LiveFeed {
             final MultipartRequest<MessageCreateRequest> request = MultipartRequest.ofRequest(MessageCreateRequest.builder()
                 .embeds(embeds)
                 .build());
-            // todo: test if we need to use a rate limiter between sending messages to different guilds
-            long before = System.currentTimeMillis();
-            Flux.fromIterable(liveChannels.entrySet())
-                .parallel()
-                .runOn(Schedulers.parallel())
-                .flatMap(entry -> processSend(entry.getKey(), entry.getValue(), request))
-                .sequential()
-                .doOnError(error -> LOGGER.error("Error processing message queue", error))
-                .blockLast();
-            long after = System.currentTimeMillis();
-            if (after - before > 20000) {
-                LOGGER.info("[{}] Sent {} events in {}ms", feedName(), embeds.size(), after - before);
-            }
+            var channels = new ArrayList<>(liveChannels.entrySet());
+            Collections.shuffle(channels);
+            Lists.partition(channels, 100).forEach(c -> {
+                long before = System.currentTimeMillis();
+                Flux.fromIterable(c)
+                    .flatMap(entry -> processSend(entry.getKey(), entry.getValue(), request))
+                    .doOnError(error -> LOGGER.error("Error processing message queue", error))
+                    .blockLast();
+                long after = System.currentTimeMillis();
+                if (after - before > 20000) {
+                    LOGGER.info("[{}] Sent {} events in {}ms", feedName(), embeds.size(), after - before);
+                }
+            });
         } catch (final Throwable e) {
             LOGGER.error("Error processing message queue", e);
         }
