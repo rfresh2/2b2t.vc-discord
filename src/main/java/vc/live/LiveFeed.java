@@ -222,13 +222,18 @@ public abstract class LiveFeed {
                 .embeds(embeds)
                 .build());
             // todo: test if we need to use a rate limiter between sending messages to different guilds
+            long before = System.currentTimeMillis();
             Flux.fromIterable(liveChannels.entrySet())
                 .parallel()
                 .runOn(Schedulers.parallel())
                 .flatMap(entry -> processSend(entry.getKey(), entry.getValue(), request))
                 .sequential()
                 .doOnError(error -> LOGGER.error("Error processing message queue", error))
-                .blockLast(Duration.ofSeconds(60));
+                .blockLast();
+            long after = System.currentTimeMillis();
+            if (after - before > 20000) {
+                LOGGER.info("[{}] Sent {} events in {}ms", feedName(), embeds.size(), after - before);
+            }
         } catch (final Throwable e) {
             LOGGER.error("Error processing message queue", e);
         }
