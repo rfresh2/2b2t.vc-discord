@@ -227,7 +227,8 @@ public abstract class LiveFeed {
                 .runOn(Schedulers.parallel())
                 .flatMap(entry -> processSend(entry.getKey(), entry.getValue(), request))
                 .sequential()
-                .blockLast(Duration.ofSeconds(20));
+                .doOnError(error -> LOGGER.error("Error processing message queue", error))
+                .blockLast(Duration.ofSeconds(60));
         } catch (final Throwable e) {
             LOGGER.error("Error processing message queue", e);
         }
@@ -235,6 +236,7 @@ public abstract class LiveFeed {
 
     private Mono<?> processSend(String guildId, RestChannel channel, MultipartRequest<MessageCreateRequest> request) {
         return channel.createMessage(request)
+            .doOnError(error -> LOGGER.error("Error sending message to guild: {}, channelId: {}", guildId, channel.getId().asString(), error))
             .timeout(Duration.ofSeconds(3))
             // retry only on TimeoutException
             .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
