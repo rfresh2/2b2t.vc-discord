@@ -20,6 +20,7 @@ import vc.commands.options.PlayerLookupOption;
 import vc.commands.options.TimeRangeOption;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ConnectionsApi;
+import vc.openapi.model.Connection;
 import vc.openapi.model.ConnectionsResponse;
 import vc.util.PlayerLookup;
 
@@ -94,7 +95,7 @@ public class ConnectionsCommand implements SlashCommand, ButtonCommand {
         final StringBuilder result = new StringBuilder();
         final AtomicBoolean truncated = new AtomicBoolean(false);
         connectionsResponse.getConnections().stream()
-            .map(c -> c.getConnection().getValue() + " " + SHORT_DATE_TIME.format(c.getTime().toInstant()))
+            .map(c -> (c.getConnection() == Connection.ConnectionEnum.JOIN ? ":green_circle:" : ":red_circle:")  + " " + SHORT_DATE_TIME.format(c.getTime().toInstant()))
             .forEachOrdered(s -> {
                 if (result.length() + s.length() + 1 > 4090) {
                     truncated.set(true);
