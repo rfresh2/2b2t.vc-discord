@@ -37,6 +37,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public abstract class LiveFeed {
     private final Logger LOGGER = getLogger(getClass().getSimpleName());
+    private static final int MESSAGE_Q_CAPACITY = 1000;
     protected final RedisClient redisClient;
     protected final GatewayDiscordClient discordClient;
     protected final Map<String, RestChannel> liveChannels;
@@ -61,7 +62,7 @@ public abstract class LiveFeed {
         this.discordClient = discordClient;
         this.liveChannels = new ConcurrentHashMap<>();
         this.guildConfigManager = guildConfigManager;
-        this.messageQueue = new PriorityBlockingQueue<>(1000);
+        this.messageQueue = new PriorityBlockingQueue<>(MESSAGE_Q_CAPACITY);
         this.inputQueues = new ConcurrentHashMap<>();
         this.executorService = executorService;
         this.objectMapper = objectMapper;
@@ -70,7 +71,7 @@ public abstract class LiveFeed {
             syncChannels();
             this.processMessageQueueFuture = this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 11, SECONDS);
             inputQueues().forEach(this::registerInputQueue);
-            this.processInputQueuesFuture = this.executorService.scheduleWithFixedDelay(this::processInputQueues, ((int) (Math.random() * 10)), 4, SECONDS);
+            this.processInputQueuesFuture = this.executorService.scheduleWithFixedDelay(this::processInputQueues, ((int) (Math.random() * 10)), 8, SECONDS);
         } else {
             LOGGER.info("Live feed {} disabled", getClass().getSimpleName());
         }
@@ -122,7 +123,7 @@ public abstract class LiveFeed {
 
     private void processInputQueues() {
         synchronized (this.messageQueue) {
-            if (this.messageQueue.size() < 200) {
+            if (this.messageQueue.size() < MESSAGE_Q_CAPACITY - 1) {
 //                try {
 //                    queueHealthCheck();
 //                } catch (final Exception e) {
