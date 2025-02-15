@@ -75,9 +75,6 @@ public class PlayerStatsCommand implements SlashCommand {
         return event.createFollowup()
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
                             .color(Color.CYAN)
-                            .addField("Joins", ""+playerStats.getJoinCount(), true)
-                            .addField("Leaves", ""+playerStats.getLeaveCount(), true)
-                            .addField("\u200B", "\u200B", true)
                             .addField("First Seen", playerStats.getFirstSeen() != null
                                           ? SHORT_DATE_TIME.format(playerStats.getFirstSeen().toInstant())
                                           : "Never",
@@ -88,14 +85,15 @@ public class PlayerStatsCommand implements SlashCommand {
                                       true)
                             .addField("\u200B", "\u200B", true)
                             .addField("Playtime", formatDuration(playerStats.getPlaytimeSeconds()), true)
-                            .addField("Playtime (Last 30 Days)", formatDuration(playerStats.getPlaytimeSecondsMonth()), true)
+                            .addField("Playtime Last 30 Days", formatDuration(playerStats.getPlaytimeSecondsMonth()), true)
                             .addField("\u200B", "\u200B", true)
-                            .addField("Deaths", ""+playerStats.getDeathCount(), true)
                             .addField("Kills", ""+playerStats.getKillCount(), true)
-                            .addField("\u200B", "\u200B", true)
+                            .addField("Deaths", ""+playerStats.getDeathCount(), true)
+                            .addField("K/D", playerStats.getDeathCount() == 0 ? ""+0 : String.format("%.2f", playerStats.getKillCount().floatValue() / playerStats.getDeathCount().floatValue()), true)
+                            // row break
+                            .addField("Joins", ""+playerStats.getJoinCount(), true)
                             .addField("Chats", ""+playerStats.getChatsCount(), true)
                             .addField("Priority Queue", Boolean.TRUE.equals(playerStats.getPrio()) ? "Yes" : "No", true)
-                            .addField("\u200B", "\u200B", true)
                             .thumbnail(identity.getAvatarURL())
                             .build());
     }
