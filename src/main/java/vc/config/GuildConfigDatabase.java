@@ -66,7 +66,9 @@ public class GuildConfigDatabase implements DisposableBean {
                 backupPath.toFile().mkdirs();
             }
             var backupPath = "backups/guild-config-backup-" + DATE_FORMATTER.format(Instant.now()) + ".db";
-            connection.createStatement().executeUpdate("BACKUP TO '" + backupPath + "'");
+            try (var statement = connection.createStatement()) {
+                statement.executeUpdate("BACKUP TO '" + backupPath + "'");
+            }
             if (!dbSync) remoteDatabaseBackup.uploadDatabaseBackup(backupPath);
         } catch (final Exception e) {
             LOGGER.error("Error backing up guild config database", e);
@@ -104,23 +106,27 @@ public class GuildConfigDatabase implements DisposableBean {
 
     private void createGuildConfigTable() {
         try {
-            connection.createStatement().executeUpdate("CREATE TABLE IF NOT EXISTS guild_config ("
-                                                           + "guild_id INTEGER, "
-                                                           + "guild_name TEXT, "
-                                                           + "live_chat_enabled INTEGER, "
-                                                           + "live_chat_channel_id TEXT, "
-                                                           + "live_connections_enabled INTEGER, "
-                                                           + "live_connections_channel_id TEXT"
-                                                           + ")");
-            connection.createStatement().executeUpdate("CREATE UNIQUE INDEX IF NOT EXISTS unique_guild_id ON guild_config (guild_id)");
+            try (var statement = connection.createStatement()) {
+                statement.executeUpdate("CREATE TABLE IF NOT EXISTS guild_config ("
+                                            + "guild_id INTEGER, "
+                                            + "guild_name TEXT, "
+                                            + "live_chat_enabled INTEGER, "
+                                            + "live_chat_channel_id TEXT, "
+                                            + "live_connections_enabled INTEGER, "
+                                            + "live_connections_channel_id TEXT"
+                                            + ")");
+            }
+            try (var statement = connection.createStatement()) {
+                statement.executeUpdate("CREATE UNIQUE INDEX IF NOT EXISTS unique_guild_id ON guild_config (guild_id)");
+            }
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     public Optional<GuildConfigRecord> getGuildConfigRecord(final String guildId) {
-        try {
-            ResultSet resultSet = connection.createStatement()
+        try (var statement = connection.createStatement()){
+            ResultSet resultSet = statement
                 .executeQuery("SELECT * FROM guild_config WHERE guild_id = " + guildId);
             if (resultSet.next()) {
                 return Optional.of(new GuildConfigRecord(
@@ -139,8 +145,7 @@ public class GuildConfigDatabase implements DisposableBean {
     }
 
     public void writeGuildConfigRecord(final GuildConfigRecord config) {
-        try {
-            PreparedStatement statement = connection.prepareStatement("INSERT OR REPLACE INTO guild_config VALUES (?, ?, ?, ?, ?, ?)");
+        try (PreparedStatement statement = connection.prepareStatement("INSERT OR REPLACE INTO guild_config VALUES (?, ?, ?, ?, ?, ?)")) {
             statement.setString(1, config.guildId());
             statement.setString(2, config.guildName());
             statement.setBoolean(3, config.liveChatEnabled());
