@@ -10,6 +10,7 @@ import vc.api.model.CraftheadProfileResponse;
 import vc.api.model.ProfileData;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 @Component
 public class CraftheadRestClient {
@@ -35,6 +36,17 @@ public class CraftheadRestClient {
     public ProfileData getProfile(final String username) {
         var response = restClient.get()
             .uri("/profile/{username}", username)
+            .retrieve()
+            .body(CraftheadProfileResponse.class);
+        if (response == null || response.id() == null) {
+            throw new RestClientException("Received invalid response from crafthead");
+        }
+        return response;
+    }
+
+    public ProfileData getProfileFromUuid(final UUID uuid) {
+        var response = restClient.get()
+            .uri("/profile/{uuid}", uuid)
             .retrieve()
             .body(CraftheadProfileResponse.class);
         if (response == null || response.id() == null) {
