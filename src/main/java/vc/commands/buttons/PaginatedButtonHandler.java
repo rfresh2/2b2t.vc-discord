@@ -51,7 +51,11 @@ public class PaginatedButtonHandler {
     public Possible<List<Button>> getButtons(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
         List<Button> buttons = new ArrayList<>();
         if (page > 1) {
-            var firstPageArgs = new PaginatedCommandArgs(identity.name(), 1, startDate, endDate, null);
+            String padding = null;
+            if (1 == page - 1) {
+                padding = "0";
+            }
+            var firstPageArgs = new PaginatedCommandArgs(identity.name(), 1, startDate, endDate, padding);
             addButtonSafe(encodeButtonId(objectMapper, commandName, firstPageArgs), ReactionEmoji.unicode("⏮"), buttons);
             var prevPageArgs = new PaginatedCommandArgs(identity.name(), page - 1, startDate, endDate, null);
             addButtonSafe(encodeButtonId(objectMapper, commandName, prevPageArgs), ReactionEmoji.unicode("◀"), buttons);
