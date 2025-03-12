@@ -224,7 +224,7 @@ public abstract class LiveFeed {
                 .build());
             var channels = new ArrayList<>(liveChannels.entrySet());
             Collections.shuffle(channels);
-            Lists.partition(channels, 100).forEach(c -> {
+            Lists.partition(channels, 50).forEach(c -> {
                 long before = System.currentTimeMillis();
                 Flux.fromIterable(c)
                     .flatMap(entry -> processSend(entry.getKey(), entry.getValue(), request))
