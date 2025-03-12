@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 public class PaginatedButtonHandler {
@@ -50,20 +51,26 @@ public class PaginatedButtonHandler {
     public Possible<List<Button>> getButtons(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
         List<Button> buttons = new ArrayList<>();
         if (page > 1) {
-            var firstPageArgs = new PaginatedCommandArgs(identity.name(), 1, startDate, endDate);
+            var firstPageArgs = new PaginatedCommandArgs(identity.name(), 1, startDate, endDate, null);
             addButtonSafe(encodeButtonId(objectMapper, commandName, firstPageArgs), ReactionEmoji.unicode("⏮"), buttons);
-            if (page - 1 > 1) {
-                var prevPageArgs = new PaginatedCommandArgs(identity.name(), page - 1, startDate, endDate);
-                addButtonSafe(encodeButtonId(objectMapper, commandName, prevPageArgs), ReactionEmoji.unicode("◀"), buttons);
-            }
+            var prevPageArgs = new PaginatedCommandArgs(identity.name(), page - 1, startDate, endDate, null);
+            addButtonSafe(encodeButtonId(objectMapper, commandName, prevPageArgs), ReactionEmoji.unicode("◀"), buttons);
+        } else {
+            addDisabledButton(ReactionEmoji.unicode("⏮"), buttons);
+            addDisabledButton(ReactionEmoji.unicode("◀"), buttons);
         }
         if (page < totalPageCount) {
-            if (page + 1 < totalPageCount) {
-                var nextPageArgs = new PaginatedCommandArgs(identity.name(), page + 1, startDate, endDate);
-                addButtonSafe(encodeButtonId(objectMapper, commandName, nextPageArgs), ReactionEmoji.unicode("▶"), buttons);
+            String padding = null;
+            if (page + 1 >= totalPageCount) {
+                padding = "0";
             }
-            var lastPageArgs = new PaginatedCommandArgs(identity.name(), totalPageCount, startDate, endDate);
+            var nextPageArgs = new PaginatedCommandArgs(identity.name(), page + 1, startDate, endDate, padding);
+            addButtonSafe(encodeButtonId(objectMapper, commandName, nextPageArgs), ReactionEmoji.unicode("▶"), buttons);
+            var lastPageArgs = new PaginatedCommandArgs(identity.name(), totalPageCount, startDate, endDate, null);
             addButtonSafe(encodeButtonId(objectMapper, commandName, lastPageArgs), ReactionEmoji.unicode("⏭"), buttons);
+        } else {
+            addDisabledButton(ReactionEmoji.unicode("▶"), buttons);
+            addDisabledButton(ReactionEmoji.unicode("⏭"), buttons);
         }
         return buttons.isEmpty() ? Possible.absent() : Possible.of(buttons);
     }
@@ -79,6 +86,10 @@ public class PaginatedButtonHandler {
             return;
         }
         out.add(Button.secondary(encodedId, emoji));
+    }
+
+    public void addDisabledButton(ReactionEmoji emoji, List<Button> out) {
+        out.add(Button.secondary(UUID.randomUUID().toString(), emoji).disabled());
     }
 
     public String encodeButtonId(ObjectMapper objectMapper, String commandName, PaginatedCommandArgs args) {
