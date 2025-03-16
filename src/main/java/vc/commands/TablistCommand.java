@@ -1,6 +1,9 @@
 package vc.commands;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.collect.Lists;
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import org.slf4j.Logger;
@@ -11,6 +14,7 @@ import vc.openapi.handler.TabListApi;
 import vc.openapi.model.TablistEntry;
 import vc.openapi.model.TablistResponse;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.List;
@@ -21,6 +25,9 @@ import java.util.stream.IntStream;
 @Component
 public class TablistCommand implements SlashCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(TablistCommand.class);
+    private final Cache<Snowflake, Boolean> channelResponseCache = Caffeine.newBuilder()
+        .expireAfterWrite(Duration.ofSeconds(30))
+        .build();
 
     private final TabListApi tabListApi;
 
@@ -35,6 +42,10 @@ public class TablistCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
+        var channelId = event.getInteraction().getChannelId();
+        if (channelResponseCache.getIfPresent(channelId) != null) {
+            return error(event, "Too many tablist requests, try again later");
+        }
         TablistResponse response = null;
         try {
             response = tabListApi.onlinePlayers();
@@ -100,6 +111,7 @@ public class TablistCommand implements SlashCommand {
         } catch (final Exception e) {
             LOGGER.warn("Error sending tablist", e);
         }
+        channelResponseCache.put(channelId, true);
         return Mono.empty();
     }
 }
