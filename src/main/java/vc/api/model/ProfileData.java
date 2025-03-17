@@ -11,10 +11,6 @@ public interface ProfileData {
     }
 
     default String getAvatarURL() {
-        return getAvatarURL(uuid().toString().replace("-", ""));
-    }
-
-    default String getAvatarURL(String playerName) {
-        return String.format("https://crafthead.net/helm/%s/64", playerName);
+        return String.format("https://api.mineatar.io/body/full/%s", uuid());
     }
 }
