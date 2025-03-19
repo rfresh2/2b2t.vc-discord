@@ -106,8 +106,8 @@ public class ChatsCommand implements SlashCommand, ButtonCommand {
                             .color(Color.CYAN)
                             .description(result.toString())
                             .addField("Total", ""+chatsResponse.getTotal(), true)
-                            .addField("Current Page", ""+page, true)
-                            .addField("Total Pages", ""+chatsResponse.getPageCount(), true)
+                            .addField("Page", page + " / " + chatsResponse.getPageCount(), true)
+                            .addField("\u200B", "\u200B", true)
                             .thumbnail(identity.getAvatarURL())
                             .build())
             .withComponents(buttonHandler.getButtonRow(objectMapper, getName(), chatsResponse.getPageCount(), page, identity, startDate, endDate));

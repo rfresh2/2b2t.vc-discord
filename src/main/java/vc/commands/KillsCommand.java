@@ -110,8 +110,8 @@ public class KillsCommand implements SlashCommand, ButtonCommand {
                             .color(Color.CYAN)
                             .description(result.toString())
                             .addField("Total", ""+killsResponse.getTotal(), true)
-                            .addField("Page", ""+page, true)
-                            .addField("Page Count", ""+killsResponse.getPageCount(), true)
+                            .addField("Page", page + " / " + killsResponse.getPageCount(), true)
+                            .addField("\u200B", "\u200B", true)
                             .thumbnail(identity.getAvatarURL())
                             .build())
             .withComponents(buttonHandler.getButtonRow(objectMapper, getName(), killsResponse.getPageCount(), page, identity, startDate, endDate));

@@ -13,4 +13,8 @@ public interface ProfileData {
     default String getAvatarURL() {
         return String.format("https://api.mineatar.io/body/full/%s", uuid());
     }
+
+    default String getHeadURL() {
+        return String.format("https://crafthead.net/helm/%s/64", uuid().toString().replace("-", ""));
+    }
 }
