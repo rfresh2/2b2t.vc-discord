@@ -44,7 +44,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <version>3.4.3</version>
+            <version>3.4.4</version>
         </dependency>
         <dependency>
             <groupId>me.paulschwarz</groupId>
@@ -90,7 +90,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.4.0-jre</version>
+            <version>33.4.5-jre</version>
         </dependency>
         <dependency>
             <groupId>org.redisson</groupId>
@@ -145,7 +145,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.4.3</version>
+                <version>3.4.4</version>
                 <executions>
                     <execution>
                         <configuration>
