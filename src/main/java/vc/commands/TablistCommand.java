@@ -1,11 +1,11 @@
 package vc.commands;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.google.common.collect.Lists;
-import discord4j.common.util.Snowflake;
+import de.siegmar.fastcsv.writer.CsvWriter;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
+import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.MessageCreateFields;
+import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -14,20 +14,13 @@ import vc.openapi.handler.TabListApi;
 import vc.openapi.model.TablistEntry;
 import vc.openapi.model.TablistResponse;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Formatter;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.Comparator;
 
 @Component
 public class TablistCommand implements SlashCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(TablistCommand.class);
-    private final Cache<Snowflake, Boolean> channelResponseCache = Caffeine.newBuilder()
-        .expireAfterWrite(Duration.ofSeconds(30))
-        .build();
 
     private final TabListApi tabListApi;
 
@@ -42,10 +35,6 @@ public class TablistCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        var channelId = event.getInteraction().getChannelId();
-        if (channelResponseCache.getIfPresent(channelId) != null) {
-            return error(event, "Too many tablist requests, try again later");
-        }
         TablistResponse response = null;
         try {
             response = tabListApi.onlinePlayers();
@@ -54,64 +43,24 @@ public class TablistCommand implements SlashCommand {
         }
         if (response == null || response.getPlayers() == null || response.getPlayers().isEmpty())
             return error(event, "Unable to resolve current tablist");
-        List<String> playerNames = response.getPlayers().stream()
-                .map(TablistEntry::getPlayerName)
-                .distinct()
-                .sorted(String::compareTo)
-                .toList();
-        final int longestPlayerNameSize = playerNames.stream().map(String::length).max(Integer::compareTo).get();
-        final int colSize = 4; // num cols of playernames
-        final int paddingSize = 1; // num spaces between names
-        List<List<String>> playerNamesColumnized = Lists.partition(playerNames, colSize);
-        final List<String> rows = new ArrayList<>();
-
-        final List<List<String>> colOrderedNames = new ArrayList<>();
-        IntStream.range(0, playerNamesColumnized.size())
-                .forEach(i -> colOrderedNames.add(new ArrayList<>()));
-        // iterate down col, then row
-        final ListIterator<String> pNameIterator = playerNames.listIterator();
-        for (int i = 0; i < colSize; i++) {
-            for (int col = 0; col < playerNamesColumnized.size(); col++) {
-                if (pNameIterator.hasNext()) {
-                    colOrderedNames.get(col).add(pNameIterator.next());
-                } else {
-                    break;
-                }
+        var entries = response.getPlayers().stream()
+            .map(TablistEntry::getPlayerName)
+            .distinct()
+            .sorted(Comparator.comparing((v) -> v, String::compareToIgnoreCase))
+            .toList();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (CsvWriter csv = CsvWriter.builder().build(bos)) {
+            for (var entry : entries) {
+                csv.writeRecord(entry);
             }
-        }
-
-        colOrderedNames.forEach(row -> {
-            final StringBuilder stringBuilder = new StringBuilder();
-            final Formatter formatter = new Formatter(stringBuilder);
-            final String formatting = IntStream.range(0, row.size())
-                    .mapToObj(i -> "%-" + (longestPlayerNameSize + paddingSize) + "." + (longestPlayerNameSize + paddingSize) + "s")
-                    .collect(Collectors.joining(" "));
-            formatter.format(formatting, row.toArray());
-            stringBuilder.append("\n");
-            rows.add(stringBuilder.toString());
-        });
-
-
-        final List<String> outputMessages = new ArrayList<>();
-        StringBuilder out = new StringBuilder();
-        for (int i = 0; i < rows.size(); i++) {
-            if (out.toString().length() + rows.get(i).length() < 1950) {
-                out.append(rows.get(i));
-            } else {
-                outputMessages.add(out.toString());
-                out = new StringBuilder();
-            }
-        }
-        outputMessages.add(out.toString());
-        outputMessages.removeIf(String::isEmpty);
-        try {
-            outputMessages.forEach(outputMessage -> {
-                event.createFollowup().withContent("```\n" + outputMessage + "\n```").block();
-            });
         } catch (final Exception e) {
-            LOGGER.warn("Error sending tablist", e);
+            LOGGER.error("Failed to write CSV", e);
         }
-        channelResponseCache.put(channelId, true);
-        return Mono.empty();
+        return event.createFollowup()
+            .withFiles(MessageCreateFields.File.of("tablist.csv", new ByteArrayInputStream(bos.toByteArray())))
+            .withEmbeds(EmbedCreateSpec.builder()
+                            .addField("Player Count", entries.size()+"", false)
+                            .color(Color.CYAN)
+                            .build());
     }
 }
