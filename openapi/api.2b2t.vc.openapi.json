@@ -18,8 +18,8 @@
         ],
         "operationId": "getWorldTime",
         "responses": {
-          "204": {
-            "description": "No world time data available",
+          "200": {
+            "description": "Returns the 2b2t world time in ticks (0 - 24000).\n\nTo determine the real-time 2b2t world time, interpolate between lastUpdated and the current real world time.\n\nMC and real world time conversion help: https://minecraft.wiki/w/Daylight_cycle#Conversions\n1 minecraft tick = 50 ms real world time\n\nDaytime starts at 6:00 (0 ticks) and night begins at 18:00 (12000 ticks)\n",
             "content": {
               "*/*": {
                 "schema": {
@@ -28,8 +28,8 @@
               }
             }
           },
-          "200": {
-            "description": "Returns the 2b2t world time in ticks (0 - 24000).\n\nTo determine the real-time 2b2t world time, interpolate between lastUpdated and the current real world time.\n\nMC and real world time conversion help: https://minecraft.wiki/w/Daylight_cycle#Conversions\n1 minecraft tick = 50 ms real world time\n\nDaytime starts at 6:00 (0 ticks) and night begins at 18:00 (12000 ticks)\n",
+          "204": {
+            "description": "No world time data available",
             "content": {
               "*/*": {
                 "schema": {
@@ -71,9 +71,6 @@
         ],
         "operationId": "onlinePlayersInfo",
         "responses": {
-          "204": {
-            "description": "No data"
-          },
           "200": {
             "description": "List of online players with additional info about their prio and bot status",
             "content": {
@@ -83,6 +80,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data"
           }
         }
       }
@@ -123,11 +123,11 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -158,9 +158,6 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "200": {
             "description": "First and last time a player was seen on 2b2t",
             "content": {
@@ -173,6 +170,9 @@
           },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -184,9 +184,6 @@
         ],
         "operationId": "queue",
         "responses": {
-          "204": {
-            "description": "No data"
-          },
           "200": {
             "description": "Current queue length",
             "content": {
@@ -196,6 +193,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data"
           }
         }
       }
@@ -266,9 +266,6 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "200": {
             "description": "Playtime for given player",
             "content": {
@@ -281,6 +278,9 @@
           },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -315,9 +315,6 @@
         ],
         "operationId": "playtimeTopMonth",
         "responses": {
-          "204": {
-            "description": "No data"
-          },
           "200": {
             "description": "Top playtime for the month",
             "content": {
@@ -327,6 +324,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data"
           }
         }
       }
@@ -350,6 +350,26 @@
           },
           "204": {
             "description": "No data"
+          }
+        }
+      }
+    },
+    "/limits/session-time-limit": {
+      "get": {
+        "tags": [
+          "Limits"
+        ],
+        "operationId": "getNonPrioKickTimeLimit",
+        "responses": {
+          "200": {
+            "description": "Return the current 2b2t game session time limit for non-priority players.\n\nWhen this limit is reached, the player will be kicked from the server.\n",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTimeLimitResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -426,11 +446,11 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -490,11 +510,11 @@
               "application/csv": {}
             }
           },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -561,9 +581,6 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "200": {
             "description": "Death history for given player",
             "content": {
@@ -576,6 +593,9 @@
           },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -590,7 +610,7 @@
           {
             "name": "startDate",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -606,7 +626,28 @@
             }
           },
           {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
             "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "page",
             "in": "query",
             "required": false,
             "schema": {
@@ -616,12 +657,6 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "No deaths found in this window."
-          },
-          "400": {
-            "description": "Bad request. startDate must be provided"
-          },
           "200": {
             "description": "All 2b2t deaths during a window of time, starting from startDate (required) until endDate or pageSize is met\n\nstartDate and endDate must be ISO 8601 formatted strings, in this format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX\n\nExample: \"2022-10-31T01:30:00.000\".\n",
             "content": {
@@ -631,6 +666,12 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No deaths found in this window."
+          },
+          "400": {
+            "description": "Bad request. startDate must be provided"
           }
         }
       }
@@ -642,9 +683,6 @@
         ],
         "operationId": "deathsTopMonth",
         "responses": {
-          "204": {
-            "description": "No data for the month"
-          },
           "200": {
             "description": "Top deaths for the month",
             "content": {
@@ -654,6 +692,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No data for the month"
           }
         }
       }
@@ -730,11 +771,11 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "204": {
             "description": "No data for player"
+          },
+          "400": {
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -749,7 +790,7 @@
           {
             "name": "startDate",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -765,7 +806,28 @@
             }
           },
           {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
             "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "page",
             "in": "query",
             "required": false,
             "schema": {
@@ -775,9 +837,6 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "No connections found in this window."
-          },
           "200": {
             "description": "All 2b2t connections during a window of time, starting from startDate (required) until endDate or pageSize is met\n\nstartDate and endDate must be ISO 8601 formatted strings, in this format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX\n\nExample: \"2022-10-31T01:30:00.000\".\n",
             "content": {
@@ -787,6 +846,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No connections found in this window."
           },
           "400": {
             "description": "Bad request. startDate must be provided"
@@ -856,9 +918,6 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
-          },
           "200": {
             "description": "Chat history for given player",
             "content": {
@@ -871,39 +930,9 @@
           },
           "204": {
             "description": "No data for player"
-          }
-        }
-      }
-    },
-    "/chats/word-count": {
-      "get": {
-        "tags": [
-          "Chats"
-        ],
-        "operationId": "wordCount",
-        "parameters": [
-          {
-            "name": "word",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Counts the number of times a word has appeared in chat",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WordCount"
-                }
-              }
-            }
           },
           "400": {
-            "description": "Bad request. The word must be between 4 and 30 characters."
+            "description": "Bad request. Either uuid or playerName must be provided."
           }
         }
       }
@@ -918,7 +947,7 @@
           {
             "name": "startDate",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -934,66 +963,15 @@
             }
           },
           {
-            "name": "pageSize",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "All 2b2t chats during a window of time, starting from startDate (required) until endDate or pageSize is met\n\nstartDate and endDate must be ISO 8601 formatted strings, in this format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX\n\nExample: \"2022-10-31T01:30:00.000\".\n",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChatWindowResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request. startDate must be provided"
-          },
-          "204": {
-            "description": "No chats found in this window."
-          }
-        }
-      }
-    },
-    "/chats/search": {
-      "get": {
-        "tags": [
-          "Chats"
-        ],
-        "operationId": "chatSearch",
-        "parameters": [
-          {
-            "name": "word",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "startDate",
+            "name": "sort",
             "in": "query",
             "required": false,
             "schema": {
               "type": "string",
-              "format": "date"
-            }
-          },
-          {
-            "name": "endDate",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "date"
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           },
           {
@@ -1016,21 +994,21 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Bad request."
-          },
-          "204": {
-            "description": "No data"
-          },
           "200": {
-            "description": "Find chat messages containing a specific word",
+            "description": "All 2b2t chats during a window of time, starting from startDate until endDate or pageSize is met.\n\nResults are sorted in ascending order by default.\n\nstartDate is required if sort is ASC, endDate is required if sort is DESC.\n\nstartDate and endDate must be ISO 8601 formatted strings, in this format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX\n\nExample: \"2022-10-31T01:30:00.000\".\n",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChatSearchResponse"
+                  "$ref": "#/components/schemas/ChatWindowResponse"
                 }
               }
             }
+          },
+          "204": {
+            "description": "No chats found in this window."
+          },
+          "400": {
+            "description": "Bad request. startDate must be provided"
           }
         }
       }
@@ -1094,6 +1072,9 @@
             "items": {
               "$ref": "#/components/schemas/TablistEntry"
             }
+          },
+          "header": {
+            "type": "string"
           }
         }
       },
@@ -1123,6 +1104,9 @@
             "items": {
               "$ref": "#/components/schemas/TablistInfoEntry"
             }
+          },
+          "header": {
+            "type": "string"
           },
           "count": {
             "type": "integer",
@@ -1327,6 +1311,15 @@
             "items": {
               "$ref": "#/components/schemas/PriorityPlayer"
             }
+          }
+        }
+      },
+      "SessionTimeLimitResponse": {
+        "type": "object",
+        "properties": {
+          "hours": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -1538,15 +1531,6 @@
           }
         }
       },
-      "WordCount": {
-        "type": "object",
-        "properties": {
-          "count": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "ChatWindowResponse": {
         "type": "object",
         "properties": {
@@ -1574,25 +1558,6 @@
           },
           "chat": {
             "type": "string"
-          }
-        }
-      },
-      "ChatSearchResponse": {
-        "type": "object",
-        "properties": {
-          "chats": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PlayerChat"
-            }
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageCount": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },
