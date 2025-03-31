@@ -90,7 +90,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.4.5-jre</version>
+            <version>33.4.6-jre</version>
         </dependency>
         <dependency>
             <groupId>org.redisson</groupId>
@@ -115,7 +115,7 @@
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
-            <version>1.3.5</version>
+            <version>3.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
