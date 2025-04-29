@@ -1,8 +1,9 @@
 package vc.live;
 
 import org.redisson.Redisson;
-import org.redisson.api.RBoundedBlockingQueue;
+import org.redisson.api.RReliableTopic;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,20 +20,19 @@ public class RedisClient implements DisposableBean {
         this.redissonClient = buildRedisClient(redisURL, redisUsername, redisPassword);
     }
 
-    public <T> RBoundedBlockingQueue<T> getQueue(final String queueName) {
-        return redissonClient.getBoundedBlockingQueue(queueName);
+    public RReliableTopic getTopic(final String topicName) {
+        return redissonClient.getReliableTopic(topicName);
     }
 
     public RedissonClient buildRedisClient(final String redisURL, final String redisUsername, final String redisPassword) {
         Config config = new Config();
-        config.setNettyThreads(1)
-            .setThreads(1)
+        config
             .useSingleServer()
             .setAddress(redisURL)
             .setUsername(redisUsername)
             .setPassword(redisPassword)
-            .setConnectionPoolSize(1)
             .setConnectionMinimumIdleSize(1);
+        config.setCodec(StringCodec.INSTANCE);
         return Redisson.create(config);
     }
 

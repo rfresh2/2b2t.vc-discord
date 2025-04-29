@@ -1,5 +1,6 @@
 package vc.live;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -12,7 +13,7 @@ import discord4j.discordjson.json.MessageCreateRequest;
 import discord4j.rest.entity.RestChannel;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.MultipartRequest;
-import org.redisson.api.RBoundedBlockingQueue;
+import org.redisson.api.RReliableTopic;
 import org.slf4j.Logger;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
@@ -41,7 +42,7 @@ public abstract class LiveFeed {
     protected final RedisClient redisClient;
     protected final GatewayDiscordClient discordClient;
     protected final Map<String, RestChannel> liveChannels;
-    protected final Map<InputQueue, RBoundedBlockingQueue> inputQueues;
+    protected final Map<InputQueue, RReliableTopic> inputTopics;
     protected final GuildConfigManager guildConfigManager;
     private final PriorityBlockingQueue<Message> messageQueue;
     private final ScheduledExecutorService executorService;
@@ -50,7 +51,6 @@ public abstract class LiveFeed {
         .expireAfterWrite(5, MINUTES)
         .build();
     private ScheduledFuture<?> processMessageQueueFuture;
-    private ScheduledFuture<?> processInputQueuesFuture;
 
     public LiveFeed(final RedisClient redisClient,
                     final GatewayDiscordClient discordClient,
@@ -63,7 +63,7 @@ public abstract class LiveFeed {
         this.liveChannels = new ConcurrentHashMap<>();
         this.guildConfigManager = guildConfigManager;
         this.messageQueue = new PriorityBlockingQueue<>(MESSAGE_Q_CAPACITY);
-        this.inputQueues = new ConcurrentHashMap<>();
+        this.inputTopics = new ConcurrentHashMap<>();
         this.executorService = executorService;
         this.objectMapper = objectMapper;
         if (liveFeedEnabled) {
@@ -71,7 +71,6 @@ public abstract class LiveFeed {
             syncChannels();
             this.processMessageQueueFuture = this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 11, SECONDS);
             inputQueues().forEach(this::registerInputQueue);
-            this.processInputQueuesFuture = this.executorService.scheduleWithFixedDelay(this::processInputQueues, ((int) (Math.random() * 10)), 8, SECONDS);
         } else {
             LOGGER.info("Live feed {} disabled", getClass().getSimpleName());
         }
@@ -87,7 +86,7 @@ public abstract class LiveFeed {
     protected abstract List<InputQueue> inputQueues();
 
     record InputQueue<T>(
-        String queueName,
+        String topicName,
         Class<T> deserializedType,
         Function<T, EmbedData> embedBuilderFunction,
         Function<T, Long> timestampFunction
@@ -101,54 +100,24 @@ public abstract class LiveFeed {
     }
 
     private void registerInputQueue(final InputQueue inputQueue) {
-        final RBoundedBlockingQueue<String> queue = this.redisClient.getQueue(inputQueue.queueName());
-        inputQueues.put(inputQueue, queue);
+        final RReliableTopic topic = this.redisClient.getTopic(inputQueue.topicName());
+        inputTopics.put(inputQueue, topic);
+        topic.addListener(String.class, (channel, message) -> topicMessageListener(inputQueue, message));
+    }
+
+    private void topicMessageListener(final InputQueue inputQueue, final String message) {
+        try {
+            var data = objectMapper.readValue(message, inputQueue.deserializedType());
+            synchronized (this.messageQueue) {
+                this.messageQueue.add(new Message((EmbedData) inputQueue.embedBuilderFunction().apply(data), (long) inputQueue.timestampFunction().apply(data)));
+            }
+        } catch (JsonProcessingException e) {
+            LOGGER.error("Failed to deserialize message: {}", message, e);
+        }
     }
 
     private String feedName() {
         return getClass().getSimpleName();
-    }
-
-    private void processInputQueue(final InputQueue inputQueue, final RBoundedBlockingQueue<String> queue) {
-        try {
-            String json;
-            while ((json = queue.poll()) != null) {
-                final Object data = objectMapper.readValue(json, inputQueue.deserializedType());
-                this.messageQueue.add(new Message((EmbedData) inputQueue.embedBuilderFunction().apply(data), (long) inputQueue.timestampFunction().apply(data)));
-            }
-        } catch (final Exception e) {
-            LOGGER.error("Error processing {} queue", feedName(), e);
-        }
-    }
-
-    private void processInputQueues() {
-        synchronized (this.messageQueue) {
-            if (this.messageQueue.size() < MESSAGE_Q_CAPACITY - 1) {
-//                try {
-//                    queueHealthCheck();
-//                } catch (final Exception e) {
-//                    LOGGER.error("Error during queue health check", e);
-//                    return;
-//                }
-                inputQueues.forEach(this::processInputQueue);
-            } else
-                LOGGER.warn("Message queue is full, skipping input queues");
-        }
-    }
-
-    private void queueHealthCheck() {
-        final List<InputQueue> recreate = new ArrayList<>(1);
-        for (Map.Entry<InputQueue, RBoundedBlockingQueue> entry : inputQueues.entrySet()) {
-            // todo: this is returning false for some reason
-            //  need to find out what the queue failure modes are
-            //  what happens on redis restart?
-            //  do queues have an expiry?
-            if (!entry.getValue().isExists()) recreate.add(entry.getKey());
-        }
-        if (!recreate.isEmpty()) {
-            LOGGER.warn("Recreating {} input queues", recreate.size());
-            recreate.forEach(this::registerInputQueue);
-        }
     }
 
     public void syncChannels() {

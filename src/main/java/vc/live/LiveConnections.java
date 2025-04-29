@@ -57,10 +57,12 @@ public class LiveConnections extends LiveFeed {
 
     @Override
     protected List<InputQueue> inputQueues() {
-        return asList(new InputQueue<>("ConnectionsQueue",
-                                       ConnectionsRecord.class,
-                                       this::buildConnectionsEmbed,
-                                       this::getConnectionTimestamp));
+        return asList(new InputQueue<>(
+            "ConnectionsTopic",
+            ConnectionsRecord.class,
+            this::buildConnectionsEmbed,
+            this::getConnectionTimestamp)
+        );
     }
 
     protected EmbedData buildConnectionsEmbed(final ConnectionsRecord con) {
