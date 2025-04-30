@@ -5,8 +5,8 @@ import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
+import discord4j.core.object.emoji.Emoji;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.discordjson.possible.Possible;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,12 +56,12 @@ public class PaginatedButtonHandler {
                 padding = "0";
             }
             var firstPageArgs = new PaginatedCommandArgs(identity.name(), 1, startDate, endDate, padding);
-            addButtonSafe(encodeButtonId(objectMapper, commandName, firstPageArgs), ReactionEmoji.unicode("⏮"), buttons);
+            addButtonSafe(encodeButtonId(objectMapper, commandName, firstPageArgs), Emoji.unicode("⏮"), buttons);
             var prevPageArgs = new PaginatedCommandArgs(identity.name(), page - 1, startDate, endDate, null);
-            addButtonSafe(encodeButtonId(objectMapper, commandName, prevPageArgs), ReactionEmoji.unicode("◀"), buttons);
+            addButtonSafe(encodeButtonId(objectMapper, commandName, prevPageArgs), Emoji.unicode("◀"), buttons);
         } else {
-            addDisabledButton(ReactionEmoji.unicode("⏮"), buttons);
-            addDisabledButton(ReactionEmoji.unicode("◀"), buttons);
+            addDisabledButton(Emoji.unicode("⏮"), buttons);
+            addDisabledButton(Emoji.unicode("◀"), buttons);
         }
         if (page < totalPageCount) {
             String padding = null;
@@ -69,12 +69,12 @@ public class PaginatedButtonHandler {
                 padding = "0";
             }
             var nextPageArgs = new PaginatedCommandArgs(identity.name(), page + 1, startDate, endDate, padding);
-            addButtonSafe(encodeButtonId(objectMapper, commandName, nextPageArgs), ReactionEmoji.unicode("▶"), buttons);
+            addButtonSafe(encodeButtonId(objectMapper, commandName, nextPageArgs), Emoji.unicode("▶"), buttons);
             var lastPageArgs = new PaginatedCommandArgs(identity.name(), totalPageCount, startDate, endDate, null);
-            addButtonSafe(encodeButtonId(objectMapper, commandName, lastPageArgs), ReactionEmoji.unicode("⏭"), buttons);
+            addButtonSafe(encodeButtonId(objectMapper, commandName, lastPageArgs), Emoji.unicode("⏭"), buttons);
         } else {
-            addDisabledButton(ReactionEmoji.unicode("▶"), buttons);
-            addDisabledButton(ReactionEmoji.unicode("⏭"), buttons);
+            addDisabledButton(Emoji.unicode("▶"), buttons);
+            addDisabledButton(Emoji.unicode("⏭"), buttons);
         }
         return buttons.isEmpty() ? Possible.absent() : Possible.of(buttons);
     }
@@ -84,7 +84,7 @@ public class PaginatedButtonHandler {
             .map(buttons -> List.of(ActionRow.of(buttons)));
     }
 
-    public void addButtonSafe(String encodedId, ReactionEmoji emoji, List<Button> out) {
+    public void addButtonSafe(String encodedId, Emoji emoji, List<Button> out) {
         if (encodedId.length() > 100) {
             LOGGER.warn("Button ID too long: {}", encodedId);
             return;
@@ -92,7 +92,7 @@ public class PaginatedButtonHandler {
         out.add(Button.secondary(encodedId, emoji));
     }
 
-    public void addDisabledButton(ReactionEmoji emoji, List<Button> out) {
+    public void addDisabledButton(Emoji emoji, List<Button> out) {
         out.add(Button.secondary(UUID.randomUUID().toString(), emoji).disabled());
     }
 
