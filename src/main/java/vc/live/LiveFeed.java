@@ -70,7 +70,7 @@ public abstract class LiveFeed {
         if (liveFeedEnabled) {
             LOGGER.info("Starting {} live feed", getClass().getSimpleName());
             syncChannels();
-            this.processMessageQueueFuture = this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 11, SECONDS);
+            this.processMessageQueueFuture = this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 10, SECONDS);
             inputQueues().forEach(this::registerInputQueue);
         } else {
             LOGGER.info("Live feed {} disabled", getClass().getSimpleName());
