@@ -27,6 +27,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -183,7 +184,9 @@ public abstract class LiveFeed {
             final List<EmbedData> embeds = new ArrayList<>(4);
             synchronized (this.messageQueue) {
                 Message message;
+                var now = Instant.now().getEpochSecond();
                 while (embeds.size() < 10 && (message = messageQueue.poll()) != null) {
+                    if (now - message.timestamp > MINUTES.toSeconds(20)) continue;
                     embeds.add(message.embedData());
                 }
             }
