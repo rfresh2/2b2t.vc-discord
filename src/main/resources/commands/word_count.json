@@ -1,0 +1,12 @@
+{
+  "name": "wordcount",
+  "description": "Counts how many times a word has ever been seen in chat",
+  "options": [
+    {
+      "name": "word",
+      "description": "The word to search",
+      "type": 3,
+      "required": true
+    }
+  ]
+}
