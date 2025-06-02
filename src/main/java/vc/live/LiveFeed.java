@@ -15,6 +15,7 @@ import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.MultipartRequest;
 import org.redisson.api.RReliableTopic;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.DisposableBean;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -37,13 +38,13 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public abstract class LiveFeed {
+public abstract class LiveFeed implements DisposableBean {
     private final Logger LOGGER = getLogger(getClass().getSimpleName());
     private static final int MESSAGE_Q_CAPACITY = 1000;
     protected final RedisClient redisClient;
     protected final GatewayDiscordClient discordClient;
     protected final Map<String, RestChannel> liveChannels;
-    protected final Map<InputQueue, RReliableTopic> inputTopics;
+    protected final Map<InputQueue, TopicListener> inputTopics;
     protected final GuildConfigManager guildConfigManager;
     private final PriorityBlockingQueue<Message> messageQueue;
     private final ScheduledExecutorService executorService;
@@ -77,6 +78,11 @@ public abstract class LiveFeed {
         }
     }
 
+    record TopicListener(
+        RReliableTopic topic,
+        String id
+    ) {}
+
     protected abstract boolean channelEnabledPredicate(final GuildConfigRecord guildConfigRecord);
     protected abstract String liveChannelId(final GuildConfigRecord guildConfigRecord);
 
@@ -102,8 +108,9 @@ public abstract class LiveFeed {
 
     private void registerInputQueue(final InputQueue inputQueue) {
         final RReliableTopic topic = this.redisClient.getTopic(inputQueue.topicName());
-        inputTopics.put(inputQueue, topic);
-        topic.addListener(String.class, (channel, message) -> topicMessageListener(inputQueue, message));
+        String id = topic.addListener(String.class, (channel, message) -> topicMessageListener(inputQueue, message));
+        inputTopics.put(inputQueue, new TopicListener(topic, id));
+        LOGGER.info("Registered {} topic listener {}", inputQueue.topicName(), id);
     }
 
     private void topicMessageListener(final InputQueue inputQueue, final String message) {
@@ -283,5 +290,20 @@ public abstract class LiveFeed {
     public void onAllGuildsLoaded() {
         syncChannels();
         LOGGER.info("Loaded {} live guilds", liveChannels.size());
+    }
+
+    @Override
+    public void destroy() {
+        LOGGER.info("Shutting down {} live feed", getClass().getSimpleName());
+        if (processMessageQueueFuture != null && !processMessageQueueFuture.isCancelled()) {
+            processMessageQueueFuture.cancel(true);
+        }
+        inputTopics.values().forEach(topicListener -> {
+            try {
+                topicListener.topic.removeListener(topicListener.id);
+            } catch (final Exception e) {
+                LOGGER.error("Error removing topic listener for {}", topicListener.topic.getName(), e);
+            }
+        });
     }
 }

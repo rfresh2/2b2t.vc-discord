@@ -38,6 +38,7 @@ public class RedisClient implements DisposableBean {
 
     @Override
     public void destroy() {
+        LOGGER.info("Shutting down redisson client");
         try {
             redissonClient.shutdown();
         } catch (Exception e) {
