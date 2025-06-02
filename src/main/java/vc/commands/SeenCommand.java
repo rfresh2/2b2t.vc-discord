@@ -80,12 +80,12 @@ public class SeenCommand implements SlashCommand {
                                 .thumbnail(identity.getAvatarURL())
                                 .build());
         return event.createFollowup()
-                .withEmbeds(populateIdentity(EmbedCreateSpec.builder()
-                                 .addField("First seen", getSeenString(seenResponse.getFirstSeen()), false)
-                                 .addField("Last seen", getSeenString(seenResponse.getLastSeen()), false), identity)
-                                .color(Color.CYAN)
-                                .thumbnail(identity.getAvatarURL())
-                                .build());
+            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                .addField("First seen", getSeenString(seenResponse.getFirstSeen()), false)
+                .addField("Last seen", getSeenString(seenResponse.getLastSeen()), false)
+                .color(Color.CYAN)
+                .thumbnail(identity.getAvatarURL())
+                .build());
     }
 
     private String getSeenString(@Nullable final OffsetDateTime seen) {
