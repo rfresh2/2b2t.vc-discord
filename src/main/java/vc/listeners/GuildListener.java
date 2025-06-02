@@ -12,11 +12,14 @@ import reactor.core.publisher.Mono;
 import vc.config.GuildConfigManager;
 import vc.live.LiveFeedManager;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 @Component
 public class GuildListener {
     private static final Logger LOGGER = LoggerFactory.getLogger("GuildListener");
     private final GuildConfigManager guildConfigManager;
     private final LiveFeedManager liveFeedManager;
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     public GuildListener(final GatewayDiscordClient client,
                          final RestClient restClient,
@@ -31,11 +34,12 @@ public class GuildListener {
             guilds.forEach(guildConfigManager::loadGuild);
             guildConfigManager.writeAllGuildConfigs();
             liveFeedManager.onAllGuildsLoaded();
+            initialized.set(true);
         });
     }
 
     private Mono<Void> handleGuildCreateJoin(final GuildCreateEvent event) {
-        LOGGER.info("Joined guild: {}", event.getGuild().getName());
+        if (initialized.get()) LOGGER.info("Joined guild: {}", event.getGuild().getName());
         guildConfigManager.loadGuild(event.getGuild().getData());
         return Mono.empty();
     }
@@ -46,7 +50,7 @@ public class GuildListener {
             return Mono.empty();
         }
         var guildName = event.getGuild().map(Guild::getName).orElse("?");
-        LOGGER.info("Left guild: ({}) {}", event.getGuildId().asString(), guildName);
+        if (initialized.get()) LOGGER.info("Left guild: ({}) {}", event.getGuildId().asString(), guildName);
         liveFeedManager.disableFeedsInGuild(event.getGuildId().asString());
         return Mono.empty();
     }
