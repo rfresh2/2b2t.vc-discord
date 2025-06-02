@@ -40,11 +40,11 @@ public class QueueCommand implements SlashCommand {
             if (isNull(queuelength)) return error(event, "Unable to resolve queue length");
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                                .color(Color.CYAN)
-                                .addField("Prio", queuelength.getPrio().toString(), true)
-                                .addField("Regular", queuelength.getRegular().toString(), true)
-                                .addField("ETA", QueueETA.INSTANCE.getEtaString(queuelength.getRegular()), true)
-                                .build());
+                    .color(Color.CYAN)
+                    .addField("Prio", queuelength.getPrio().toString(), true)
+                    .addField("Regular", queuelength.getRegular().toString(), true)
+                    .addField("ETA", QueueETA.INSTANCE.getEtaString(queuelength.getRegular()), true)
+                    .build());
         });
 
     }

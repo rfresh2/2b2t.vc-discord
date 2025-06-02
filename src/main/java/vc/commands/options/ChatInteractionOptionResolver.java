@@ -26,9 +26,9 @@ public class ChatInteractionOptionResolver {
             }
         } catch (final Exception e) {
             LOGGER.error("Error while resolving options for event: {} with options: {}",
-                         event.getCommandName(),
-                         event.getOptions().stream().map(ApplicationCommandInteractionOption::getName).toArray(),
-                         e);
+                event.getCommandName(),
+                event.getOptions().stream().map(ApplicationCommandInteractionOption::getName).toArray(),
+                e);
             if (!ctx.isErrorSet()) ctx.setError("Error while resolving command options");
         }
         return ctx;

@@ -54,10 +54,10 @@ public class DataCommand implements SlashCommand {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                     return event.createFollowup()
                         .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                        .color(Color.RUBY)
-                                        .description("No Data")
-                                        .thumbnail(identity.getAvatarURL())
-                                        .build());
+                            .color(Color.RUBY)
+                            .description("No Data")
+                            .thumbnail(identity.getAvatarURL())
+                            .build());
                 } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
                     LOGGER.error("Timeout searching for data dump: {}", identity.uuid(), httpTimeoutException);
                     return error(event, "Timeout searching for data. Try again in a minute");
@@ -70,17 +70,17 @@ public class DataCommand implements SlashCommand {
         if (playerDataDump == null)
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                .color(Color.RUBY)
-                                .description("No Data")
-                                .thumbnail(identity.getAvatarURL())
-                                .build());
+                    .color(Color.RUBY)
+                    .description("No Data")
+                    .thumbnail(identity.getAvatarURL())
+                    .build());
         return event.createFollowup()
             .withFiles(MessageCreateFields.File.of(identity.name() + ".csv", new ByteArrayInputStream(playerDataDump.getBytes())))
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                            .addField("Data Count", ""+playerDataDump.lines().count(), true)
-                            .description("CSV Generated!")
-                            .color(Color.CYAN)
-                            .thumbnail(identity.getAvatarURL())
-                            .build());
+                .addField("Data Count", ""+playerDataDump.lines().count(), true)
+                .description("CSV Generated!")
+                .color(Color.CYAN)
+                .thumbnail(identity.getAvatarURL())
+                .build());
     }
 }

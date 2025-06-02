@@ -28,11 +28,11 @@ public class LiveConnections extends LiveFeed {
                            final String liveFeedsEnabled
     ) {
         super(redisClient,
-              discordClient,
-              guildConfigManager,
-              executorService,
-              objectMapper,
-              Boolean.parseBoolean(liveFeedsEnabled));
+            discordClient,
+            guildConfigManager,
+            executorService,
+            objectMapper,
+            Boolean.parseBoolean(liveFeedsEnabled));
     }
 
     @Override

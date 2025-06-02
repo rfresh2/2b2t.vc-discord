@@ -54,10 +54,10 @@ public class PlaytimeTopMonthCommand implements SlashCommand {
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                                .title("Top Playtime (30 days)")
-                                .color(Color.CYAN)
-                                .description(result.toString())
-                                .build());
+                    .title("Top Playtime (30 days)")
+                    .color(Color.CYAN)
+                    .description(result.toString())
+                    .build());
         });
     }
 }

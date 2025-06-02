@@ -71,10 +71,10 @@ public class KillsCommand implements SlashCommand, ButtonCommand {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                     return event.createFollowup()
                         .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                        .color(Color.RUBY)
-                                        .description("No kills found")
-                                        .thumbnail(identity.getAvatarURL())
-                                        .build());
+                            .color(Color.RUBY)
+                            .description("No kills found")
+                            .thumbnail(identity.getAvatarURL())
+                            .build());
                 } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
                     LOGGER.error("Timeout searching for kills: {}", identity.uuid(), httpTimeoutException);
                     return error(event, "Timeout searching for kills. Try again in a minute");
@@ -87,10 +87,10 @@ public class KillsCommand implements SlashCommand, ButtonCommand {
         if (killsResponse == null || killsResponse.getKills() == null || killsResponse.getKills().isEmpty())
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                .color(Color.RUBY)
-                                .description("No kills found")
-                                .thumbnail(identity.getAvatarURL())
-                                .build());
+                    .color(Color.RUBY)
+                    .description("No kills found")
+                    .thumbnail(identity.getAvatarURL())
+                    .build());
 
         final StringBuilder result = new StringBuilder();
         final AtomicBoolean truncated = new AtomicBoolean(false);
@@ -107,13 +107,13 @@ public class KillsCommand implements SlashCommand, ButtonCommand {
         if (truncated.get()) LOGGER.warn("Truncated kills response");
         return event.createFollowup()
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                            .color(Color.CYAN)
-                            .description(result.toString())
-                            .addField("Total", ""+killsResponse.getTotal(), true)
-                            .addField("Page", page + " / " + killsResponse.getPageCount(), true)
-                            .addField("\u200B", "\u200B", true)
-                            .thumbnail(identity.getAvatarURL())
-                            .build())
+                .color(Color.CYAN)
+                .description(result.toString())
+                .addField("Total", ""+killsResponse.getTotal(), true)
+                .addField("Page", page + " / " + killsResponse.getPageCount(), true)
+                .addField("\u200B", "\u200B", true)
+                .thumbnail(identity.getAvatarURL())
+                .build())
             .withComponents(buttonHandler.getButtonRow(objectMapper, getName(), killsResponse.getPageCount(), page, identity, startDate, endDate));
     }
 

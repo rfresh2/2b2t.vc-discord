@@ -27,13 +27,13 @@ public class CommandsCommand implements SlashCommand {
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         var commandInfos = this.commands.stream()
-                .map(c -> "`/" + c.name() + "` -> " + c.description().toOptional().orElse(""))
-                .toList();
+            .map(c -> "`/" + c.name() + "` -> " + c.description().toOptional().orElse(""))
+            .toList();
         return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Commands")
-                        .description(String.join("\n", commandInfos))
-                        .color(Color.CYAN)
-                        .build());
+            .withEmbeds(EmbedCreateSpec.builder()
+                .title("Commands")
+                .description(String.join("\n", commandInfos))
+                .color(Color.CYAN)
+                .build());
     }
 }

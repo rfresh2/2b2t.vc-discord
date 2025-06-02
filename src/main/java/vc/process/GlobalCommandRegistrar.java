@@ -52,13 +52,13 @@ public class GlobalCommandRegistrar implements ApplicationRunner {
 
         // delete any commands we haven't registered
         Map<String, ApplicationCommandData> existingCommands = applicationService
-                .getGlobalApplicationCommands(applicationId)
-                .collectMap(ApplicationCommandData::name)
-                .block();
+            .getGlobalApplicationCommands(applicationId)
+            .collectMap(ApplicationCommandData::name)
+            .block();
         Optional.ofNullable(existingCommands)
-                .ifPresent(e -> e.entrySet().stream()
-                        .filter(entry -> commands.stream().noneMatch(command -> command.name().equals(entry.getKey())))
-                        .forEach(entry -> applicationService.deleteGlobalApplicationCommand(applicationId, entry.getValue().id().asLong()).block()));
+            .ifPresent(e -> e.entrySet().stream()
+                .filter(entry -> commands.stream().noneMatch(command -> command.name().equals(entry.getKey())))
+                .forEach(entry -> applicationService.deleteGlobalApplicationCommand(applicationId, entry.getValue().id().asLong()).block()));
 
         /* Bulk overwrite commands. This is now idempotent, so it is safe to use this even when only 1 command
         is changed/added/removed

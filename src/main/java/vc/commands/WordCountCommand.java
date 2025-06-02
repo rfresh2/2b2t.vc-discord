@@ -48,9 +48,9 @@ public class WordCountCommand implements SlashCommand {
                     if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                         return event.createFollowup()
                             .withEmbeds(EmbedCreateSpec.builder()
-                                            .color(Color.RUBY)
-                                            .description("No chats containing this word were found. That's pretty rare!")
-                                            .build());
+                                .color(Color.RUBY)
+                                .description("No chats containing this word were found. That's pretty rare!")
+                                .build());
                     } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
                         LOGGER.error("Timeout searching for word: {}", word, httpTimeoutException);
                         return error(event, "Timeout searching for word. Try again in a minute");
@@ -65,11 +65,11 @@ public class WordCountCommand implements SlashCommand {
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                                .title("Word Count")
-                                .color(Color.CYAN)
-                                .addField("Count", count+"", false)
-                                .addField("Word", escape(word), false)
-                                .build());
+                    .title("Word Count")
+                    .color(Color.CYAN)
+                    .addField("Count", count+"", false)
+                    .addField("Word", escape(word), false)
+                    .build());
         });
     }
 }

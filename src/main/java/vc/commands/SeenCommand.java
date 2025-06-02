@@ -59,10 +59,10 @@ public class SeenCommand implements SlashCommand {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                     return event.createFollowup()
                         .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                        .color(Color.RUBY)
-                                        .description("Never Seen")
-                                        .thumbnail(identity.getAvatarURL())
-                                        .build());
+                            .color(Color.RUBY)
+                            .description("Never Seen")
+                            .thumbnail(identity.getAvatarURL())
+                            .build());
                 } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
                     LOGGER.error("Timeout getting seen for: {}", identity.uuid(), httpTimeoutException);
                     return error(event, "Timeout getting seen data. Try again in a minute");
@@ -75,10 +75,10 @@ public class SeenCommand implements SlashCommand {
         if (isNull(seenResponse))
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                .color(Color.RUBY)
-                                .description("Never Seen")
-                                .thumbnail(identity.getAvatarURL())
-                                .build());
+                    .color(Color.RUBY)
+                    .description("Never Seen")
+                    .thumbnail(identity.getAvatarURL())
+                    .build());
         return event.createFollowup()
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
                 .addField("First seen", getSeenString(seenResponse.getFirstSeen()), false)

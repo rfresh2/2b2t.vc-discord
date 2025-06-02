@@ -21,11 +21,11 @@ public interface SlashCommand {
 
     default Mono<Message> error(DeferrableInteractionEvent event, final String message) {
         return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
-                        .title("Error")
-                        .color(Color.RUBY)
-                        .description(message)
-                        .build());
+            .withEmbeds(EmbedCreateSpec.builder()
+                .title("Error")
+                .color(Color.RUBY)
+                .description(message)
+                .build());
     }
 
     default String escape(String message) {

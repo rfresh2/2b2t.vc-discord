@@ -59,11 +59,11 @@ public class Application {
     @Bean
     public GatewayDiscordClient gatewayDiscordClient() {
         this.gatewayDiscordClient = DiscordClientBuilder.create(token).build()
-                .gateway()
-                .setEnabledIntents(IntentSet.of(Intent.GUILDS))
-                .setInitialPresence(ignore -> ClientPresence.of(Status.ONLINE, ClientActivity.custom("/commands")))
-                .login()
-                .block();
+            .gateway()
+            .setEnabledIntents(IntentSet.of(Intent.GUILDS))
+            .setInitialPresence(ignore -> ClientPresence.of(Status.ONLINE, ClientActivity.custom("/commands")))
+            .login()
+            .block();
         return this.gatewayDiscordClient;
     }
 
@@ -100,9 +100,9 @@ public class Application {
     @Bean
     public ScheduledExecutorService scheduledExecutorService() {
         this.scheduledExecutorService = Executors.newScheduledThreadPool(2, new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("scheduled-%d")
-                .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught exception in scheduled thread: {}", t.getName(), e))
+            .setDaemon(true)
+            .setNameFormat("scheduled-%d")
+            .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught exception in scheduled thread: {}", t.getName(), e))
             .build());
         return this.scheduledExecutorService;
     }

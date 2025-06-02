@@ -54,10 +54,10 @@ public class PlaytimeTopCommand implements SlashCommand {
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                                .title("Top Playtime")
-                                .color(Color.CYAN)
-                                .description(result.toString())
-                                .build());
+                    .title("Top Playtime")
+                    .color(Color.CYAN)
+                    .description(result.toString())
+                    .build());
         });
     }
 

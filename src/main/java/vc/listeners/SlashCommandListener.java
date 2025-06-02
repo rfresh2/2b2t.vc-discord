@@ -75,10 +75,10 @@ public class SlashCommandListener {
                 .map(config -> "(" + config.guildId() + " - " + config.guildName() + ")")
                 .orElse("(?)");
             LOGGER.info("[{}ms] {} {} clicked button: {}",
-                        afterTime.toEpochMilli() - beforeTime.toEpochMilli(),
-                        username,
-                        guild,
-                        event.getCustomId());
+                afterTime.toEpochMilli() - beforeTime.toEpochMilli(),
+                username,
+                guild,
+                event.getCustomId());
             if (error != null) {
                 LOGGER.error("Error handling button", error);
             }
@@ -104,11 +104,11 @@ public class SlashCommandListener {
                 .map(config -> "(" + config.guildId() + " - " + config.guildName() + ")")
                 .orElse("(?)");
             LOGGER.info("[{}ms] {} {} executed {}{}",
-                        afterTime.toEpochMilli() - beforeTime.toEpochMilli(),
-                        username,
-                        guild,
-                        command.getName(),
-                        !dataOptions.isEmpty() ? " : " + dataOptions : "");
+                afterTime.toEpochMilli() - beforeTime.toEpochMilli(),
+                username,
+                guild,
+                command.getName(),
+                !dataOptions.isEmpty() ? " : " + dataOptions : "");
             if (error != null) {
                 LOGGER.error("Error executing command", error);
             }

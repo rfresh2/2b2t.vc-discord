@@ -51,9 +51,9 @@ public class DeathsTopMonthCommand implements SlashCommand {
         }
         return event.createFollowup()
             .withEmbeds(EmbedCreateSpec.builder()
-                            .title("Top Deaths Count (30 days)")
-                            .color(Color.CYAN)
-                            .description(result.toString())
-                            .build());
+                .title("Top Deaths Count (30 days)")
+                .color(Color.CYAN)
+                .description(result.toString())
+                .build());
     }
 }

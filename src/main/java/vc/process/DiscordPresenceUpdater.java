@@ -49,9 +49,9 @@ public class DiscordPresenceUpdater {
     void updatePresence() {
         try {
             this.discordClient.updatePresence(
-                ClientPresence.of(
-                    Status.ONLINE,
-                    ClientActivity.custom(selectStatusMessage())))
+                    ClientPresence.of(
+                        Status.ONLINE,
+                        ClientActivity.custom(selectStatusMessage())))
                 .block();
         } catch (final Exception e) {
             LOGGER.error("Error updating presence", e);
@@ -93,9 +93,9 @@ public class DiscordPresenceUpdater {
         try {
             var queuelength = queueApi.queue();
             return Optional.of(String.format("Q: %d | Prio: %d | ETA: %s",
-                                             queuelength.getRegular(),
-                                             queuelength.getPrio(),
-                                             QueueETA.INSTANCE.getEtaString(queuelength.getRegular() != null ? queuelength.getRegular() : 0)));
+                queuelength.getRegular(),
+                queuelength.getPrio(),
+                QueueETA.INSTANCE.getEtaString(queuelength.getRegular() != null ? queuelength.getRegular() : 0)));
         } catch (final Exception e) {
             LOGGER.error("Error getting queue status", e);
             return Optional.empty();

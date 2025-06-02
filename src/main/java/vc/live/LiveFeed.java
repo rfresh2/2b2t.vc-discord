@@ -218,16 +218,16 @@ public abstract class LiveFeed {
             .timeout(Duration.ofSeconds(3))
             // retry only on TimeoutException
             .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
-                           .filter(error -> error instanceof TimeoutException)
-                           .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
-                               "Retries exhausted sending message to guild: " + guildId + ", channelId: " + channel.getId().asString(),
-                               signal.failure())))
+                .filter(error -> error instanceof TimeoutException)
+                .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
+                    "Retries exhausted sending message to guild: " + guildId + ", channelId: " + channel.getId().asString(),
+                    signal.failure())))
             .onErrorResume(error -> {
                 if (Exceptions.isRetryExhausted(error))
                     handleBroadcastError(error.getCause(), guildId, channel);
                 else
                     handleBroadcastError(error, guildId, channel);
-               return Mono.empty();
+                return Mono.empty();
             });
     }
 

@@ -71,10 +71,10 @@ public class DeathsCommand implements SlashCommand, ButtonCommand {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                     return event.createFollowup()
                         .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                        .color(Color.RUBY)
-                                        .description("No deaths found")
-                                        .thumbnail(identity.getAvatarURL())
-                                        .build());
+                            .color(Color.RUBY)
+                            .description("No deaths found")
+                            .thumbnail(identity.getAvatarURL())
+                            .build());
                 } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
                     LOGGER.error("Timeout searching for deaths: {}", identity.uuid(), httpTimeoutException);
                     return error(event, "Timeout searching for deaths. Try again in a minute");
@@ -87,10 +87,10 @@ public class DeathsCommand implements SlashCommand, ButtonCommand {
         if (deathsResponse == null || deathsResponse.getDeaths() == null || deathsResponse.getDeaths().isEmpty())
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                .color(Color.RUBY)
-                                .description("No deaths found")
-                                .thumbnail(identity.getAvatarURL())
-                                .build());
+                    .color(Color.RUBY)
+                    .description("No deaths found")
+                    .thumbnail(identity.getAvatarURL())
+                    .build());
         final StringBuilder result = new StringBuilder();
         final AtomicBoolean truncated = new AtomicBoolean(false);
         deathsResponse.getDeaths().stream()
@@ -106,13 +106,13 @@ public class DeathsCommand implements SlashCommand, ButtonCommand {
         if (truncated.get()) LOGGER.warn("Truncated deaths response");
         return event.createFollowup()
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                            .color(Color.CYAN)
-                            .description(result.toString())
-                            .addField("Total", ""+deathsResponse.getTotal(), true)
-                            .addField("Page", page + " / " + deathsResponse.getPageCount(), true)
-                            .addField("\u200B", "\u200B", true)
-                            .thumbnail(identity.getAvatarURL())
-                            .build())
+                .color(Color.CYAN)
+                .description(result.toString())
+                .addField("Total", ""+deathsResponse.getTotal(), true)
+                .addField("Page", page + " / " + deathsResponse.getPageCount(), true)
+                .addField("\u200B", "\u200B", true)
+                .thumbnail(identity.getAvatarURL())
+                .build())
             .withComponents(buttonHandler.getButtonRow(objectMapper, getName(), deathsResponse.getPageCount(), page, identity, startDate, endDate));
     }
 

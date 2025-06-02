@@ -58,10 +58,10 @@ public class PriorityPlayersCommand implements SlashCommand {
             return event.createFollowup()
                 .withFiles(MessageCreateFields.File.of("priority_players.json", new ByteArrayInputStream(jsonString.getBytes())))
                 .withEmbeds(EmbedCreateSpec.builder()
-                                .addField("Player Count", ""+response.getPlayers().size(), true)
-                                .description("JSON Generated!")
-                                .color(Color.CYAN)
-                                .build());
+                    .addField("Player Count", ""+response.getPlayers().size(), true)
+                    .description("JSON Generated!")
+                    .color(Color.CYAN)
+                    .build());
         });
     }
 }

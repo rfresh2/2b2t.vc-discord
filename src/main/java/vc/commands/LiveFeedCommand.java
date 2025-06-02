@@ -48,10 +48,10 @@ public abstract class LiveFeedCommand implements SlashCommand {
                         liveFeed.enableFeed(guildId, channel.getId().asString());
                         return event.createFollowup()
                             .withEmbeds(EmbedCreateSpec.builder()
-                                            .title(feedName() + " Enabled")
-                                            .color(Color.CYAN)
-                                            .addField("Channel", channel.getMention(), true)
-                                            .build());
+                                .title(feedName() + " Enabled")
+                                .color(Color.CYAN)
+                                .addField("Channel", channel.getMention(), true)
+                                .build());
                     } catch (final Throwable e) {
                         return error(event, "Unable to enable " + feedName() + ": " + e.getMessage());
                     }}))
@@ -61,9 +61,9 @@ public abstract class LiveFeedCommand implements SlashCommand {
                 liveFeed.disableFeed(guildId);
                 return event.createFollowup()
                     .withEmbeds(EmbedCreateSpec.builder()
-                                    .title(feedName() + " Disabled")
-                                    .color(Color.CYAN)
-                                    .build());
+                        .title(feedName() + " Disabled")
+                        .color(Color.CYAN)
+                        .build());
             } catch (final Throwable e) {
                 return error(event, "Unable to disable " + feedName() + ": " + e.getMessage());
             }

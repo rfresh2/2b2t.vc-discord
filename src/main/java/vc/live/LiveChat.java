@@ -32,11 +32,11 @@ public class LiveChat extends LiveFeed {
                     final String liveFeedsEnabled
     ) {
         super(redisClient,
-              discordClient,
-              guildConfigManager,
-              executorService,
-              objectMapper,
-              Boolean.parseBoolean(liveFeedsEnabled));
+            discordClient,
+            guildConfigManager,
+            executorService,
+            objectMapper,
+            Boolean.parseBoolean(liveFeedsEnabled));
     }
 
     @Override
@@ -62,7 +62,7 @@ public class LiveChat extends LiveFeed {
     @Override
     protected List<InputQueue> inputQueues() {
         return asList(new InputQueue<>("ChatsTopic", ChatsRecord.class, this::getChatEmbed, this::getChatTimestamp),
-                      new InputQueue<>("DeathsTopic", DeathsRecord.class, this::getDeathEmbed, this::getDeathTimestamp));
+            new InputQueue<>("DeathsTopic", DeathsRecord.class, this::getDeathEmbed, this::getDeathTimestamp));
     }
 
     private EmbedData getChatEmbed(final ChatsRecord chat) {

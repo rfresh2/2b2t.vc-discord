@@ -108,13 +108,13 @@ public class GuildConfigDatabase implements DisposableBean {
         try {
             try (var statement = connection.createStatement()) {
                 statement.executeUpdate("CREATE TABLE IF NOT EXISTS guild_config ("
-                                            + "guild_id INTEGER, "
-                                            + "guild_name TEXT, "
-                                            + "live_chat_enabled INTEGER, "
-                                            + "live_chat_channel_id TEXT, "
-                                            + "live_connections_enabled INTEGER, "
-                                            + "live_connections_channel_id TEXT"
-                                            + ")");
+                    + "guild_id INTEGER, "
+                    + "guild_name TEXT, "
+                    + "live_chat_enabled INTEGER, "
+                    + "live_chat_channel_id TEXT, "
+                    + "live_connections_enabled INTEGER, "
+                    + "live_connections_channel_id TEXT"
+                    + ")");
             }
             try (var statement = connection.createStatement()) {
                 statement.executeUpdate("CREATE UNIQUE INDEX IF NOT EXISTS unique_guild_id ON guild_config (guild_id)");

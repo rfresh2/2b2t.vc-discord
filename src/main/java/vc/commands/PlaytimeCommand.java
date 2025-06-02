@@ -56,10 +56,10 @@ public class PlaytimeCommand implements SlashCommand {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                     return event.createFollowup()
                         .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                        .color(Color.RUBY)
-                                        .description("Never Played")
-                                        .thumbnail(identity.getAvatarURL())
-                                        .build());
+                            .color(Color.RUBY)
+                            .description("Never Played")
+                            .thumbnail(identity.getAvatarURL())
+                            .build());
                 } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
                     LOGGER.error("Timeout searching for playtime: {}", identity.uuid(), httpTimeoutException);
                     return error(event, "Timeout getting playtime. Try again in a minute");
@@ -72,18 +72,18 @@ public class PlaytimeCommand implements SlashCommand {
         if (isNull(playtime))
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                                .color(Color.RUBY)
-                                .description("Never Played")
-                                .thumbnail(identity.getAvatarURL())
-                                .build());
+                    .color(Color.RUBY)
+                    .description("Never Played")
+                    .thumbnail(identity.getAvatarURL())
+                    .build());
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();
         String durationStr = formatDuration(playtimeSeconds);
         return event.createFollowup()
-                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                        .color(Color.CYAN)
-                        .description(durationStr)
-                        .thumbnail(identity.getAvatarURL())
-                        .build());
+            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                .color(Color.CYAN)
+                .description(durationStr)
+                .thumbnail(identity.getAvatarURL())
+                .build());
     }
 
     private String formatDuration(long durationInSeconds) {

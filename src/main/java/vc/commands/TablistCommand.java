@@ -59,9 +59,9 @@ public class TablistCommand implements SlashCommand {
         return event.createFollowup()
             .withFiles(MessageCreateFields.File.of("tablist.csv", new ByteArrayInputStream(bos.toByteArray())))
             .withEmbeds(EmbedCreateSpec.builder()
-                            .description(escape(response.getHeader()))
-                            .addField("Player Count", entries.size()+"", false)
-                            .color(Color.CYAN)
-                            .build());
+                .description(escape(response.getHeader()))
+                .addField("Player Count", entries.size()+"", false)
+                .color(Color.CYAN)
+                .build());
     }
 }

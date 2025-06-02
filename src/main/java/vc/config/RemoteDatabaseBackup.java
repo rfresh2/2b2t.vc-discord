@@ -60,12 +60,12 @@ public class RemoteDatabaseBackup implements DisposableBean {
     public String findLatestDatabaseBackup() {
         try {
             var backupPath = StreamSupport.stream(
-                minioClient.listObjects(
-                    ListObjectsArgs.builder()
-                        .bucket(bucketName)
-                        .prefix("backups/guild-config-backup-")
-                        .build())
-                    .spliterator(), false)
+                    minioClient.listObjects(
+                            ListObjectsArgs.builder()
+                                .bucket(bucketName)
+                                .prefix("backups/guild-config-backup-")
+                                .build())
+                        .spliterator(), false)
                 .map(RemoteDatabaseBackup::retrieveS3ItemData)
                 .filter(i -> !i.isDir())
                 .sorted((o1, o2) -> o2.lastModified().compareTo(o1.lastModified()))
