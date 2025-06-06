@@ -20,7 +20,7 @@ public class PlayerLookupOption implements ChatInteractionOption {
             context.setError("Player name required");
             return;
         }
-        String playerName = playerNameOptional.get();
+        String playerName = playerNameOptional.get().trim();
         if (!Validator.isValidPlayerName(playerName)) {
             context.setError("Invalid player name");
             return;
