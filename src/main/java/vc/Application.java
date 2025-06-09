@@ -43,8 +43,9 @@ public class Application {
     private ScheduledExecutorService scheduledExecutorService;
 
     public static void main(String[] args) {
-        System.setProperty("reactor.schedulers.defaultBoundedElasticOnVirtualThreads", "true");
+//        System.setProperty("reactor.schedulers.defaultBoundedElasticOnVirtualThreads", "true");
         new SpringApplicationBuilder(Application.class)
+            .registerShutdownHook(true)
             .build()
             .run(args);
     }

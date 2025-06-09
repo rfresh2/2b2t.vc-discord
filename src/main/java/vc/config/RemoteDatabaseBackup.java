@@ -109,6 +109,7 @@ public class RemoteDatabaseBackup implements DisposableBean {
 
     @Override
     public void destroy() {
+        LOGGER.info("Shutting down RemoteDatabaseBackup");
         try {
             minioClient.close();
         } catch (final Exception e) {

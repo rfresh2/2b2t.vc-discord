@@ -53,6 +53,7 @@ public class GuildConfigDatabase implements DisposableBean {
 
     @Override
     public void destroy() {
+        LOGGER.info("Shutting down GuildConfigDatabase");
         try {
             connection.close();
         } catch (final Exception e) {
