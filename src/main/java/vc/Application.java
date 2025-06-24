@@ -110,12 +110,13 @@ public class Application {
 
     @PreDestroy
     public void onDestroy() {
+        LOGGER.info("Shutting down Application");
         try {
-            if (this.gatewayDiscordClient != null) {
-                this.gatewayDiscordClient.logout().block();
-            }
             if (this.scheduledExecutorService != null) {
                 this.scheduledExecutorService.shutdownNow();
+            }
+            if (this.gatewayDiscordClient != null) {
+                this.gatewayDiscordClient.logout().block(Duration.ofSeconds(5));
             }
         } catch (Exception e) {
             LOGGER.error("Error during shutdown", e);
