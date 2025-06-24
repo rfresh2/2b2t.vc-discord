@@ -67,7 +67,8 @@ public class DataCommand implements SlashCommand {
                 throw new RuntimeException(e);
             }
         }
-        if (playerDataDump == null)
+        int dataCount = playerDataDump != null ? (int) playerDataDump.lines().count() : 0;
+        if (playerDataDump == null || dataCount == 0)
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
                     .color(Color.RUBY)
@@ -77,7 +78,7 @@ public class DataCommand implements SlashCommand {
         return event.createFollowup()
             .withFiles(MessageCreateFields.File.of(identity.name() + ".csv", new ByteArrayInputStream(playerDataDump.getBytes())))
             .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
-                .addField("Data Count", ""+playerDataDump.lines().count(), true)
+                .addField("Data Count", ""+dataCount, true)
                 .description("CSV Generated!")
                 .color(Color.CYAN)
                 .thumbnail(identity.getAvatarURL())
