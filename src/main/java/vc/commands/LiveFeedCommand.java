@@ -6,6 +6,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.Color;
 import discord4j.rest.util.Permission;
@@ -82,8 +83,12 @@ public abstract class LiveFeedCommand implements SlashCommand {
             var embed = EmbedCreateSpec.builder()
                 .description("✔ " + feedName() + " Permissions Test Success! ✔")
                 .color(Color.MEDIUM_SEA_GREEN)
-                .build().asRequest();
-            channel.getRestChannel().createMessage(embed)
+                .build();
+            var msg = MessageCreateSpec.builder()
+                .addEmbed(embed)
+                .build()
+                .asRequest();
+            channel.getRestChannel().createMessage(msg)
                 .block();
             return true;
         } catch (final ClientException clientException) {
