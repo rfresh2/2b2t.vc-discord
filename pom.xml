@@ -37,9 +37,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.rfresh2.discord4j</groupId>
+            <groupId>com.discord4j</groupId>
             <artifactId>discord4j-core</artifactId>
-            <version>3.4.5.14</version>
+            <version>3.3.0-RC2</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -169,6 +169,10 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.3</version>
             </plugin>
             <plugin>
                 <groupId>org.openapitools</groupId>
