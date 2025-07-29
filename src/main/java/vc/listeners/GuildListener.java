@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.config.GuildConfigManager;
+import vc.config.live_feed.LiveFeedConfigManager;
 import vc.live.LiveFeedManager;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,13 +17,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Component
 public class GuildListener {
     private static final Logger LOGGER = LoggerFactory.getLogger("GuildListener");
-    private final GuildConfigManager guildConfigManager;
+    private final LiveFeedConfigManager guildConfigManager;
     private final LiveFeedManager liveFeedManager;
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     public GuildListener(final GatewayDiscordClient client,
                          final RestClient restClient,
-                         final GuildConfigManager guildConfigManager,
+                         final LiveFeedConfigManager guildConfigManager,
                          final LiveFeedManager liveFeedManager) {
         this.guildConfigManager = guildConfigManager;
         this.liveFeedManager = liveFeedManager;
@@ -32,7 +32,7 @@ public class GuildListener {
         restClient.getGuilds().collectList().subscribe(guilds -> {
             LOGGER.info("Connected to {} guilds", guilds.size());
             guilds.forEach(guildConfigManager::loadGuild);
-            guildConfigManager.writeAllGuildConfigs();
+            guildConfigManager.writeAllLiveFeedConfigs();
             liveFeedManager.onAllGuildsLoaded();
             initialized.set(true);
         });

@@ -7,8 +7,8 @@ import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import vc.config.GuildConfigManager;
-import vc.config.GuildConfigRecord;
+import vc.config.live_feed.LiveFeedConfigManager;
+import vc.config.live_feed.LiveFeedConfigRecord;
 import vc.live.dto.ChatsRecord;
 import vc.live.dto.DeathsRecord;
 
@@ -25,7 +25,7 @@ public class LiveChat extends LiveFeed {
 
     public LiveChat(final RedisClient redisClient,
                     final GatewayDiscordClient discordClient,
-                    final GuildConfigManager guildConfigManager,
+                    final LiveFeedConfigManager guildConfigManager,
                     final ScheduledExecutorService executorService,
                     final ObjectMapper objectMapper,
                     @Value("${LIVE_FEEDS}")
@@ -40,23 +40,23 @@ public class LiveChat extends LiveFeed {
     }
 
     @Override
-    protected boolean channelEnabledPredicate(final GuildConfigRecord guildConfigRecord) {
+    protected boolean channelEnabledPredicate(final LiveFeedConfigRecord guildConfigRecord) {
         return guildConfigRecord.liveChatEnabled();
     }
 
     @Override
-    protected String liveChannelId(final GuildConfigRecord guildConfigRecord) {
+    protected String liveChannelId(final LiveFeedConfigRecord guildConfigRecord) {
         return guildConfigRecord.liveChatChannelId();
     }
 
     @Override
-    protected GuildConfigRecord disableRecordInternal(final GuildConfigRecord in) {
-        return new GuildConfigRecord(in.guildId(), in.guildName(), false, in.liveChatChannelId(), in.liveConnectionsEnabled(), in.liveConnectionsChannelId());
+    protected LiveFeedConfigRecord disableRecordInternal(final LiveFeedConfigRecord in) {
+        return new LiveFeedConfigRecord(in.guildId(), in.guildName(), false, in.liveChatChannelId(), in.liveConnectionsEnabled(), in.liveConnectionsChannelId());
     }
 
     @Override
-    protected GuildConfigRecord enableRecordInternal(final GuildConfigRecord in, final String guildId, final String channelId) {
-        return new GuildConfigRecord(guildId, in.guildName(), true, channelId, in.liveConnectionsEnabled(), in.liveConnectionsChannelId());
+    protected LiveFeedConfigRecord enableRecordInternal(final LiveFeedConfigRecord in, final String guildId, final String channelId) {
+        return new LiveFeedConfigRecord(guildId, in.guildName(), true, channelId, in.liveConnectionsEnabled(), in.liveConnectionsChannelId());
     }
 
     @Override

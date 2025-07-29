@@ -20,8 +20,8 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
-import vc.config.GuildConfigManager;
-import vc.config.GuildConfigRecord;
+import vc.config.live_feed.LiveFeedConfigManager;
+import vc.config.live_feed.LiveFeedConfigRecord;
 
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
@@ -45,7 +45,7 @@ public abstract class LiveFeed implements DisposableBean {
     protected final GatewayDiscordClient discordClient;
     protected final Map<String, RestChannel> liveChannels;
     protected final Map<InputQueue, TopicListener> inputTopics;
-    protected final GuildConfigManager guildConfigManager;
+    protected final LiveFeedConfigManager guildConfigManager;
     private final PriorityBlockingQueue<Message> messageQueue;
     private final ScheduledExecutorService executorService;
     private final ObjectMapper objectMapper;
@@ -56,7 +56,7 @@ public abstract class LiveFeed implements DisposableBean {
 
     public LiveFeed(final RedisClient redisClient,
                     final GatewayDiscordClient discordClient,
-                    final GuildConfigManager guildConfigManager,
+                    final LiveFeedConfigManager guildConfigManager,
                     final ScheduledExecutorService executorService,
                     final ObjectMapper objectMapper,
                     final boolean liveFeedEnabled) {
@@ -83,12 +83,12 @@ public abstract class LiveFeed implements DisposableBean {
         String id
     ) {}
 
-    protected abstract boolean channelEnabledPredicate(final GuildConfigRecord guildConfigRecord);
-    protected abstract String liveChannelId(final GuildConfigRecord guildConfigRecord);
+    protected abstract boolean channelEnabledPredicate(final LiveFeedConfigRecord guildConfigRecord);
+    protected abstract String liveChannelId(final LiveFeedConfigRecord guildConfigRecord);
 
-    protected abstract GuildConfigRecord disableRecordInternal(final GuildConfigRecord in);
+    protected abstract LiveFeedConfigRecord disableRecordInternal(final LiveFeedConfigRecord in);
 
-    protected abstract GuildConfigRecord enableRecordInternal(final GuildConfigRecord in, final String guildId, final String channelId);
+    protected abstract LiveFeedConfigRecord enableRecordInternal(final LiveFeedConfigRecord in, final String guildId, final String channelId);
 
     protected abstract List<InputQueue> inputQueues();
 
@@ -150,32 +150,32 @@ public abstract class LiveFeed implements DisposableBean {
     }
 
     public void disableFeed(final String guildId) {
-        this.guildConfigManager.getGuildConfig(guildId)
+        this.guildConfigManager.getLiveFeedConfig(guildId)
             .ifPresentOrElse(guildConfigRecord -> {
-                final GuildConfigRecord newRecord = disableRecordInternal(guildConfigRecord);
-                this.guildConfigManager.updateGuildConfig(newRecord);
+                final LiveFeedConfigRecord newRecord = disableRecordInternal(guildConfigRecord);
+                this.guildConfigManager.updateLiveFeedConfig(newRecord);
                 LOGGER.info("Disabled {} for guild {}, {}", feedName(), guildId, guildConfigRecord.guildName());
             }, () -> LOGGER.info("Guild: {} config not found while disabling {} feed", guildId, feedName()));
         this.liveChannels.remove(guildId);
     }
 
     public void enableFeed(final String guildId, final String channelId) {
-        Optional<GuildConfigRecord> guildConfigOptional = this.guildConfigManager.getGuildConfig(guildId);
+        Optional<LiveFeedConfigRecord> guildConfigOptional = this.guildConfigManager.getLiveFeedConfig(guildId);
         if (guildConfigOptional.isEmpty()) {
             try {
                 this.guildConfigManager.loadGuild(guildId).block();
-                guildConfigOptional = this.guildConfigManager.getGuildConfig(guildId);
+                guildConfigOptional = this.guildConfigManager.getLiveFeedConfig(guildId);
             } catch (final Exception e) {
                 LOGGER.error("Error loading guild data to create record for guild: {}", guildId, e);
             }
             if (guildConfigOptional.isEmpty()) {
                 LOGGER.error("Error getting guild data to create record for guild: {}", guildId);
-                guildConfigOptional = Optional.of(new GuildConfigRecord(guildId, "", false, "", false, ""));
+                guildConfigOptional = Optional.of(new LiveFeedConfigRecord(guildId, "", false, "", false, ""));
             }
         }
         var guildConfigRecord = guildConfigOptional.get();
-        final GuildConfigRecord newRecord = enableRecordInternal(guildConfigRecord, guildId, channelId);
-        this.guildConfigManager.updateGuildConfig(newRecord);
+        final LiveFeedConfigRecord newRecord = enableRecordInternal(guildConfigRecord, guildId, channelId);
+        this.guildConfigManager.updateLiveFeedConfig(newRecord);
         this.liveChannels.put(guildId, getRestChannel(channelId));
         LOGGER.info("Enabled {} for guild {}, {}", feedName(), guildId, guildConfigRecord.guildName());
     }

@@ -53,7 +53,6 @@ public class RemoteDatabaseBackup implements DisposableBean {
             downloadDatabaseBackup(path);
         } catch (final Exception e) {
             LOGGER.error("Error syncing database from remote", e);
-            throw new RuntimeException(e);
         }
     }
 
@@ -63,7 +62,7 @@ public class RemoteDatabaseBackup implements DisposableBean {
                     minioClient.listObjects(
                             ListObjectsArgs.builder()
                                 .bucket(bucketName)
-                                .prefix("backups/guild-config-backup-")
+                                .prefix("backups/config-backup-")
                                 .build())
                         .spliterator(), false)
                 .map(RemoteDatabaseBackup::retrieveS3ItemData)
@@ -90,7 +89,7 @@ public class RemoteDatabaseBackup implements DisposableBean {
 
     public void downloadDatabaseBackup(final String backupPath) {
         try {
-            var out = Paths.get("guild-config.db");
+            var out = Paths.get("config.db");
             Files.deleteIfExists(out);
             var data = minioClient.getObject(
                 GetObjectArgs.builder()

@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 import vc.commands.SlashCommand;
 import vc.commands.buttons.ButtonCommand;
 import vc.commands.buttons.PaginatedButtonHandler;
-import vc.config.GuildConfigManager;
+import vc.config.live_feed.LiveFeedConfigManager;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -27,9 +27,9 @@ public class SlashCommandListener {
     private static final Logger LOGGER = LoggerFactory.getLogger("CommandListener");
     private final Map<String, SlashCommand> commandMap;
     private final Map<String, ButtonCommand> buttonListenerMap;
-    private final GuildConfigManager guildConfigManager;
+    private final LiveFeedConfigManager guildConfigManager;
 
-    public SlashCommandListener(List<SlashCommand> slashCommands, GatewayDiscordClient client, final GuildConfigManager guildConfigManager) {
+    public SlashCommandListener(List<SlashCommand> slashCommands, GatewayDiscordClient client, final LiveFeedConfigManager guildConfigManager) {
         this.commandMap = slashCommands.stream().collect(Collectors.toMap(SlashCommand::getName, c -> c));
         this.buttonListenerMap = slashCommands.stream()
             .filter(c -> c instanceof ButtonCommand)
@@ -71,7 +71,7 @@ public class SlashCommandListener {
             String username = event.getInteraction().getUser().getTag();
             String guild = event.getInteraction().getGuildId()
                 .map(Snowflake::asString)
-                .flatMap(guildConfigManager::getGuildConfig)
+                .flatMap(guildConfigManager::getLiveFeedConfig)
                 .map(config -> "(" + config.guildId() + " - " + config.guildName() + ")")
                 .orElse("(?)");
             LOGGER.info("[{}ms] {} {} clicked button: {}",
@@ -100,7 +100,7 @@ public class SlashCommandListener {
                 .collect(Collectors.joining(" "));
             String guild = event.getInteraction().getGuildId()
                 .map(Snowflake::asString)
-                .flatMap(guildConfigManager::getGuildConfig)
+                .flatMap(guildConfigManager::getLiveFeedConfig)
                 .map(config -> "(" + config.guildId() + " - " + config.guildName() + ")")
                 .orElse("(?)");
             LOGGER.info("[{}ms] {} {} executed {}{}",

@@ -28,6 +28,6 @@ target/
 log/
 .env
 
-guild-config.db
-guild-config.db-journal
+*.db
+*.db-journal
 backups/
