@@ -54,12 +54,14 @@ public abstract class LiveFeed implements DisposableBean {
         .build();
     private ScheduledFuture<?> processMessageQueueFuture;
 
-    public LiveFeed(final RedisClient redisClient,
-                    final GatewayDiscordClient discordClient,
-                    final LiveFeedConfigManager guildConfigManager,
-                    final ScheduledExecutorService executorService,
-                    final ObjectMapper objectMapper,
-                    final boolean liveFeedEnabled) {
+    public LiveFeed(
+        final RedisClient redisClient,
+        final GatewayDiscordClient discordClient,
+        final LiveFeedConfigManager guildConfigManager,
+        final ScheduledExecutorService executorService,
+        final ObjectMapper objectMapper,
+        final boolean liveFeedEnabled
+    ) {
         this.redisClient = redisClient;
         this.discordClient = discordClient;
         this.liveChannels = new ConcurrentHashMap<>();

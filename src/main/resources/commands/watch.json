@@ -1,0 +1,72 @@
+{
+  "name": "watch",
+  "description": "DM notifications on player events",
+  "options": [
+    {
+      "name": "add",
+      "description": "Add a watch",
+      "type": 1,
+      "options": [
+        {
+          "name": "player",
+          "description": "Player Name",
+          "type": 3,
+          "required": true
+        },
+        {
+          "name": "joins",
+          "description": "On player join",
+          "type": 5,
+          "required": false
+        },
+        {
+          "name": "leaves",
+          "description": "On player disconnects",
+          "type": 5,
+          "required": false
+        },
+        {
+          "name": "chats",
+          "description": "On player chats",
+          "type": 5,
+          "required": false
+        },
+        {
+          "name": "deaths",
+          "description": "On player deaths",
+          "type": 5,
+          "required": false
+        },
+        {
+          "name": "kills",
+          "description": "On player kills",
+          "type": 5,
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "delete",
+      "description": "Remove a watch",
+      "type": 1,
+      "options": [
+        {
+          "name": "player",
+          "description": "Player Name",
+          "type": 3,
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "list",
+      "description": "List all watches",
+      "type": 1
+    },
+    {
+      "name": "clear",
+      "description": "Remove all watches",
+      "type": 1
+    }
+  ]
+}

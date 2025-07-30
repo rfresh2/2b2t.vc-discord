@@ -116,7 +116,7 @@ public class Application {
                 this.scheduledExecutorService.shutdownNow();
             }
             if (this.gatewayDiscordClient != null) {
-                this.gatewayDiscordClient.logout().block(Duration.ofSeconds(5));
+                this.gatewayDiscordClient.logout().block(Duration.ofSeconds(15));
             }
         } catch (Exception e) {
             LOGGER.error("Error during shutdown", e);

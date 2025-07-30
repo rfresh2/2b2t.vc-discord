@@ -10,7 +10,8 @@ import java.util.List;
 public class DatabaseMigrator {
     private final List<DatabaseMigration> migrations = List.of(
         new V0Migration(),
-        new V1Migration()
+        new V1Migration(),
+        new V2Migration()
     );
 
     public void migrate(Path dbPath, Jdbi connection) {

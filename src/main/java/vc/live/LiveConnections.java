@@ -19,13 +19,14 @@ import static java.util.Arrays.asList;
 
 @Component
 public class LiveConnections extends LiveFeed {
-    public LiveConnections(final RedisClient redisClient,
-                           final GatewayDiscordClient discordClient,
-                           final LiveFeedConfigManager guildConfigManager,
-                           final ScheduledExecutorService executorService,
-                           final ObjectMapper objectMapper,
-                           @Value("${LIVE_FEEDS}")
-                           final String liveFeedsEnabled
+    public LiveConnections(
+        final RedisClient redisClient,
+        final GatewayDiscordClient discordClient,
+        final LiveFeedConfigManager guildConfigManager,
+        final ScheduledExecutorService executorService,
+        final ObjectMapper objectMapper,
+        @Value("${LIVE_FEEDS}")
+        final String liveFeedsEnabled
     ) {
         super(redisClient,
             discordClient,

@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import vc.config.live_feed.LiveFeedConfigRecord;
 import vc.config.migrations.DatabaseMigrator;
+import vc.config.watch.GuildWatchConfigRecord;
+import vc.config.watch.UserWatchConfigRecord;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -20,6 +22,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -46,7 +49,7 @@ public class ConfigDatabase implements DisposableBean {
     ) {
         this.dbSync = Boolean.parseBoolean(dbSync);
         this.remoteDatabaseBackup = remoteDatabaseBackup;
-        if (this.dbSync) this.remoteDatabaseBackup.syncFromRemote();
+//        if (this.dbSync) this.remoteDatabaseBackup.syncFromRemote();
         final Path dbPath = Paths.get("config.db");
         try {
             connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
@@ -58,6 +61,8 @@ public class ConfigDatabase implements DisposableBean {
         jdbi = Jdbi.create(connection);
         new SQLitePlugin().customizeJdbi(jdbi);
         jdbi.registerRowMapper(ConstructorMapper.factory(LiveFeedConfigRecord.class));
+        jdbi.registerRowMapper(ConstructorMapper.factory(UserWatchConfigRecord.class));
+        jdbi.registerRowMapper(ConstructorMapper.factory(GuildWatchConfigRecord.class));
         migrator.migrate(dbPath, jdbi);
     }
 
@@ -85,7 +90,8 @@ public class ConfigDatabase implements DisposableBean {
             try (var statement = connection.createStatement()) {
                 statement.executeUpdate("BACKUP TO '" + backupPath + "'");
             }
-            if (!dbSync) remoteDatabaseBackup.uploadDatabaseBackup(backupPath);
+            // todo: re-enable
+//            if (!dbSync) remoteDatabaseBackup.uploadDatabaseBackup(backupPath);
         } catch (final Exception e) {
             LOGGER.error("Error backing up config database", e);
         }
@@ -149,6 +155,110 @@ public class ConfigDatabase implements DisposableBean {
                 .bind("liveChatChannelId", config.liveChatChannelId())
                 .bind("liveConnectionsEnabled", config.liveConnectionsEnabled())
                 .bind("liveConnectionsChannelId", config.liveConnectionsChannelId())
+                .execute();
+        }
+    }
+
+    public List<UserWatchConfigRecord> getUserWatchConfigs() {
+        try (var handle = jdbi.open()) {
+            return handle.select("SELECT * FROM user_watch_config")
+                .mapTo(UserWatchConfigRecord.class)
+                .list();
+        } catch (final Exception e) {
+            LOGGER.error("Error retrieving user watch configs", e);
+            return List.of();
+        }
+    }
+
+    public List<GuildWatchConfigRecord> getGuildWatchConfigs() {
+        try (var handle = jdbi.open()) {
+            return handle.select("SELECT * FROM guild_watch_config")
+                .mapTo(GuildWatchConfigRecord.class)
+                .list();
+        } catch (final Exception e) {
+            LOGGER.error("Error retrieving guild watch configs", e);
+            return List.of();
+        }
+    }
+
+    public void writeUserWatchConfig(final UserWatchConfigRecord config) {
+        try (var handle = jdbi.open()) {
+            handle.createUpdate("""
+                INSERT OR REPLACE INTO user_watch_config VALUES (
+                    :watchId,
+                    :ownerUserId,
+                    :ownerUserName,
+                    :joins,
+                    :leaves,
+                    :chats,
+                    :deaths,
+                    :kills,
+                    :targetUuid,
+                    :targetName
+                );
+                """)
+                .bind("watchId", config.watchId())
+                .bind("ownerUserId", config.ownerUserId())
+                .bind("ownerUserName", config.ownerUserName())
+                .bind("joins", config.joins())
+                .bind("leaves", config.leaves())
+                .bind("chats", config.chats())
+                .bind("deaths", config.deaths())
+                .bind("kills", config.kills())
+                .bind("targetUuid", config.targetUuid())
+                .bind("targetName", config.targetName())
+                .execute();
+        }
+    }
+
+    public void writeGuildWatchConfig(final GuildWatchConfigRecord config) {
+        try (var handle = jdbi.open()) {
+            handle.createUpdate("""
+                INSERT OR REPLACE INTO guild_watch_config VALUES (
+                    :watchId,
+                    :guildId,
+                    :guildName,
+                    :channelId,
+                    :joins,
+                    :leaves,
+                    :chats,
+                    :deaths,
+                    :kills,
+                    :mentionUserId,
+                    :mentionRoleId,
+                    :targetUuid,
+                    :targetName
+                );
+                """)
+                .bind("watchId", config.watchId())
+                .bind("guildId", config.guildId())
+                .bind("guildName", config.guildName())
+                .bind("channelId", config.channelId())
+                .bind("joins", config.joins())
+                .bind("leaves", config.leaves())
+                .bind("chats", config.chats())
+                .bind("deaths", config.deaths())
+                .bind("kills", config.kills())
+                .bind("mentionUserId", config.mentionUserId())
+                .bind("mentionRoleId", config.mentionRoleId())
+                .bind("targetUuid", config.targetUuid())
+                .bind("targetName", config.targetName())
+                .execute();
+        }
+    }
+
+    public void deleteUserWatchConfig(final String watchId) {
+        try (var handle = jdbi.open()) {
+            handle.createUpdate("DELETE FROM user_watch_config WHERE watch_id = :watchId")
+                .bind("watchId", watchId)
+                .execute();
+        }
+    }
+
+    public void deleteGuildWatchConfig(final String watchId) {
+        try (var handle = jdbi.open()) {
+            handle.createUpdate("DELETE FROM guild_watch_config WHERE watch_id = :watchId")
+                .bind("watchId", watchId)
                 .execute();
         }
     }
