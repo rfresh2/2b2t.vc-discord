@@ -26,4 +26,4 @@ Invite link: [bot.2b2t.vc](https://bot.2b2t.vc)
 * `/wordcount` -> Counts how many times a word has been seen in chat
 * `/search` -> Searches for chats containing a specific word
 * `/watch` -> DM Notifications on player joins, leaves, deaths, or kills
-* `/guild-watch` -> Discord server channel notifications on player joins, leaves, deaths, or kills
+* `/watch-guild` -> Discord server channel notifications on player joins, leaves, deaths, or kills

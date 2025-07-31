@@ -33,13 +33,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Component
-public class GuildWatchCommand implements SlashCommand {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GuildWatchCommand.class);
+public class WatchGuildCommand implements SlashCommand {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WatchGuildCommand.class);
     private final WatchManager watchManager;
     private final WatchConfigManager watchConfigManager;
     private final PlayerLookup playerLookup;
 
-    public GuildWatchCommand(
+    public WatchGuildCommand(
         final WatchManager watchManager,
         final WatchConfigManager watchConfigManager,
         final PlayerLookup playerLookup
@@ -51,7 +51,7 @@ public class GuildWatchCommand implements SlashCommand {
 
     @Override
     public String getName() {
-        return "guild-watch";
+        return "watch-guild";
     }
 
     @Override
