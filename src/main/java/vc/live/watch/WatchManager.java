@@ -173,6 +173,7 @@ public class WatchManager implements DisposableBean {
                     try {
                         var ownerUserId = userWatch.ownerUserId();
                         var channel = discordClient.getUserById(Snowflake.of(ownerUserId))
+                            .doOnSuccess(user -> LOGGER.info("Sending {} user watch to {}", targetNameProvider.apply(data), user.getUsername()))
                             .flatMap(User::getPrivateChannel)
                             .block(Duration.ofSeconds(10));
                         var msg = MessageCreateSpec.builder()
@@ -241,6 +242,7 @@ public class WatchManager implements DisposableBean {
                             watchConfigManager.removeGuildWatchConfig(guildWatch);
                             continue;
                         }
+                        LOGGER.info("Sending {} guild watch to {} ({})", targetNameProvider.apply(data), guild.getName(), channel.getName());
                         var msgBuilder = MessageCreateSpec.builder()
                             .addEmbed(watchEmbedProvider.apply(data));
                         if (guildWatch.mentionUserId() != null && !guildWatch.mentionUserId().isBlank()) {
