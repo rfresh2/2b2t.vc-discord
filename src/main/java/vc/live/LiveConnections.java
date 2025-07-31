@@ -13,7 +13,6 @@ import vc.live.dto.ConnectionsRecord;
 import vc.live.dto.enums.Connectiontype;
 
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 import static java.util.Arrays.asList;
 
@@ -23,17 +22,17 @@ public class LiveConnections extends LiveFeed {
         final RedisClient redisClient,
         final GatewayDiscordClient discordClient,
         final LiveFeedConfigManager guildConfigManager,
-        final ScheduledExecutorService executorService,
         final ObjectMapper objectMapper,
         @Value("${LIVE_FEEDS}")
         final String liveFeedsEnabled
     ) {
-        super(redisClient,
+        super(
+            redisClient,
             discordClient,
             guildConfigManager,
-            executorService,
             objectMapper,
-            Boolean.parseBoolean(liveFeedsEnabled));
+            Boolean.parseBoolean(liveFeedsEnabled)
+        );
     }
 
     @Override

@@ -5,6 +5,7 @@ import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.object.presence.Status;
 import org.slf4j.Logger;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import vc.openapi.handler.QueueApi;
 import vc.openapi.handler.TabListApi;
@@ -14,7 +15,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.asList;
@@ -22,7 +22,6 @@ import static java.util.Arrays.asList;
 @Component
 public class DiscordPresenceUpdater {
     private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger("LivePresence");
-    private final ScheduledExecutorService scheduledExecutorService;
     private final GatewayDiscordClient discordClient;
     private final QueueApi queueApi;
     private final TabListApi tabListApi;
@@ -37,15 +36,13 @@ public class DiscordPresenceUpdater {
         "Powered by ZenithProxy!"
     );
 
-    public DiscordPresenceUpdater(final ScheduledExecutorService scheduledExecutorService, final GatewayDiscordClient discordClient, final QueueApi queueApi, final TabListApi tabListApi) {
-        this.scheduledExecutorService = scheduledExecutorService;
+    public DiscordPresenceUpdater(final GatewayDiscordClient discordClient, final QueueApi queueApi, final TabListApi tabListApi) {
         this.discordClient = discordClient;
         this.queueApi = queueApi;
         this.tabListApi = tabListApi;
-        this.scheduledExecutorService.scheduleWithFixedDelay(this::updatePresence, 1, 1, TimeUnit.MINUTES);
-        this.scheduledExecutorService.scheduleWithFixedDelay(this::updateEtaEquation, 0, 1, TimeUnit.HOURS);
     }
 
+    @Scheduled(fixedRate = 1, timeUnit = TimeUnit.MINUTES)
     void updatePresence() {
         try {
             this.discordClient.updatePresence(
@@ -58,6 +55,7 @@ public class DiscordPresenceUpdater {
         }
     }
 
+    @Scheduled(fixedRate = 1, timeUnit = TimeUnit.HOURS)
     void updateEtaEquation() {
         try {
             if (QueueETA.INSTANCE.lastUpdate().isAfter(Instant.now().minusSeconds(30))) return;
@@ -73,7 +71,6 @@ public class DiscordPresenceUpdater {
             QueueETA.INSTANCE = new QueueETA(equation.getFactor(), equation.getPow(), Instant.now());
         } catch (final Exception e) {
             LOGGER.error("Failed updating queue ETA equation");
-            scheduledExecutorService.schedule(this::updateEtaEquation, 1L, TimeUnit.MINUTES);
         }
     }
 

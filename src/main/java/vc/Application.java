@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.ClientActivity;
@@ -25,22 +24,21 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PreDestroy;
 import java.time.Duration;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
 @SpringBootApplication
+@EnableScheduling
 public class Application {
     @Value("${BOT_TOKEN}")
     String token;
     private static final Logger LOGGER = getLogger("Application");
     private GatewayDiscordClient gatewayDiscordClient;
-    private ScheduledExecutorService scheduledExecutorService;
 
     public static void main(String[] args) {
 //        System.setProperty("reactor.schedulers.defaultBoundedElasticOnVirtualThreads", "true");
@@ -98,23 +96,10 @@ public class Application {
         return mapper;
     }
 
-    @Bean
-    public ScheduledExecutorService scheduledExecutorService() {
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(2, new ThreadFactoryBuilder()
-            .setDaemon(true)
-            .setNameFormat("scheduled-%d")
-            .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught exception in scheduled thread: {}", t.getName(), e))
-            .build());
-        return this.scheduledExecutorService;
-    }
-
     @PreDestroy
     public void onDestroy() {
         LOGGER.info("Shutting down Application");
         try {
-            if (this.scheduledExecutorService != null) {
-                this.scheduledExecutorService.shutdownNow();
-            }
             if (this.gatewayDiscordClient != null) {
                 this.gatewayDiscordClient.logout().block(Duration.ofSeconds(15));
             }

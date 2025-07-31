@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
@@ -32,7 +33,8 @@ import vc.live.dto.enums.Connectiontype;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -42,7 +44,6 @@ public class WatchManager implements DisposableBean {
     private final WatchConfigManager watchConfigManager;
     private final RedisClient redisClient;
     private final GatewayDiscordClient discordClient;
-    private final ScheduledExecutorService executorService;
     private final ObjectMapper objectMapper;
     private final boolean watchesEnabled;
     private final ConcurrentLinkedDeque<ConnectionsRecord> joinsQueue = new ConcurrentLinkedDeque<>();
@@ -50,11 +51,6 @@ public class WatchManager implements DisposableBean {
     private final ConcurrentLinkedDeque<ChatsRecord> chatsQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<DeathsRecord> deathsQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<DeathsRecord> killsQueue = new ConcurrentLinkedDeque<>();
-    ScheduledFuture<?> processJoinsFuture;
-    ScheduledFuture<?> processLeavesFuture;
-    ScheduledFuture<?> processChatsFuture;
-    ScheduledFuture<?> processDeathsFuture;
-    ScheduledFuture<?> processKillsFuture;
     RReliableTopic connectionsTopic;
     RReliableTopic chatsTopic;
     RReliableTopic deathsTopic;
@@ -66,7 +62,6 @@ public class WatchManager implements DisposableBean {
         final WatchConfigManager watchConfigManager,
         final RedisClient redisClient,
         final GatewayDiscordClient discordClient,
-        final ScheduledExecutorService executorService,
         final ObjectMapper objectMapper,
         @Value("${WATCHES}")
         final String watchesEnabled
@@ -74,7 +69,6 @@ public class WatchManager implements DisposableBean {
         this.watchConfigManager = watchConfigManager;
         this.redisClient = redisClient;
         this.discordClient = discordClient;
-        this.executorService = executorService;
         this.objectMapper = objectMapper;
         this.watchesEnabled = Boolean.parseBoolean(watchesEnabled);
         if (this.watchesEnabled) {
@@ -85,21 +79,17 @@ public class WatchManager implements DisposableBean {
             LOGGER.info("Loaded {} guild watch configs", watchConfigManager.getAllGuildWatchConfigs().size());
             connectionsTopic = this.redisClient.getTopic("ConnectionsTopic");
             connectionsTopicId = connectionsTopic.addListener(String.class, (channel, msg) -> connectionsTopicListener(msg));
-            processJoinsFuture = executorService.scheduleAtFixedRate(this::processJoinsQueue, 0, 1, TimeUnit.SECONDS);
-            processLeavesFuture = executorService.scheduleAtFixedRate(this::processLeavesQueue, 0, 1, TimeUnit.SECONDS);
             chatsTopic = this.redisClient.getTopic("ChatsTopic");
             chatsTopicId = chatsTopic.addListener(String.class, (channel, msg) -> chatsTopicListener(msg));
-            processChatsFuture = executorService.scheduleAtFixedRate(this::processChatsQueue, 0, 1, TimeUnit.SECONDS);
             deathsTopic = this.redisClient.getTopic("DeathsTopic");
             deathsTopicId = deathsTopic.addListener(String.class, (channel, msg) -> deathsTopicListener(msg));
-            processDeathsFuture = executorService.scheduleAtFixedRate(this::processDeathsQueue, 0, 1, TimeUnit.SECONDS);
-            processKillsFuture = executorService.scheduleAtFixedRate(this::processKillsQueue, 0, 1, TimeUnit.SECONDS);
             LOGGER.info("Watch manager initialized");
         } else {
             LOGGER.info("Watch manager disabled");
         }
     }
 
+    @Scheduled(fixedRate = 1000)
     private void processJoinsQueue() {
         processQueue(
             "Joins",
@@ -112,6 +102,7 @@ public class WatchManager implements DisposableBean {
         );
     }
 
+    @Scheduled(fixedRate = 1000)
     private void processLeavesQueue() {
         processQueue(
             "Leaves",
@@ -124,6 +115,7 @@ public class WatchManager implements DisposableBean {
         );
     }
 
+    @Scheduled(fixedRate = 1000)
     private void processKillsQueue() {
         processQueue(
             "Kills",
@@ -136,6 +128,7 @@ public class WatchManager implements DisposableBean {
         );
     }
 
+    @Scheduled(fixedRate = 1000)
     private void processDeathsQueue() {
         processQueue(
             "Deaths",
@@ -148,6 +141,7 @@ public class WatchManager implements DisposableBean {
         );
     }
 
+    @Scheduled(fixedRate = 1000)
     private void processChatsQueue() {
         processQueue(
             "Chats",
@@ -456,15 +450,6 @@ public class WatchManager implements DisposableBean {
             deathsTopic.removeListener(deathsTopicId);
         } catch (Exception e) {
             LOGGER.error("Failed to remove Redis topic listener: {}", deathsTopicId, e);
-        }
-        try {
-            processJoinsFuture.cancel(true);
-            processLeavesFuture.cancel(true);
-            processChatsFuture.cancel(true);
-            processDeathsFuture.cancel(true);
-            processKillsFuture.cancel(true);
-        } catch (Exception e) {
-            LOGGER.error("Failed to cancel scheduled tasks", e);
         }
     }
 

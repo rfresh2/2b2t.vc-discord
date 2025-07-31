@@ -5,6 +5,7 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.entity.Guild;
 import discord4j.discordjson.json.GuildData;
 import discord4j.discordjson.json.GuildFields;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.config.ConfigDatabase;
@@ -14,26 +15,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Component
 public class LiveFeedConfigManager {
     private final Map<String, LiveFeedConfigRecord> guildConfigMap;
     private final ConfigDatabase configDatabase;
-    private final ScheduledExecutorService scheduledExecutorService;
     private final GatewayDiscordClient gatewayDiscordClient;
 
     public LiveFeedConfigManager(
         final ConfigDatabase configDatabase,
-        final ScheduledExecutorService scheduledExecutorService,
         final GatewayDiscordClient gatewayDiscordClient
     ) {
-        this.scheduledExecutorService = scheduledExecutorService;
         this.gatewayDiscordClient = gatewayDiscordClient;
         this.guildConfigMap = new ConcurrentHashMap<>();
         this.configDatabase = configDatabase;
-        this.scheduledExecutorService.scheduleAtFixedRate(this::writeAllLiveFeedConfigs, 1, 1, TimeUnit.DAYS);
     }
 
     public void loadGuild(final GuildFields guildFields) {
@@ -52,6 +48,7 @@ public class LiveFeedConfigManager {
         return Optional.ofNullable(guildConfigMap.get(guildId));
     }
 
+    @Scheduled(fixedRate = 1, initialDelay = 1, timeUnit = TimeUnit.DAYS)
     public void writeAllLiveFeedConfigs() {
         guildConfigMap.values().forEach(configDatabase::writeGuildConfigRecord);
         configDatabase.backupDatabase();

@@ -16,6 +16,7 @@ import discord4j.rest.util.MultipartRequest;
 import org.redisson.api.RReliableTopic;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.scheduling.annotation.Scheduled;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,12 +31,14 @@ import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public abstract class LiveFeed implements DisposableBean {
@@ -47,18 +50,15 @@ public abstract class LiveFeed implements DisposableBean {
     protected final Map<InputQueue, TopicListener> inputTopics;
     protected final LiveFeedConfigManager guildConfigManager;
     private final PriorityBlockingQueue<Message> messageQueue;
-    private final ScheduledExecutorService executorService;
     private final ObjectMapper objectMapper;
     private final Cache<String, AtomicInteger> guildMessageSendFailCountCache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, MINUTES)
         .build();
-    private ScheduledFuture<?> processMessageQueueFuture;
 
     public LiveFeed(
         final RedisClient redisClient,
         final GatewayDiscordClient discordClient,
         final LiveFeedConfigManager guildConfigManager,
-        final ScheduledExecutorService executorService,
         final ObjectMapper objectMapper,
         final boolean liveFeedEnabled
     ) {
@@ -68,12 +68,10 @@ public abstract class LiveFeed implements DisposableBean {
         this.guildConfigManager = guildConfigManager;
         this.messageQueue = new PriorityBlockingQueue<>(MESSAGE_Q_CAPACITY);
         this.inputTopics = new ConcurrentHashMap<>();
-        this.executorService = executorService;
         this.objectMapper = objectMapper;
         if (liveFeedEnabled) {
             LOGGER.info("Starting {} live feed", getClass().getSimpleName());
             syncChannels();
-            this.processMessageQueueFuture = this.executorService.scheduleWithFixedDelay(this::processMessageQueue, ((int) (Math.random() * 10)), 10, SECONDS);
             inputQueues().forEach(this::registerInputQueue);
         } else {
             LOGGER.info("Live feed {} disabled", getClass().getSimpleName());
@@ -188,6 +186,7 @@ public abstract class LiveFeed implements DisposableBean {
             .block();
     }
 
+    @Scheduled(initialDelay = 5, fixedRate = 10, timeUnit = TimeUnit.SECONDS)
     protected void processMessageQueue() {
         try {
             final List<EmbedData> embeds = new ArrayList<>(4);
@@ -297,9 +296,6 @@ public abstract class LiveFeed implements DisposableBean {
     @Override
     public void destroy() {
         LOGGER.info("Shutting down {} live feed", getClass().getSimpleName());
-        if (processMessageQueueFuture != null && !processMessageQueueFuture.isCancelled()) {
-            processMessageQueueFuture.cancel(true);
-        }
         inputTopics.values().forEach(topicListener -> {
             try {
                 topicListener.topic.removeListener(topicListener.id);

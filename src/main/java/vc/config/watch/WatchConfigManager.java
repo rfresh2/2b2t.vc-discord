@@ -9,7 +9,6 @@ import vc.config.ConfigDatabase;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
 
 @Component
 public class WatchConfigManager implements DisposableBean {
@@ -21,15 +20,12 @@ public class WatchConfigManager implements DisposableBean {
     private final Map<String, Set<String>> ownerToUserWatchMap = new ConcurrentHashMap<>();
     private final Map<String, Set<String>> guildToGuildWatchMap = new ConcurrentHashMap<>();
     private final ConfigDatabase configDatabase;
-    private final ScheduledExecutorService scheduledExecutorService;
     private final GatewayDiscordClient gatewayDiscordClient;
 
     public WatchConfigManager(
         ConfigDatabase configDatabase,
-        ScheduledExecutorService scheduledExecutorService,
         GatewayDiscordClient gatewayDiscordClient
     ) {
-        this.scheduledExecutorService = scheduledExecutorService;
         this.configDatabase = configDatabase;
         this.gatewayDiscordClient = gatewayDiscordClient;
         loadUserWatchConfigs();
