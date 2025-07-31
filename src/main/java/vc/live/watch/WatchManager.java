@@ -364,17 +364,25 @@ public class WatchManager implements DisposableBean {
         final DeathsRecord death
     ) {
         var profile = new ProfileDataImpl(death.victimPlayerName(), death.victimPlayerUuid());
-        EmbedCreateSpec embed = EmbedCreateSpec.builder()
+        var embed = EmbedCreateSpec.builder()
             .title("Watched Player Death")
             .addField("Victim", "[" + profile.name() + "](" + profile.getNameMCLink(profile.uuid()) + ")", true)
             .addField("\u200B", "\u200B", true)
-            .addField("\u200B", "\u200B", true)
-            .addField("Death Message", death.deathMessage(), false)
+            .addField("\u200B", "\u200B", true);
+        if (death.killerPlayerUuid() != null) {
+            var killerProfile = new ProfileDataImpl(death.killerPlayerName(), death.killerPlayerUuid());
+            embed
+                .addField("Killer", "[" + killerProfile.name() + "](" + killerProfile.getNameMCLink(killerProfile.uuid()) + ")", true)
+                .addField("\u200B", "\u200B", true)
+                .addField("\u200B", "\u200B", true);
+        }
+        embed
+            .addField("Death Message", escape(death.deathMessage().replace(death.victimPlayerName(), "**" + death.victimPlayerName() + "**")), false)
             .thumbnail(profile.getAvatarURL())
             .timestamp(death.time().toInstant())
             .color(Color.RUBY)
             .build();
-        return embed;
+        return embed.build();
     }
 
     public EmbedCreateSpec killsWatchEmbed(
@@ -382,18 +390,19 @@ public class WatchManager implements DisposableBean {
     ) {
         var killerProfile = new ProfileDataImpl(death.killerPlayerName(), death.killerPlayerUuid());
         var victimProfile = new ProfileDataImpl(death.victimPlayerName(), death.victimPlayerUuid());
-        EmbedCreateSpec embed = EmbedCreateSpec.builder()
+        return EmbedCreateSpec.builder()
             .title("Watched Player Kill")
             .addField("Killer", "[" + killerProfile.name() + "](" + killerProfile.getNameMCLink(killerProfile.uuid()) + ")", true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
-            .addField("Victim", "[" + victimProfile.name() + "](" + victimProfile.getNameMCLink(victimProfile.uuid()) + ")", false)
-            .addField("Death Message", death.deathMessage(), false)
+            .addField("Victim", "[" + victimProfile.name() + "](" + victimProfile.getNameMCLink(victimProfile.uuid()) + ")", true)
+            .addField("\u200B", "\u200B", true)
+            .addField("\u200B", "\u200B", true)
+            .addField("Death Message", escape(death.deathMessage().replace(killerProfile.name(), "**" + killerProfile.name() + "**")), false)
             .thumbnail(killerProfile.getAvatarURL())
             .timestamp(death.time().toInstant())
             .color(Color.SEA_GREEN)
             .build();
-        return embed;
     }
 
     private void connectionsTopicListener(final String msg) {
