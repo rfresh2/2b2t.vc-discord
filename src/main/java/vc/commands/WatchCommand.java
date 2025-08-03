@@ -14,10 +14,9 @@ import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
 import vc.api.model.ProfileDataImpl;
 import vc.commands.options.ChatInteractionOptionContext;
-import vc.config.watch.UserChatWatchConfig;
-import vc.config.watch.UserPlayerWatchConfig;
-import vc.config.watch.WatchConfigManager;
-import vc.live.watch.WatchManager;
+import vc.config.watch.WatchConfigStore;
+import vc.config.watch.model.UserChatWatchConfig;
+import vc.config.watch.model.UserPlayerWatchConfig;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 
@@ -29,17 +28,14 @@ import java.util.UUID;
 @Component
 public class WatchCommand implements SlashCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(WatchCommand.class);
-    private final WatchManager watchManager;
-    private final WatchConfigManager watchConfigManager;
+    private final WatchConfigStore watchConfigStore;
     private final PlayerLookup playerLookup;
 
     public WatchCommand(
-        final WatchManager watchManager,
-        final WatchConfigManager watchConfigManager,
+        final WatchConfigStore watchConfigStore,
         final PlayerLookup playerLookup
     ) {
-        this.watchManager = watchManager;
-        this.watchConfigManager = watchConfigManager;
+        this.watchConfigStore = watchConfigStore;
         this.playerLookup = playerLookup;
     }
 
@@ -83,13 +79,13 @@ public class WatchCommand implements SlashCommand {
                 keyword,
                 caseSensitive
             );
-            var existingWatches = watchConfigManager.getUserChatWatchesByOwner(event.getUser().getId().asString());
+            var existingWatches = watchConfigStore.getUserChatWatchesByOwner(event.getUser().getId().asString());
             for (var w : existingWatches) {
                 if (w.keyword().equals(keyword)) {
-                    watchConfigManager.removeUserChatWatchConfig(w);
+                    watchConfigStore.removeUserChatWatchConfig(w);
                 }
             }
-            watchConfigManager.updateUserChatWatchConfig(watch);
+            watchConfigStore.writeUserChatWatchConfig(watch);
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
                     .color(Color.SEA_GREEN)
@@ -108,10 +104,10 @@ public class WatchCommand implements SlashCommand {
             if (keyword.length() < 3 || keyword.length() > 50) {
                 return error(event, "Keyword must be between 3 and 50 characters");
             }
-            var watches = watchConfigManager.getUserChatWatchesByOwner(event.getUser().getId().asString());
+            var watches = watchConfigStore.getUserChatWatchesByOwner(event.getUser().getId().asString());
             for (var watch : watches) {
                 if (watch.keyword().equals(keyword)) {
-                    watchConfigManager.removeUserChatWatchConfig(watch);
+                    watchConfigStore.removeUserChatWatchConfig(watch);
                     return event.createFollowup()
                         .withEmbeds(EmbedCreateSpec.builder()
                             .color(Color.SEA_GREEN)
@@ -121,7 +117,7 @@ public class WatchCommand implements SlashCommand {
             }
             return error(event, "No watch found for `" + keyword + "`");
         } else if (option.getOption("list").isPresent()) {
-            var watches = watchConfigManager.getUserChatWatchesByOwner(event.getUser().getId().asString());
+            var watches = watchConfigStore.getUserChatWatchesByOwner(event.getUser().getId().asString());
             Collections.sort(watches, (a, b) -> a.keyword().compareToIgnoreCase(b.keyword()));
             StringBuilder builder = new StringBuilder();
             if (watches.isEmpty()) {
@@ -148,9 +144,9 @@ public class WatchCommand implements SlashCommand {
                     .color(Color.CYAN)
                     .build());
         } else if (option.getOption("clear").isPresent()) {
-            var watches = watchConfigManager.getUserChatWatchesByOwner(event.getUser().getId().asString());
+            var watches = watchConfigStore.getUserChatWatchesByOwner(event.getUser().getId().asString());
             for (var watch : watches) {
-                watchConfigManager.removeUserChatWatchConfig(watch);
+                watchConfigStore.removeUserChatWatchConfig(watch);
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
@@ -203,13 +199,13 @@ public class WatchCommand implements SlashCommand {
                 profile.uuid(),
                 profile.name()
             );
-            var existingWatches = watchConfigManager.getUserWatchesByOwner(event.getUser().getId().asString());
+            var existingWatches = watchConfigStore.getUserWatchesByOwner(event.getUser().getId().asString());
             for (var w : existingWatches) {
                 if (w.targetUuid().equals(profile.uuid())) {
-                    watchConfigManager.removeUserWatchConfig(w);
+                    watchConfigStore.removeUserPlayerWatchConfig(w);
                 }
             }
-            watchConfigManager.updateUserWatchConfig(watch);
+            watchConfigStore.writeUserPlayerWatchConfig(watch);
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
                     .color(Color.SEA_GREEN)
@@ -235,10 +231,10 @@ public class WatchCommand implements SlashCommand {
             var profile = playerLookup.getPlayerIdentity(playerName)
                 // fall back to a random UUID, so we can handle cases where the player's profile was deleted or name changed
                 .orElse(new ProfileDataImpl(playerName, UUID.randomUUID()));
-            var watches = watchConfigManager.getUserWatchesByOwner(event.getUser().getId().asString());
+            var watches = watchConfigStore.getUserWatchesByOwner(event.getUser().getId().asString());
             for (var watch : watches) {
                 if (watch.targetName().equalsIgnoreCase(playerName)) {
-                    watchConfigManager.removeUserWatchConfig(watch);
+                    watchConfigStore.removeUserPlayerWatchConfig(watch);
                     return event.createFollowup()
                         .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
                             .color(Color.SEA_GREEN)
@@ -249,7 +245,7 @@ public class WatchCommand implements SlashCommand {
             }
             return error(event, "No watch found for " + profile.name() + " (" + profile.uuid() + ")");
         } else if (option.getOption("list").isPresent()) {
-            var watches = watchConfigManager.getUserWatchesByOwner(event.getUser().getId().asString());
+            var watches = watchConfigStore.getUserWatchesByOwner(event.getUser().getId().asString());
             Collections.sort(watches, (a, b) -> a.targetName().compareToIgnoreCase(b.targetName()));
             StringBuilder builder = new StringBuilder();
             if (watches.isEmpty()) {
@@ -296,9 +292,9 @@ public class WatchCommand implements SlashCommand {
                     .color(Color.CYAN)
                     .build());
         } else if (option.getOption("clear").isPresent()) {
-            var watches = watchConfigManager.getUserWatchesByOwner(event.getUser().getId().asString());
+            var watches = watchConfigStore.getUserWatchesByOwner(event.getUser().getId().asString());
             for (var watch : watches) {
-                watchConfigManager.removeUserWatchConfig(watch);
+                watchConfigStore.removeUserPlayerWatchConfig(watch);
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()

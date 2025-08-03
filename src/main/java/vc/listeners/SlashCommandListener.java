@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
 import vc.commands.SlashCommand;
 import vc.commands.buttons.ButtonCommand;
 import vc.commands.buttons.PaginatedButtonHandler;
-import vc.config.live_feed.LiveFeedConfigManager;
+import vc.config.live_feed.LiveFeedConfigStore;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -28,9 +28,9 @@ public class SlashCommandListener {
     private static final Logger LOGGER = LoggerFactory.getLogger("CommandListener");
     private final Map<String, SlashCommand> commandMap;
     private final Map<String, ButtonCommand> buttonListenerMap;
-    private final LiveFeedConfigManager guildConfigManager;
+    private final LiveFeedConfigStore guildConfigManager;
 
-    public SlashCommandListener(List<SlashCommand> slashCommands, GatewayDiscordClient client, final LiveFeedConfigManager guildConfigManager) {
+    public SlashCommandListener(List<SlashCommand> slashCommands, GatewayDiscordClient client, final LiveFeedConfigStore guildConfigManager) {
         this.commandMap = slashCommands.stream().collect(Collectors.toMap(SlashCommand::getName, c -> c));
         this.buttonListenerMap = slashCommands.stream()
             .filter(c -> c instanceof ButtonCommand)

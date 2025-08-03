@@ -1,4 +1,4 @@
-package vc.config.watch;
+package vc.config.watch.model;
 
 public interface GuildWatch extends Watch {
     String guildId();

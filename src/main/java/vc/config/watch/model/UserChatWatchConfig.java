@@ -1,4 +1,4 @@
-package vc.config.watch;
+package vc.config.watch.model;
 
 import org.jdbi.v3.core.mapper.reflect.ColumnName;
 

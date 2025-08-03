@@ -5,36 +5,34 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.entity.Guild;
 import discord4j.discordjson.json.GuildData;
 import discord4j.discordjson.json.GuildFields;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.config.ConfigDatabase;
+import vc.config.live_feed.model.LiveFeedConfig;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 @Component
-public class LiveFeedConfigManager {
-    private final Map<String, LiveFeedConfigRecord> guildConfigMap;
-    private final ConfigDatabase configDatabase;
+public class LiveFeedConfigStore {
+    private final Map<String, LiveFeedConfig> guildConfigMap;
+    private final LiveFeedRepository liveFeedRepository;
     private final GatewayDiscordClient gatewayDiscordClient;
 
-    public LiveFeedConfigManager(
-        final ConfigDatabase configDatabase,
-        final GatewayDiscordClient gatewayDiscordClient
+    public LiveFeedConfigStore(
+        LiveFeedRepository liveFeedRepository,
+        GatewayDiscordClient gatewayDiscordClient
     ) {
         this.gatewayDiscordClient = gatewayDiscordClient;
         this.guildConfigMap = new ConcurrentHashMap<>();
-        this.configDatabase = configDatabase;
+        this.liveFeedRepository = liveFeedRepository;
     }
 
     public void loadGuild(final GuildFields guildFields) {
-        final LiveFeedConfigRecord guildConfigRecord = configDatabase.getLiveFeedConfigRecord(guildFields.id().asString())
-            .orElse(new LiveFeedConfigRecord(guildFields.id().asString(), guildFields.name(), false, "", false, ""));
+        final LiveFeedConfig guildConfigRecord = liveFeedRepository.getLiveFeedConfig(guildFields.id().asString())
+            .orElse(new LiveFeedConfig(guildFields.id().asString(), guildFields.name(), false, "", false, ""));
         guildConfigMap.put(guildFields.id().asString(), guildConfigRecord);
     }
 
@@ -44,26 +42,20 @@ public class LiveFeedConfigManager {
             .doOnNext(this::loadGuild);
     }
 
-    public Optional<LiveFeedConfigRecord> getLiveFeedConfig(final String guildId) {
+    public Optional<LiveFeedConfig> getLiveFeedConfig(final String guildId) {
         return Optional.ofNullable(guildConfigMap.get(guildId));
     }
 
-    @Scheduled(fixedRate = 1, initialDelay = 1, timeUnit = TimeUnit.DAYS)
-    public void writeAllLiveFeedConfigs() {
-        guildConfigMap.values().forEach(configDatabase::writeGuildConfigRecord);
-        configDatabase.backupDatabase();
-    }
-
     public void writeLiveFeedConfig(final String guildId) {
-        Optional.ofNullable(guildConfigMap.get(guildId)).ifPresent(configDatabase::writeGuildConfigRecord);
+        Optional.ofNullable(guildConfigMap.get(guildId)).ifPresent(liveFeedRepository::writeLiveFeedConfig);
     }
 
-    public void updateLiveFeedConfig(final LiveFeedConfigRecord guildConfigRecord) {
+    public void updateLiveFeedConfig(final LiveFeedConfig guildConfigRecord) {
         guildConfigMap.put(guildConfigRecord.guildId(), guildConfigRecord);
         writeLiveFeedConfig(guildConfigRecord.guildId());
     }
 
-    public List<LiveFeedConfigRecord> getAllGuildConfigs() {
+    public List<LiveFeedConfig> getAllGuildConfigs() {
         return new ArrayList<>(guildConfigMap.values());
     }
 }

@@ -9,8 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.config.live_feed.LiveFeedConfigManager;
-import vc.config.watch.WatchConfigManager;
+import vc.config.live_feed.LiveFeedConfigStore;
+import vc.config.watch.WatchConfigStore;
 import vc.live.LiveFeedManager;
 import vc.live.watch.WatchManager;
 
@@ -19,18 +19,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Component
 public class GuildListener {
     private static final Logger LOGGER = LoggerFactory.getLogger("GuildListener");
-    private final LiveFeedConfigManager guildConfigManager;
+    private final LiveFeedConfigStore guildConfigManager;
     private final LiveFeedManager liveFeedManager;
-    private final WatchConfigManager watchConfigManager;
+    private final WatchConfigStore watchConfigManager;
     private final WatchManager watchManager;
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     public GuildListener(
         final GatewayDiscordClient client,
         final RestClient restClient,
-        final LiveFeedConfigManager guildConfigManager,
+        final LiveFeedConfigStore guildConfigManager,
         final LiveFeedManager liveFeedManager,
-        final WatchConfigManager watchConfigManager,
+        final WatchConfigStore watchConfigManager,
         final WatchManager watchManager
     ) {
         this.guildConfigManager = guildConfigManager;
@@ -42,7 +42,6 @@ public class GuildListener {
         restClient.getGuilds().collectList().subscribe(guilds -> {
             LOGGER.info("Connected to {} guilds", guilds.size());
             guilds.forEach(guildConfigManager::loadGuild);
-            guildConfigManager.writeAllLiveFeedConfigs();
             liveFeedManager.onAllGuildsLoaded();
             watchManager.onAllGuildsLoaded(guilds);
             initialized.set(true);

@@ -21,7 +21,11 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import vc.api.model.ProfileDataImpl;
-import vc.config.watch.*;
+import vc.config.watch.WatchConfigStore;
+import vc.config.watch.model.GuildPlayerWatchConfig;
+import vc.config.watch.model.GuildWatch;
+import vc.config.watch.model.UserPlayerWatchConfig;
+import vc.config.watch.model.UserWatch;
 import vc.live.RedisClient;
 import vc.live.dto.ChatsRecord;
 import vc.live.dto.ConnectionsRecord;
@@ -41,7 +45,7 @@ import java.util.function.Supplier;
 @Component
 public class WatchManager implements DisposableBean {
     private static final Logger LOGGER = LoggerFactory.getLogger(WatchManager.class);
-    private final WatchConfigManager watchConfigManager;
+    private final WatchConfigStore watchConfigManager;
     private final RedisClient redisClient;
     private final GatewayDiscordClient discordClient;
     private final ObjectMapper objectMapper;
@@ -60,7 +64,7 @@ public class WatchManager implements DisposableBean {
     String deathsTopicId;
 
     public WatchManager(
-        final WatchConfigManager watchConfigManager,
+        final WatchConfigStore watchConfigManager,
         final RedisClient redisClient,
         final GatewayDiscordClient discordClient,
         final ObjectMapper objectMapper,
@@ -74,9 +78,9 @@ public class WatchManager implements DisposableBean {
         this.watchesEnabled = Boolean.parseBoolean(watchesEnabled);
         if (this.watchesEnabled) {
             LOGGER.info("Watch manager enabled");
-            watchConfigManager.loadUserWatchConfigs();
+            watchConfigManager.loadUserPlayerWatchConfigs();
             LOGGER.info("Loaded {} user watch configs", watchConfigManager.getAllUserWatchConfigs().size());
-            watchConfigManager.loadGuildWatchConfigs();
+            watchConfigManager.loadGuildPlayerWatchConfigs();
             LOGGER.info("Loaded {} guild watch configs", watchConfigManager.getAllGuildWatchConfigs().size());
             watchConfigManager.loadUserChatWatchConfigs();
             LOGGER.info("Loaded {} user chat watch configs", watchConfigManager.getAllUserChatWatchConfigs().size());
@@ -220,7 +224,7 @@ public class WatchManager implements DisposableBean {
                             id,
                             userWatch,
                             () -> watchEmbedProvider.apply(data),
-                            watchConfigManager::removeUserWatchConfig
+                            watchConfigManager::removeUserPlayerWatchConfig
                         );
                     } catch (Exception e) {
                         LOGGER.error("Error sending user watch notification {}", userWatch, e);
@@ -241,7 +245,7 @@ public class WatchManager implements DisposableBean {
                             userWatch.targetUuid(),
                             targetNameProvider.apply(data)
                         );
-                        watchConfigManager.updateUserWatchConfig(newConfig);
+                        watchConfigManager.writeUserPlayerWatchConfig(newConfig);
                     }
                 }
                 var guildWatches = watchConfigManager.getGuildWatches(targetUuidProvider.apply(data));
@@ -251,7 +255,7 @@ public class WatchManager implements DisposableBean {
                         id,
                         guildWatch,
                         () -> watchEmbedProvider.apply(data),
-                        watchConfigManager::removeGuildWatchConfig
+                        watchConfigManager::removeGuildPlayerWatchConfig
                     );
                 }
                 for (var guildWatch : guildWatches) {
@@ -272,7 +276,7 @@ public class WatchManager implements DisposableBean {
                             guildWatch.targetUuid(),
                             targetNameProvider.apply(data)
                         );
-                        watchConfigManager.updateGuildWatchConfig(newConfig);
+                        watchConfigManager.writeGuildPlayerWatchConfig(newConfig);
                     }
                 }
             }

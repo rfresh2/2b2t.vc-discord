@@ -20,10 +20,9 @@ import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
 import vc.api.model.ProfileDataImpl;
 import vc.commands.options.ChatInteractionOptionContext;
-import vc.config.watch.GuildChatWatchConfig;
-import vc.config.watch.GuildPlayerWatchConfig;
-import vc.config.watch.WatchConfigManager;
-import vc.live.watch.WatchManager;
+import vc.config.watch.WatchConfigStore;
+import vc.config.watch.model.GuildChatWatchConfig;
+import vc.config.watch.model.GuildPlayerWatchConfig;
 import vc.util.PlayerLookup;
 import vc.util.Validator;
 
@@ -36,17 +35,14 @@ import java.util.UUID;
 @Component
 public class WatchGuildCommand implements SlashCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(WatchGuildCommand.class);
-    private final WatchManager watchManager;
-    private final WatchConfigManager watchConfigManager;
+    private final WatchConfigStore watchConfigStore;
     private final PlayerLookup playerLookup;
 
     public WatchGuildCommand(
-        final WatchManager watchManager,
-        final WatchConfigManager watchConfigManager,
+        final WatchConfigStore watchConfigStore,
         final PlayerLookup playerLookup
     ) {
-        this.watchManager = watchManager;
-        this.watchConfigManager = watchConfigManager;
+        this.watchConfigStore = watchConfigStore;
         this.playerLookup = playerLookup;
     }
 
@@ -137,13 +133,13 @@ public class WatchGuildCommand implements SlashCommand {
                 mentionUserId,
                 mentionRoleId
             );
-            var existingWatches = watchConfigManager.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            var existingWatches = watchConfigStore.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
             for (var w : existingWatches) {
                 if (w.keyword().equals(keyword)) {
-                    watchConfigManager.removeGuildChatWatchConfig(w);
+                    watchConfigStore.removeGuildChatWatchConfig(w);
                 }
             }
-            watchConfigManager.updateGuildChatWatchConfig(watch);
+            watchConfigStore.writeGuildChatWatchConfig(watch);
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
                     .color(Color.SEA_GREEN)
@@ -162,10 +158,10 @@ public class WatchGuildCommand implements SlashCommand {
             if (keyword.length() < 3 || keyword.length() > 50) {
                 return error(event, "Keyword must be between 3 and 50 characters");
             }
-            var watches = watchConfigManager.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            var watches = watchConfigStore.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
             for (var watch : watches) {
                 if (watch.keyword().equals(keyword)) {
-                    watchConfigManager.removeGuildChatWatchConfig(watch);
+                    watchConfigStore.removeGuildChatWatchConfig(watch);
                     return event.createFollowup()
                         .withEmbeds(EmbedCreateSpec.builder()
                             .color(Color.SEA_GREEN)
@@ -175,7 +171,7 @@ public class WatchGuildCommand implements SlashCommand {
             }
             return error(event, "No watch found for `" + keyword + "`");
         } else if (option.getOption("list").isPresent()) {
-            var watches = watchConfigManager.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            var watches = watchConfigStore.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
             Collections.sort(watches, (a, b) -> {
                 int c = a.channelId().compareToIgnoreCase(b.channelId());
                 if (c != 0) return c;
@@ -206,9 +202,9 @@ public class WatchGuildCommand implements SlashCommand {
                     .color(Color.CYAN)
                     .build());
         } else if (option.getOption("clear").isPresent()) {
-            var watches = watchConfigManager.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            var watches = watchConfigStore.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
             for (var watch : watches) {
-                watchConfigManager.removeGuildChatWatchConfig(watch);
+                watchConfigStore.removeGuildChatWatchConfig(watch);
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
@@ -309,13 +305,13 @@ public class WatchGuildCommand implements SlashCommand {
                 profile.uuid(),
                 profile.name()
             );
-            var existingWatches = watchConfigManager.getGuildWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            var existingWatches = watchConfigStore.getGuildWatchesByGuild(event.getInteraction().getGuildId().get().asString());
             for (var w : existingWatches) {
                 if (w.targetUuid().equals(profile.uuid())) {
-                    watchConfigManager.removeGuildWatchConfig(w);
+                    watchConfigStore.removeGuildPlayerWatchConfig(w);
                 }
             }
-            watchConfigManager.updateGuildWatchConfig(watch);
+            watchConfigStore.writeGuildPlayerWatchConfig(watch);
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
                     .color(Color.SEA_GREEN)
@@ -341,10 +337,10 @@ public class WatchGuildCommand implements SlashCommand {
             var profile = playerLookup.getPlayerIdentity(playerName)
                 // fall back to a random UUID, so we can handle cases where the player's profile was deleted or name changed
                 .orElse(new ProfileDataImpl(playerName, UUID.randomUUID()));
-            var watches = watchConfigManager.getGuildWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            var watches = watchConfigStore.getGuildWatchesByGuild(event.getInteraction().getGuildId().get().asString());
             for (var watch : watches) {
                 if (watch.targetName().equalsIgnoreCase(playerName)) {
-                    watchConfigManager.removeGuildWatchConfig(watch);
+                    watchConfigStore.removeGuildPlayerWatchConfig(watch);
                     return event.createFollowup()
                         .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
                             .color(Color.SEA_GREEN)
@@ -355,7 +351,7 @@ public class WatchGuildCommand implements SlashCommand {
             }
             return error(event, "No watch found for " + profile.name() + " (" + profile.uuid() + ")");
         } else if (option.getOption("list").isPresent()) {
-            var watches = watchConfigManager.getGuildWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            var watches = watchConfigStore.getGuildWatchesByGuild(event.getInteraction().getGuildId().get().asString());
             Collections.sort(watches, (a, b) -> {
                 int c = a.channelId().compareToIgnoreCase(b.channelId());
                 if (c != 0) return c;
@@ -409,9 +405,9 @@ public class WatchGuildCommand implements SlashCommand {
                     .color(Color.CYAN)
                     .build());
         } else if (option.getOption("clear").isPresent()) {
-            var watches = watchConfigManager.getGuildWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            var watches = watchConfigStore.getGuildWatchesByGuild(event.getInteraction().getGuildId().get().asString());
             for (var watch : watches) {
-                watchConfigManager.removeGuildWatchConfig(watch);
+                watchConfigStore.removeGuildPlayerWatchConfig(watch);
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()

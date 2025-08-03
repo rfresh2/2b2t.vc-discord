@@ -1,19 +1,21 @@
 package vc.config.watch;
 
-import discord4j.core.GatewayDiscordClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Component;
-import vc.config.ConfigDatabase;
+import vc.config.watch.model.GuildChatWatchConfig;
+import vc.config.watch.model.GuildPlayerWatchConfig;
+import vc.config.watch.model.UserChatWatchConfig;
+import vc.config.watch.model.UserPlayerWatchConfig;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Component
-public class WatchConfigManager implements DisposableBean {
-    private static final Logger LOGGER = LoggerFactory.getLogger(WatchConfigManager.class);
+public class WatchConfigStore implements DisposableBean {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WatchConfigStore.class);
     private final Map<String, UserPlayerWatchConfig> userWatchConfigMap = new ConcurrentHashMap<>();
     private final Map<String, GuildPlayerWatchConfig> guildWatchConfigMap = new ConcurrentHashMap<>();
     private final Map<String, UserChatWatchConfig> userChatWatchConfigMap = new ConcurrentHashMap<>();
@@ -26,17 +28,25 @@ public class WatchConfigManager implements DisposableBean {
     private final Map<String, Set<String>> keywordToGuildChatWatchMap = new ConcurrentHashMap<>();
     private final Map<String, Set<String>> ownerToUserChatWatchMap = new ConcurrentHashMap<>();
     private final Map<String, Set<String>> guildToGuildChatWatchMap = new ConcurrentHashMap<>();
-    private final ConfigDatabase configDatabase;
+    private final GuildChatWatchRepository guildChatWatchRepository;
+    private final GuildPlayerWatchRepository guildPlayerWatchRepository;
+    private final UserChatWatchRepository userChatWatchRepository;
+    private final UserPlayerWatchRepository userPlayerWatchRepository;
 
-    public WatchConfigManager(
-        ConfigDatabase configDatabase,
-        GatewayDiscordClient gatewayDiscordClient
+    public WatchConfigStore(
+        final GuildChatWatchRepository guildChatWatchRepository,
+        final GuildPlayerWatchRepository guildPlayerWatchRepository,
+        final UserChatWatchRepository userChatWatchRepository,
+        final UserPlayerWatchRepository userPlayerWatchRepository
     ) {
-        this.configDatabase = configDatabase;
+        this.guildChatWatchRepository = guildChatWatchRepository;
+        this.guildPlayerWatchRepository = guildPlayerWatchRepository;
+        this.userChatWatchRepository = userChatWatchRepository;
+        this.userPlayerWatchRepository = userPlayerWatchRepository;
     }
 
-    public synchronized void loadUserWatchConfigs() {
-        List<UserPlayerWatchConfig> userWatchConfigs = configDatabase.getUserWatchConfigs();
+    public synchronized void loadUserPlayerWatchConfigs() {
+        List<UserPlayerWatchConfig> userWatchConfigs = userPlayerWatchRepository.getUserPlayerWatchConfigs();
         for (UserPlayerWatchConfig record : userWatchConfigs) {
             userWatchConfigMap.put(record.watchId(), record);
             targetToUserWatchMap.computeIfAbsent(record.targetUuid(), k -> new HashSet<>()).add(record.watchId());
@@ -44,8 +54,8 @@ public class WatchConfigManager implements DisposableBean {
         }
     }
 
-    public synchronized void loadGuildWatchConfigs() {
-        List<GuildPlayerWatchConfig> guildWatchConfigs = configDatabase.getGuildWatchConfigs();
+    public synchronized void loadGuildPlayerWatchConfigs() {
+        List<GuildPlayerWatchConfig> guildWatchConfigs = guildPlayerWatchRepository.getGuildPlayerWatchConfigs();
         for (GuildPlayerWatchConfig record : guildWatchConfigs) {
             guildWatchConfigMap.put(record.watchId(), record);
             targetToGuildWatchMap.computeIfAbsent(record.targetUuid(), k -> new HashSet<>()).add(record.watchId());
@@ -54,7 +64,7 @@ public class WatchConfigManager implements DisposableBean {
     }
 
     public synchronized void loadUserChatWatchConfigs() {
-        List<UserChatWatchConfig> userChatWatchConfigs = configDatabase.getUserChatWatchConfigs();
+        List<UserChatWatchConfig> userChatWatchConfigs = userChatWatchRepository.getUserChatWatchConfigs();
         for (UserChatWatchConfig record : userChatWatchConfigs) {
             userChatWatchConfigMap.put(record.watchId(), record);
             keywordToUserChatWatchMap.computeIfAbsent(record.keyword(), k -> new HashSet<>()).add(record.watchId());
@@ -63,7 +73,7 @@ public class WatchConfigManager implements DisposableBean {
     }
 
     public synchronized void loadGuildChatWatchConfigs() {
-        List<GuildChatWatchConfig> guildChatWatchConfigs = configDatabase.getGuildChatWatchConfigs();
+        List<GuildChatWatchConfig> guildChatWatchConfigs = guildChatWatchRepository.getGuildChatWatchConfigs();
         for (GuildChatWatchConfig record : guildChatWatchConfigs) {
             guildChatWatchConfigMap.put(record.watchId(), record);
             keywordToGuildChatWatchMap.computeIfAbsent(record.keyword(), k -> new HashSet<>()).add(record.watchId());
@@ -72,40 +82,40 @@ public class WatchConfigManager implements DisposableBean {
     }
 
     public synchronized void writeAllWatchConfigs() {
-        userWatchConfigMap.values().forEach(configDatabase::writeUserWatchConfig);
-        guildWatchConfigMap.values().forEach(configDatabase::writeGuildWatchConfig);
-        userChatWatchConfigMap.values().forEach(configDatabase::writeUserChatWatchConfig);
-        guildChatWatchConfigMap.values().forEach(configDatabase::writeGuildChatWatchConfig);
+        userWatchConfigMap.values().forEach(userPlayerWatchRepository::writeUserPlayerWatchConfig);
+        guildWatchConfigMap.values().forEach(guildPlayerWatchRepository::writeGuildPlayerWatchConfig);
+        userChatWatchConfigMap.values().forEach(userChatWatchRepository::writeUserChatWatchConfig);
+        guildChatWatchConfigMap.values().forEach(guildChatWatchRepository::writeGuildChatWatchConfig);
     }
 
-    public synchronized void updateUserWatchConfig(UserPlayerWatchConfig record) {
+    public synchronized void writeUserPlayerWatchConfig(UserPlayerWatchConfig record) {
         userWatchConfigMap.put(record.watchId(), record);
         targetToUserWatchMap.computeIfAbsent(record.targetUuid(), k -> new HashSet<>()).add(record.watchId());
         ownerToUserWatchMap.computeIfAbsent(record.ownerUserId(), k -> new HashSet<>()).add(record.watchId());
-        configDatabase.writeUserWatchConfig(record);
+        userPlayerWatchRepository.writeUserPlayerWatchConfig(record);
     }
 
-    public synchronized void updateGuildWatchConfig(GuildPlayerWatchConfig record) {
+    public synchronized void writeGuildPlayerWatchConfig(GuildPlayerWatchConfig record) {
         guildWatchConfigMap.put(record.watchId(), record);
         targetToGuildWatchMap.computeIfAbsent(record.targetUuid(), k -> new HashSet<>()).add(record.watchId());
         guildToGuildWatchMap.computeIfAbsent(record.guildId(), k -> new HashSet<>()).add(record.watchId());
-        configDatabase.writeGuildWatchConfig(record);
+        guildPlayerWatchRepository.writeGuildPlayerWatchConfig(record);
     }
 
-    public synchronized void updateUserChatWatchConfig(UserChatWatchConfig record) {
+    public synchronized void writeUserChatWatchConfig(UserChatWatchConfig record) {
         userChatWatchConfigMap.put(record.watchId(), record);
         keywordToUserChatWatchMap.computeIfAbsent(record.keyword(), k -> new HashSet<>()).add(record.watchId());
-        configDatabase.writeUserChatWatchConfig(record);
+        userChatWatchRepository.writeUserChatWatchConfig(record);
     }
 
-    public synchronized void updateGuildChatWatchConfig(GuildChatWatchConfig record) {
+    public synchronized void writeGuildChatWatchConfig(GuildChatWatchConfig record) {
         guildChatWatchConfigMap.put(record.watchId(), record);
         guildToGuildChatWatchMap.computeIfAbsent(record.guildId(), k -> new HashSet<>()).add(record.watchId());
         keywordToGuildChatWatchMap.computeIfAbsent(record.keyword(), k -> new HashSet<>()).add(record.watchId());
-        configDatabase.writeGuildChatWatchConfig(record);
+        guildChatWatchRepository.writeGuildChatWatchConfig(record);
     }
 
-    public synchronized void removeUserWatchConfig(UserPlayerWatchConfig record) {
+    public synchronized void removeUserPlayerWatchConfig(UserPlayerWatchConfig record) {
         userWatchConfigMap.remove(record.watchId());
         var targetToUser = targetToUserWatchMap.computeIfAbsent(record.targetUuid(), k -> new HashSet<>());
         targetToUser.remove(record.watchId());
@@ -117,10 +127,10 @@ public class WatchConfigManager implements DisposableBean {
         if (ownerToUser.isEmpty()) {
             ownerToUserWatchMap.remove(record.ownerUserId());
         }
-        configDatabase.deleteUserWatchConfig(record.watchId());
+        userPlayerWatchRepository.deleteUserPlayerWatchConfig(record.watchId());
     }
 
-    public synchronized void removeGuildWatchConfig(GuildPlayerWatchConfig record) {
+    public synchronized void removeGuildPlayerWatchConfig(GuildPlayerWatchConfig record) {
         guildWatchConfigMap.remove(record.watchId());
         var targetToGuild = targetToGuildWatchMap.computeIfAbsent(record.targetUuid(), k -> new HashSet<>());
         targetToGuild.remove(record.watchId());
@@ -132,7 +142,7 @@ public class WatchConfigManager implements DisposableBean {
         if (guildToGuild.isEmpty()) {
             guildToGuildWatchMap.remove(record.guildId());
         }
-        configDatabase.deleteGuildWatchConfig(record.watchId());
+        guildPlayerWatchRepository.deleteGuildPlayerWatchConfig(record.watchId());
     }
 
     public synchronized void removeUserChatWatchConfig(UserChatWatchConfig record) {
@@ -147,7 +157,7 @@ public class WatchConfigManager implements DisposableBean {
         if (ownerToUser.isEmpty()) {
             ownerToUserChatWatchMap.remove(record.ownerUserId());
         }
-        configDatabase.deleteUserChatWatchConfig(record.watchId());
+        userChatWatchRepository.deleteUserChatWatchConfig(record.watchId());
     }
 
     public synchronized void removeGuildChatWatchConfig(GuildChatWatchConfig record) {
@@ -162,7 +172,7 @@ public class WatchConfigManager implements DisposableBean {
         if (guildToGuild.isEmpty()) {
             guildToGuildChatWatchMap.remove(record.guildId());
         }
-        configDatabase.deleteGuildChatWatchConfig(record.watchId());
+        guildChatWatchRepository.deleteGuildChatWatchConfig(record.watchId());
     }
 
     public synchronized List<UserPlayerWatchConfig> getUserWatches(UUID targetUuid) {
@@ -293,7 +303,7 @@ public class WatchConfigManager implements DisposableBean {
         for (var watch : copyOfWatchesInGuild) {
             var record = guildWatchConfigMap.get(watch);
             if (record != null) {
-                removeGuildWatchConfig(record);
+                removeGuildPlayerWatchConfig(record);
             } else {
                 LOGGER.warn("Guild watch record not found for watchId {}", watch);
             }
