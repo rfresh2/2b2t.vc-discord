@@ -3,70 +3,125 @@
   "description": "DM notifications on player events",
   "options": [
     {
-      "name": "add",
-      "description": "Add a watch",
-      "type": 1,
+      "name": "player",
+      "description": "Watch for events about a specific player",
+      "type": 2,
       "options": [
         {
-          "name": "player",
-          "description": "Player Name",
-          "type": 3,
-          "required": true
+          "name": "add",
+          "description": "Add a watch",
+          "type": 1,
+          "options": [
+            {
+              "name": "player",
+              "description": "Player Name",
+              "type": 3,
+              "required": true
+            },
+            {
+              "name": "joins",
+              "description": "On player join",
+              "type": 5,
+              "required": false
+            },
+            {
+              "name": "leaves",
+              "description": "On player disconnects",
+              "type": 5,
+              "required": false
+            },
+            {
+              "name": "chats",
+              "description": "On player chats",
+              "type": 5,
+              "required": false
+            },
+            {
+              "name": "deaths",
+              "description": "On player deaths",
+              "type": 5,
+              "required": false
+            },
+            {
+              "name": "kills",
+              "description": "On player kills",
+              "type": 5,
+              "required": false
+            }
+          ]
         },
         {
-          "name": "joins",
-          "description": "On player join",
-          "type": 5,
-          "required": false
+          "name": "delete",
+          "description": "Remove a watch",
+          "type": 1,
+          "options": [
+            {
+              "name": "player",
+              "description": "Player Name",
+              "type": 3,
+              "required": true
+            }
+          ]
         },
         {
-          "name": "leaves",
-          "description": "On player disconnects",
-          "type": 5,
-          "required": false
+          "name": "list",
+          "description": "List all watches",
+          "type": 1
         },
         {
-          "name": "chats",
-          "description": "On player chats",
-          "type": 5,
-          "required": false
-        },
-        {
-          "name": "deaths",
-          "description": "On player deaths",
-          "type": 5,
-          "required": false
-        },
-        {
-          "name": "kills",
-          "description": "On player kills",
-          "type": 5,
-          "required": false
+          "name": "clear",
+          "description": "Remove all watches",
+          "type": 1
         }
       ]
     },
     {
-      "name": "delete",
-      "description": "Remove a watch",
-      "type": 1,
+      "name": "chat",
+      "description": "Watch for chats containing a keyword",
+      "type": 2,
       "options": [
         {
-          "name": "player",
-          "description": "Player Name",
-          "type": 3,
-          "required": true
+          "name": "add",
+          "description": "Add a watch",
+          "type": 1,
+          "options": [
+            {
+              "name": "keyword",
+              "description": "Set a keyword",
+              "type": 3,
+              "required": true
+            },
+            {
+              "name": "case-sensitive",
+              "description": "Set whether keyword matches regardless of upper/lowercase letters",
+              "type": 5
+            }
+          ]
+        },
+        {
+          "name": "delete",
+          "description": "Remove a watch",
+          "type": 1,
+          "options": [
+            {
+              "name": "keyword",
+              "description": "Keyword to remove",
+              "type": 3,
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "list",
+          "description": "List all watches",
+          "type": 1
+        },
+        {
+          "name": "clear",
+          "description": "Remove all watches",
+          "type": 1
         }
       ]
-    },
-    {
-      "name": "list",
-      "description": "List all watches",
-      "type": 1
-    },
-    {
-      "name": "clear",
-      "description": "Remove all watches",
-      "type": 1
     }
   ]
 }

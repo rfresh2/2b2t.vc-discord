@@ -20,7 +20,8 @@ import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
 import vc.api.model.ProfileDataImpl;
 import vc.commands.options.ChatInteractionOptionContext;
-import vc.config.watch.GuildWatchConfigRecord;
+import vc.config.watch.GuildChatWatchConfig;
+import vc.config.watch.GuildPlayerWatchConfig;
 import vc.config.watch.WatchConfigManager;
 import vc.live.watch.WatchManager;
 import vc.util.PlayerLookup;
@@ -58,8 +59,170 @@ public class WatchGuildCommand implements SlashCommand {
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
         if (event.getInteraction().getGuildId().isEmpty()) return error(event, "This command can only be used inside a discord server");
         if (!validateUserPermissions(event)) return error(event, "You must have permission: " + Permission.MANAGE_MESSAGES + " to use this command");
-        if (event.getOption("add").isPresent()) {
-            var addOption = event.getOption("add").get();
+
+        var playerTypeOption = event.getOption("player");
+        if (playerTypeOption.isPresent()) {
+            return handlePlayerWatch(event, playerTypeOption.get());
+        }
+        var chatTypeOption = event.getOption("chat");
+        if (chatTypeOption.isPresent()) {
+            return handleChatWatch(event, chatTypeOption.get());
+        }
+        return error(event, "Unknown command option");
+    }
+
+    private Mono<Message> handleChatWatch(final ChatInputInteractionEvent event, final ApplicationCommandInteractionOption option) {
+        if (option.getOption("add").isPresent()) {
+            var addOption = option.getOption("add").get();
+            var channelOption = addOption
+                .getOption("channel")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asChannel)
+                .map(m -> m.block(Duration.ofSeconds(10)));
+            if (channelOption.isEmpty()) {
+                return error(event, "Channel option is required to add a watch");
+            }
+            var channel = channelOption.get();
+            String keyword = addOption.getOption("keyword")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString)
+                .orElse("");
+            if (keyword.length() < 3 || keyword.length() > 50) {
+                return error(event, "Keyword must be between 3 and 50 characters");
+            }
+            boolean caseSensitive = addOption.getOption("case-sensitive")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asBoolean)
+                .orElse(false);
+            String mentionUserId = "";
+            String mentionRoleId = "";
+            var mentionTarget = addOption.getOption("mention")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asSnowflake);
+            if (mentionTarget.isPresent()) {
+                var snowflake = mentionTarget.get();
+                var guild = event.getInteraction().getGuild().block(Duration.ofSeconds(10));
+                try {
+                    Member member = guild.getMemberById(snowflake).block(Duration.ofSeconds(10));
+                    if (member != null) {
+                        mentionUserId = snowflake.asString();
+                    } else {
+                        LOGGER.warn("Mention target is not a member of the guild: {}", snowflake.asString());
+                    }
+                } catch (Exception e) {
+                }
+                if (mentionUserId.isEmpty()) {
+                    try {
+                        var role = guild.getRoleById(snowflake).block(Duration.ofSeconds(10));
+                        if (role != null) {
+                            mentionRoleId = snowflake.asString();
+                        } else {
+                            LOGGER.warn("Mention target is not a role in the guild: {}", snowflake.asString());
+                        }
+                    } catch (Exception e) {
+                    }
+                }
+                if (mentionUserId.isEmpty() && mentionRoleId.isEmpty()) {
+                    return error(event, "Mention target must be a valid user or role");
+                }
+            }
+
+            var watch = new GuildChatWatchConfig(
+                Snowflake.of(Instant.now()).asString(),
+                event.getInteraction().getGuildId().get().asString(),
+                event.getInteraction().getGuild().block(Duration.ofSeconds(10)).getName(),
+                channel.getId().asString(),
+                keyword,
+                caseSensitive,
+                mentionUserId,
+                mentionRoleId
+            );
+            var existingWatches = watchConfigManager.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            for (var w : existingWatches) {
+                if (w.keyword().equals(keyword)) {
+                    watchConfigManager.removeGuildChatWatchConfig(w);
+                }
+            }
+            watchConfigManager.updateGuildChatWatchConfig(watch);
+            return event.createFollowup()
+                .withEmbeds(EmbedCreateSpec.builder()
+                    .color(Color.SEA_GREEN)
+                    .description("""
+                         Watch added!
+                         
+                         Notifications on watched events will be sent to: %s
+                         """.formatted(channel.getMention()))
+                    .build());
+        } else if (option.getOption("delete").isPresent()) {
+            var deleteOption = option.getOption("delete").get();
+            String keyword = deleteOption.getOption("keyword")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString)
+                .orElse("");
+            if (keyword.length() < 3 || keyword.length() > 50) {
+                return error(event, "Keyword must be between 3 and 50 characters");
+            }
+            var watches = watchConfigManager.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            for (var watch : watches) {
+                if (watch.keyword().equals(keyword)) {
+                    watchConfigManager.removeGuildChatWatchConfig(watch);
+                    return event.createFollowup()
+                        .withEmbeds(EmbedCreateSpec.builder()
+                            .color(Color.SEA_GREEN)
+                            .description("Watch deleted!")
+                            .build());
+                }
+            }
+            return error(event, "No watch found for `" + keyword + "`");
+        } else if (option.getOption("list").isPresent()) {
+            var watches = watchConfigManager.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            Collections.sort(watches, (a, b) -> {
+                int c = a.channelId().compareToIgnoreCase(b.channelId());
+                if (c != 0) return c;
+                return a.keyword().compareTo(b.keyword());
+            });
+            StringBuilder builder = new StringBuilder();
+            if (watches.isEmpty()) {
+                builder.append("None!\n");
+            } else {
+                for (var watch : watches) {
+                    builder
+                        .append(escape(watch.keyword()));
+                    if (watch.caseSensitive()) {
+                        builder.append(" (case-sensitive)");
+                    }
+                    builder
+                        .append("\n");
+                }
+            }
+            var description = builder.toString();
+            if (description.length() > 4000) {
+                description = description.substring(0, 4000) + "\n... (truncated)";
+            }
+            return event.createFollowup()
+                .withEmbeds(EmbedCreateSpec.builder()
+                    .title("Watch List")
+                    .description(description)
+                    .color(Color.CYAN)
+                    .build());
+        } else if (option.getOption("clear").isPresent()) {
+            var watches = watchConfigManager.getGuildChatWatchesByGuild(event.getInteraction().getGuildId().get().asString());
+            for (var watch : watches) {
+                watchConfigManager.removeGuildChatWatchConfig(watch);
+            }
+            return event.createFollowup()
+                .withEmbeds(EmbedCreateSpec.builder()
+                    .title("All Watches Cleared")
+                    .description("Removed " + watches.size() + " watches.")
+                    .color(Color.CYAN)
+                    .build());
+        }
+        return error(event, "Unknown command option");
+    }
+
+    private Mono<Message> handlePlayerWatch(final ChatInputInteractionEvent event, final ApplicationCommandInteractionOption option) {
+        if (option.getOption("add").isPresent()) {
+            var addOption = option.getOption("add").get();
             var ctx = resolveProfileSubOption(new ChatInteractionOptionContext(event), addOption);
             if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
             var channelOption = addOption
@@ -131,7 +294,7 @@ public class WatchGuildCommand implements SlashCommand {
             }
 
             var profile = ctx.profileData;
-            var watch = new GuildWatchConfigRecord(
+            var watch = new GuildPlayerWatchConfig(
                 Snowflake.of(Instant.now()).asString(),
                 event.getInteraction().getGuildId().get().asString(),
                 event.getInteraction().getGuild().block(Duration.ofSeconds(10)).getName(),
@@ -163,8 +326,8 @@ public class WatchGuildCommand implements SlashCommand {
                          """.formatted(channel.getMention()))
                     .thumbnail(profile.getAvatarURL())
                     .build());
-        } else if (event.getOption("delete").isPresent()) {
-            var deleteOption = event.getOption("delete").get();
+        } else if (option.getOption("delete").isPresent()) {
+            var deleteOption = option.getOption("delete").get();
             var playerNameOption = deleteOption.getOption("player")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
@@ -191,7 +354,7 @@ public class WatchGuildCommand implements SlashCommand {
                 }
             }
             return error(event, "No watch found for " + profile.name() + " (" + profile.uuid() + ")");
-        } else if (event.getOption("list").isPresent()) {
+        } else if (option.getOption("list").isPresent()) {
             var watches = watchConfigManager.getGuildWatchesByGuild(event.getInteraction().getGuildId().get().asString());
             Collections.sort(watches, (a, b) -> {
                 int c = a.channelId().compareToIgnoreCase(b.channelId());
@@ -245,7 +408,7 @@ public class WatchGuildCommand implements SlashCommand {
                     .description(description)
                     .color(Color.CYAN)
                     .build());
-        } else if (event.getOption("clear").isPresent()) {
+        } else if (option.getOption("clear").isPresent()) {
             var watches = watchConfigManager.getGuildWatchesByGuild(event.getInteraction().getGuildId().get().asString());
             for (var watch : watches) {
                 watchConfigManager.removeGuildWatchConfig(watch);

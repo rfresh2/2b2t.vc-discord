@@ -21,9 +21,7 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import vc.api.model.ProfileDataImpl;
-import vc.config.watch.GuildWatchConfigRecord;
-import vc.config.watch.UserWatchConfigRecord;
-import vc.config.watch.WatchConfigManager;
+import vc.config.watch.*;
 import vc.live.RedisClient;
 import vc.live.dto.ChatsRecord;
 import vc.live.dto.ConnectionsRecord;
@@ -36,7 +34,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Component
 public class WatchManager implements DisposableBean {
@@ -49,6 +49,7 @@ public class WatchManager implements DisposableBean {
     private final ConcurrentLinkedDeque<ConnectionsRecord> joinsQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<ConnectionsRecord> leavesQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<ChatsRecord> chatsQueue = new ConcurrentLinkedDeque<>();
+    private final ConcurrentLinkedDeque<ChatsRecord> chatsKeywordQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<DeathsRecord> deathsQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<DeathsRecord> killsQueue = new ConcurrentLinkedDeque<>();
     RReliableTopic connectionsTopic;
@@ -77,6 +78,10 @@ public class WatchManager implements DisposableBean {
             LOGGER.info("Loaded {} user watch configs", watchConfigManager.getAllUserWatchConfigs().size());
             watchConfigManager.loadGuildWatchConfigs();
             LOGGER.info("Loaded {} guild watch configs", watchConfigManager.getAllGuildWatchConfigs().size());
+            watchConfigManager.loadUserChatWatchConfigs();
+            LOGGER.info("Loaded {} user chat watch configs", watchConfigManager.getAllUserChatWatchConfigs().size());
+            watchConfigManager.loadGuildChatWatchConfigs();
+            LOGGER.info("Loaded {} guild chat watch configs", watchConfigManager.getAllGuildChatWatchConfigs().size());
             connectionsTopic = this.redisClient.getTopic("ConnectionsTopic");
             connectionsTopicId = connectionsTopic.addListener(String.class, (channel, msg) -> connectionsTopicListener(msg));
             chatsTopic = this.redisClient.getTopic("ChatsTopic");
@@ -154,14 +159,54 @@ public class WatchManager implements DisposableBean {
         );
     }
 
+    @Scheduled(fixedRate = 1000)
+    private void processChatsKeywordQueue() {
+        try {
+            while (!chatsKeywordQueue.isEmpty()) {
+                var data = chatsKeywordQueue.poll();
+                if (data == null) continue;
+                var userWatches = watchConfigManager.getAllUserChatWatchConfigs().values();
+                for (var userWatch : userWatches) {
+                    if (userWatch.caseSensitive()
+                        ? !data.chat().contains(userWatch.keyword())
+                        : !data.chat().toLowerCase().contains(userWatch.keyword().toLowerCase())){
+                        continue;
+                    }
+                    sendUserWatchNotification(
+                        "ChatsKeyword",
+                        userWatch,
+                        () -> chatsKeywordWatchEmbed(data, userWatch.keyword()),
+                        watchConfigManager::removeUserChatWatchConfig
+                    );
+                }
+                var guildWatches = watchConfigManager.getAllGuildChatWatchConfigs().values();
+                for (var guildWatch : guildWatches) {
+                    if (guildWatch.caseSensitive()
+                        ? !data.chat().contains(guildWatch.keyword())
+                        : !data.chat().toLowerCase().contains(guildWatch.keyword().toLowerCase())){
+                        continue;
+                    }
+                    sendGuildNotification(
+                        "ChatsKeyword",
+                        guildWatch,
+                        () -> chatsKeywordWatchEmbed(data, guildWatch.keyword()),
+                        watchConfigManager::removeGuildChatWatchConfig
+                    );
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error while processing chat keyword watch queue", e);
+        }
+    }
+
     private <T> void processQueue(
         String id,
         ConcurrentLinkedDeque<T> queue,
         Function<T, EmbedCreateSpec> watchEmbedProvider,
         Function<T, UUID> targetUuidProvider,
         Function<T, String> targetNameProvider,
-        BiFunction<T, UserWatchConfigRecord, Boolean> userActivePredicate,
-        BiFunction<T, GuildWatchConfigRecord, Boolean> guildActivePredicate
+        BiFunction<T, UserPlayerWatchConfig, Boolean> userActivePredicate,
+        BiFunction<T, GuildPlayerWatchConfig, Boolean> guildActivePredicate
     ) {
         try {
             while (!queue.isEmpty()) {
@@ -171,38 +216,12 @@ public class WatchManager implements DisposableBean {
                 for (var userWatch : userWatches) {
                     if (!userActivePredicate.apply(data, userWatch)) continue;
                     try {
-                        var ownerUserId = userWatch.ownerUserId();
-                        var channel = discordClient.getUserById(Snowflake.of(ownerUserId))
-                            .doOnSuccess(user -> LOGGER.info("[{}] Sending {} user watch to {}", id, targetNameProvider.apply(data), user.getUsername()))
-                            .flatMap(User::getPrivateChannel)
-                            .block(Duration.ofSeconds(10));
-                        var msg = MessageCreateSpec.builder()
-                            .addEmbed(watchEmbedProvider.apply(data))
-                            .build();
-                        channel.createMessage(msg)
-                            .doOnError(error -> LOGGER.error("Error sending user watch to: {}", ownerUserId))
-                            .timeout(Duration.ofSeconds(3))
-                            .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
-                                .filter(error -> error instanceof TimeoutException)
-                                .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
-                                    "Retries exhausted sending watch to user: " + ownerUserId + ", channelId: " + channel.getId().asString(),
-                                    signal.failure())))
-                            .onErrorResume(error -> {
-                                if (Exceptions.isRetryExhausted(error)) {
-                                    if (error instanceof ClientException e) {
-                                        int code = e.getStatus().code();
-                                        if (code == 429) {
-                                            LOGGER.error("Rate limited while broadcasting watch to user: {}", ownerUserId);
-                                        } else if (code == 403 || code == 404) {
-                                            LOGGER.error("Missing permissions while broadcasting watch to user: {}. Removing watch.", ownerUserId);
-                                            watchConfigManager.removeUserWatchConfig(userWatch);
-                                        }
-                                    }
-                                }
-                                LOGGER.error("Error sending user watch to: {}", ownerUserId, error);
-                                return Mono.empty();
-                            })
-                            .block(Duration.ofSeconds(10));
+                        sendUserWatchNotification(
+                            id,
+                            userWatch,
+                            () -> watchEmbedProvider.apply(data),
+                            watchConfigManager::removeUserWatchConfig
+                        );
                     } catch (Exception e) {
                         LOGGER.error("Error sending user watch notification {}", userWatch, e);
                     }
@@ -210,7 +229,7 @@ public class WatchManager implements DisposableBean {
                 for (var userWatch : userWatches) {
                     if (!targetNameProvider.apply(data).equals(userWatch.targetName())) {
                         LOGGER.info("Updating user watch {} target name from {} to {}", userWatch.watchId(), userWatch.targetName(), targetNameProvider.apply(data));
-                        var newConfig = new UserWatchConfigRecord(
+                        var newConfig = new UserPlayerWatchConfig(
                             userWatch.watchId(),
                             userWatch.ownerUserId(),
                             userWatch.ownerUserName(),
@@ -228,62 +247,17 @@ public class WatchManager implements DisposableBean {
                 var guildWatches = watchConfigManager.getGuildWatches(targetUuidProvider.apply(data));
                 for (var guildWatch : guildWatches) {
                     if (!guildActivePredicate.apply(data, guildWatch)) continue;
-                    try {
-                        var guildId = Snowflake.of(guildWatch.guildId());
-                        var guild = discordClient.getGuildById(guildId).block(Duration.ofSeconds(10));
-                        if (guild == null) {
-                            LOGGER.warn("Guild with ID {} not found for watch {}", guildId.asString(), guildWatch);
-                            watchConfigManager.removeGuildWatchConfig(guildWatch);
-                            continue;
-                        }
-                        var channel = guild.getChannelById(Snowflake.of(guildWatch.channelId())).block(Duration.ofSeconds(10));
-                        if (channel == null) {
-                            LOGGER.warn("Channel with ID {} not found in guild {}", guildWatch.channelId(), guildId.asString());
-                            watchConfigManager.removeGuildWatchConfig(guildWatch);
-                            continue;
-                        }
-                        LOGGER.info("[{}] Sending {} guild watch to {} ({})", id, targetNameProvider.apply(data), guild.getName(), channel.getName());
-                        var msgBuilder = MessageCreateSpec.builder()
-                            .addEmbed(watchEmbedProvider.apply(data));
-                        if (guildWatch.mentionUserId() != null && !guildWatch.mentionUserId().isBlank()) {
-                            var mention = MentionUtil.forUser(Snowflake.of(guildWatch.mentionUserId()));
-                            msgBuilder.content(mention);
-                        } else if (guildWatch.mentionRoleId() != null && !guildWatch.mentionRoleId().isBlank()) {
-                            var mention = MentionUtil.forRole(Snowflake.of(guildWatch.mentionRoleId()));
-                            msgBuilder.content(mention);
-                        }
-                        channel.getRestChannel().createMessage(msgBuilder.build().asRequest())
-                            .doOnError(error -> LOGGER.error("Error sending guild watch to guild: {}, channelId: {}", guildId, channel.getId()))
-                            .timeout(Duration.ofSeconds(3))
-                            .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
-                                .filter(error -> error instanceof TimeoutException)
-                                .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
-                                    "Retries exhausted sending watch to guild: " + guildId + ", channelId: " + channel.getId().asString(),
-                                    signal.failure())))
-                            .onErrorResume(error -> {
-                                if (Exceptions.isRetryExhausted(error)) {
-                                    if (error instanceof ClientException e) {
-                                        int code = e.getStatus().code();
-                                        if (code == 429) {
-                                            LOGGER.error("Rate limited while broadcasting watch to guild: {}, channelId: {}.", guildId, channel.getId());
-                                        } else if (code == 403 || code == 404) {
-                                            LOGGER.error("Missing permissions while broadcasting watch to guild: {}, channelId: {}. Removing watch.", guildId, channel.getId());
-                                            watchConfigManager.removeGuildWatchConfig(guildWatch);
-                                        }
-                                    }
-                                }
-                                LOGGER.error("Error sending guild watch to guild: {}, channelId: {}", guildId, channel.getId(), error);
-                                return Mono.empty();
-                            })
-                            .block(Duration.ofSeconds(10));
-                    } catch (Exception e) {
-                        LOGGER.error("Error sending guild watch notification {}", guildWatch, e);
-                    }
+                    sendGuildNotification(
+                        id,
+                        guildWatch,
+                        () -> watchEmbedProvider.apply(data),
+                        watchConfigManager::removeGuildWatchConfig
+                    );
                 }
                 for (var guildWatch : guildWatches) {
                     if (!targetNameProvider.apply(data).equals(guildWatch.targetName())) {
                         LOGGER.info("Updating guild watch {} target name from {} to {}", guildWatch.watchId(), guildWatch.targetName(), targetNameProvider.apply(data));
-                        var newConfig = new GuildWatchConfigRecord(
+                        var newConfig = new GuildPlayerWatchConfig(
                             guildWatch.watchId(),
                             guildWatch.guildId(),
                             guildWatch.guildName(),
@@ -304,6 +278,114 @@ public class WatchManager implements DisposableBean {
             }
         } catch (Exception e) {
             LOGGER.error("Error while processing {} queue", id, e);
+        }
+    }
+
+    private <T extends UserWatch> void sendUserWatchNotification(
+        String id,
+        T userWatch,
+        Supplier<EmbedCreateSpec> embedSupplier,
+        Consumer<T> removeWatchConsumer
+    ) {
+        try {
+            var channel = discordClient.getUserById(Snowflake.of(userWatch.ownerUserId()))
+                .doOnSuccess(user -> LOGGER.info("[{}] Sending user notification to {}", id, user.getUsername()))
+                .flatMap(User::getPrivateChannel)
+                .block(Duration.ofSeconds(10));
+
+            var msg = MessageCreateSpec.builder()
+                .addEmbed(embedSupplier.get())
+                .build();
+
+            channel.createMessage(msg)
+                .doOnError(error -> LOGGER.error("Error sending user notification to: {}", userWatch.ownerUserName()))
+                .timeout(Duration.ofSeconds(3))
+                .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
+                    .filter(error -> error instanceof TimeoutException)
+                    .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
+                        "Retries exhausted sending notification to user: " + userWatch.ownerUserName() + ", channelId: " + channel.getId().asString(),
+                        signal.failure())))
+                .onErrorResume(error -> {
+                    if (Exceptions.isRetryExhausted(error)) {
+                        if (error instanceof ClientException e) {
+                            int code = e.getStatus().code();
+                            if (code == 429) {
+                                LOGGER.error("Rate limited while sending notification to user: {}", userWatch.ownerUserName());
+                            } else if (code == 403 || code == 404) {
+                                LOGGER.error("Missing permissions while sending notification to user: {}. Removing watch.", userWatch.ownerUserName());
+                                removeWatchConsumer.accept(userWatch);
+                            }
+                        }
+                    }
+                    LOGGER.error("Error sending user notification to: {}", userWatch.ownerUserName(), error);
+                    return Mono.empty();
+                })
+                .block(Duration.ofSeconds(10));
+        } catch (Exception e) {
+            LOGGER.error("Error sending user notification to {}", userWatch.ownerUserId(), e);
+        }
+    }
+
+    private <T extends GuildWatch> void sendGuildNotification(
+        String id,
+        T guildWatch,
+        Supplier<EmbedCreateSpec> embedSupplier,
+        Consumer<T> removeGuildWatchFunction
+    ) {
+        try {
+            var guildSnowflake = Snowflake.of(guildWatch.guildId());
+            var guild = discordClient.getGuildById(guildSnowflake).block(Duration.ofSeconds(10));
+            if (guild == null) {
+                LOGGER.warn("Guild with ID {} not found", guildWatch.guildId());
+                removeGuildWatchFunction.accept(guildWatch);
+                return;
+            }
+
+            var channel = guild.getChannelById(Snowflake.of(guildWatch.channelId())).block(Duration.ofSeconds(10));
+            if (channel == null) {
+                LOGGER.warn("Channel with ID {} not found in guild {}", guildWatch.channelId(), guildWatch.guildId());
+                removeGuildWatchFunction.accept(guildWatch);
+                return;
+            }
+
+            LOGGER.info("[{}] Sending guild watch notification to {} ({})", id, guild.getName(), channel.getName());
+            var msgBuilder = MessageCreateSpec.builder()
+                .addEmbed(embedSupplier.get());
+
+            if (guildWatch.mentionUserId() != null && !guildWatch.mentionUserId().isBlank()) {
+                var mention = MentionUtil.forUser(Snowflake.of(guildWatch.mentionUserId()));
+                msgBuilder.content(mention);
+            } else if (guildWatch.mentionRoleId() != null && !guildWatch.mentionRoleId().isBlank()) {
+                var mention = MentionUtil.forRole(Snowflake.of(guildWatch.mentionRoleId()));
+                msgBuilder.content(mention);
+            }
+
+            channel.getRestChannel().createMessage(msgBuilder.build().asRequest())
+                .doOnError(error -> LOGGER.error("Error sending guild notification to guild: {}, channelId: {}", guildWatch.guildId(), channel.getId()))
+                .timeout(Duration.ofSeconds(3))
+                .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
+                    .filter(error -> error instanceof TimeoutException)
+                    .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
+                        "Retries exhausted sending notification to guild: " + guildWatch.guildId() + ", channelId: " + channel.getId().asString(),
+                        signal.failure())))
+                .onErrorResume(error -> {
+                    if (Exceptions.isRetryExhausted(error)) {
+                        if (error instanceof ClientException e) {
+                            int code = e.getStatus().code();
+                            if (code == 429) {
+                                LOGGER.error("Rate limited while sending notification to guild: {}, channelId: {}.", guildWatch.guildId(), channel.getId());
+                            } else if (code == 403 || code == 404) {
+                                LOGGER.error("Missing permissions while sending notification to guild: {}, channelId: {}. Removing watch.", guildWatch.guildId(), channel.getId());
+                                removeGuildWatchFunction.accept(guildWatch);
+                            }
+                        }
+                    }
+                    LOGGER.error("Error sending guild notification to guild: {}, channelId: {}", guildWatch.guildId(), channel.getId(), error);
+                    return Mono.empty();
+                })
+                .block(Duration.ofSeconds(10));
+        } catch (Exception e) {
+            LOGGER.error("Error sending guild notification to guild: {}, channelId: {}", guildWatch.guildId(), guildWatch.channelId(), e);
         }
     }
 
@@ -349,6 +431,25 @@ public class WatchManager implements DisposableBean {
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
             .addField("Message", escape(chat.chat()), false)
+            .thumbnail(profile.getAvatarURL())
+            .timestamp(chat.time().toInstant())
+            .color(chat.chat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.SEA_GREEN)
+            .build();
+        return embed;
+    }
+
+    public EmbedCreateSpec chatsKeywordWatchEmbed(
+        final ChatsRecord chat,
+        final String keyword
+    ) {
+        var profile = new ProfileDataImpl(chat.playerName(), chat.playerUuid());
+        EmbedCreateSpec embed = EmbedCreateSpec.builder()
+            .title("Watched Keyword in Chat")
+            .addField("Player", "[" + profile.name() + "](" + profile.getNameMCLink(profile.uuid()) + ")", true)
+            .addField("\u200B", "\u200B", true)
+            .addField("\u200B", "\u200B", true)
+            .addField("Message", escape(chat.chat()), false)
+            .addField("Keyword", escape(keyword), false)
             .thumbnail(profile.getAvatarURL())
             .timestamp(chat.time().toInstant())
             .color(chat.chat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.SEA_GREEN)
@@ -418,6 +519,7 @@ public class WatchManager implements DisposableBean {
         try {
             var data = objectMapper.readValue(msg, ChatsRecord.class);
             chatsQueue.add(data);
+            chatsKeywordQueue.add(data);
         } catch (Exception e) {
             LOGGER.error("Failed to parse ChatsRecord from Redis message: {}", msg, e);
         }
@@ -461,6 +563,7 @@ public class WatchManager implements DisposableBean {
 
     public void removeWatchesInGuild(final String guildId) {
         watchConfigManager.removeGuildWatchConfigs(guildId);
+        watchConfigManager.removeGuildChatWatchConfigs(guildId);
     }
 
     String escape(String message) {

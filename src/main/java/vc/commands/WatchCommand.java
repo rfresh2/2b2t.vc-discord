@@ -14,7 +14,8 @@ import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
 import vc.api.model.ProfileDataImpl;
 import vc.commands.options.ChatInteractionOptionContext;
-import vc.config.watch.UserWatchConfigRecord;
+import vc.config.watch.UserChatWatchConfig;
+import vc.config.watch.UserPlayerWatchConfig;
 import vc.config.watch.WatchConfigManager;
 import vc.live.watch.WatchManager;
 import vc.util.PlayerLookup;
@@ -49,8 +50,121 @@ public class WatchCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        if (event.getOption("add").isPresent()) {
-            var addOption = event.getOption("add").get();
+        var playerTypeOption = event.getOption("player");
+        if (playerTypeOption.isPresent()) {
+            return handlePlayerWatch(event, playerTypeOption.get());
+        }
+        var chatTypeOption = event.getOption("chat");
+        if (chatTypeOption.isPresent()) {
+            return handleChatWatch(event, chatTypeOption.get());
+        }
+
+        return error(event, "Unknown command option");
+    }
+
+    private Mono<Message> handleChatWatch(final ChatInputInteractionEvent event, final ApplicationCommandInteractionOption option) {
+        if (option.getOption("add").isPresent()) {
+            var addOption = option.getOption("add").get();
+            String keyword = addOption.getOption("keyword")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString)
+                .orElse("");
+            if (keyword.length() < 3 || keyword.length() > 50) {
+                return error(event, "Keyword must be between 3 and 50 characters");
+            }
+            boolean caseSensitive = addOption.getOption("case-sensitive")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asBoolean)
+                .orElse(false);
+            var watch = new UserChatWatchConfig(
+                Snowflake.of(Instant.now()).asString(),
+                event.getUser().getId().asString(),
+                event.getUser().getUsername(),
+                keyword,
+                caseSensitive
+            );
+            var existingWatches = watchConfigManager.getUserChatWatchesByOwner(event.getUser().getId().asString());
+            for (var w : existingWatches) {
+                if (w.keyword().equals(keyword)) {
+                    watchConfigManager.removeUserChatWatchConfig(w);
+                }
+            }
+            watchConfigManager.updateUserChatWatchConfig(watch);
+            return event.createFollowup()
+                .withEmbeds(EmbedCreateSpec.builder()
+                    .color(Color.SEA_GREEN)
+                    .description("""
+                         Watch added!
+                         
+                         You will be DM'd on chats containing the keyword
+                         """)
+                    .build());
+        } else if (option.getOption("delete").isPresent()) {
+            var deleteOption = option.getOption("delete").get();
+            String keyword = deleteOption.getOption("keyword")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString)
+                .orElse("");
+            if (keyword.length() < 3 || keyword.length() > 50) {
+                return error(event, "Keyword must be between 3 and 50 characters");
+            }
+            var watches = watchConfigManager.getUserChatWatchesByOwner(event.getUser().getId().asString());
+            for (var watch : watches) {
+                if (watch.keyword().equals(keyword)) {
+                    watchConfigManager.removeUserChatWatchConfig(watch);
+                    return event.createFollowup()
+                        .withEmbeds(EmbedCreateSpec.builder()
+                            .color(Color.SEA_GREEN)
+                            .description("Watch deleted!")
+                            .build());
+                }
+            }
+            return error(event, "No watch found for `" + keyword + "`");
+        } else if (option.getOption("list").isPresent()) {
+            var watches = watchConfigManager.getUserChatWatchesByOwner(event.getUser().getId().asString());
+            Collections.sort(watches, (a, b) -> a.keyword().compareToIgnoreCase(b.keyword()));
+            StringBuilder builder = new StringBuilder();
+            if (watches.isEmpty()) {
+                builder.append("None!\n");
+            } else {
+                for (var watch : watches) {
+                    builder
+                        .append(escape(watch.keyword()));
+                    if (watch.caseSensitive()) {
+                        builder.append(" (case-sensitive)");
+                    }
+                    builder
+                        .append("\n");
+                }
+            }
+            var description = builder.toString();
+            if (description.length() > 4000) {
+                description = description.substring(0, 4000) + "\n... (truncated)";
+            }
+            return event.createFollowup()
+                .withEmbeds(EmbedCreateSpec.builder()
+                    .title("Watch List")
+                    .description(description)
+                    .color(Color.CYAN)
+                    .build());
+        } else if (option.getOption("clear").isPresent()) {
+            var watches = watchConfigManager.getUserChatWatchesByOwner(event.getUser().getId().asString());
+            for (var watch : watches) {
+                watchConfigManager.removeUserChatWatchConfig(watch);
+            }
+            return event.createFollowup()
+                .withEmbeds(EmbedCreateSpec.builder()
+                    .title("All Watches Cleared")
+                    .description("Removed " + watches.size() + " watches.")
+                    .color(Color.CYAN)
+                    .build());
+        }
+        return error(event, "Invalid command");
+    }
+
+    private Mono<Message> handlePlayerWatch(final ChatInputInteractionEvent event, final ApplicationCommandInteractionOption option) {
+        if (option.getOption("add").isPresent()) {
+            var addOption = option.getOption("add").get();
             var ctx = resolveProfileSubOption(new ChatInteractionOptionContext(event), addOption);
             if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
             var profile = ctx.profileData;
@@ -77,7 +191,7 @@ public class WatchCommand implements SlashCommand {
             if (!joins && !leaves && !chats && !deaths && !kills) {
                 return error(event, "At least one event type must be enabled");
             }
-            var watch = new UserWatchConfigRecord(
+            var watch = new UserPlayerWatchConfig(
                 Snowflake.of(Instant.now()).asString(),
                 event.getUser().getId().asString(),
                 event.getUser().getUsername(),
@@ -106,8 +220,8 @@ public class WatchCommand implements SlashCommand {
                          """)
                     .thumbnail(profile.getAvatarURL())
                     .build());
-        } else if (event.getOption("delete").isPresent()) {
-            var deleteOption = event.getOption("delete").get();
+        } else if (option.getOption("delete").isPresent()) {
+            var deleteOption = option.getOption("delete").get();
             var playerNameOption = deleteOption.getOption("player")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
@@ -134,7 +248,7 @@ public class WatchCommand implements SlashCommand {
                 }
             }
             return error(event, "No watch found for " + profile.name() + " (" + profile.uuid() + ")");
-        } else if (event.getOption("list").isPresent()) {
+        } else if (option.getOption("list").isPresent()) {
             var watches = watchConfigManager.getUserWatchesByOwner(event.getUser().getId().asString());
             Collections.sort(watches, (a, b) -> a.targetName().compareToIgnoreCase(b.targetName()));
             StringBuilder builder = new StringBuilder();
@@ -181,7 +295,7 @@ public class WatchCommand implements SlashCommand {
                     .description(description)
                     .color(Color.CYAN)
                     .build());
-        } else if (event.getOption("clear").isPresent()) {
+        } else if (option.getOption("clear").isPresent()) {
             var watches = watchConfigManager.getUserWatchesByOwner(event.getUser().getId().asString());
             for (var watch : watches) {
                 watchConfigManager.removeUserWatchConfig(watch);
@@ -193,7 +307,7 @@ public class WatchCommand implements SlashCommand {
                     .color(Color.CYAN)
                     .build());
         }
-        return error(event, "Unknown command option");
+        return error(event, "Invalid command");
     }
 
     private ChatInteractionOptionContext resolveProfileSubOption(final ChatInteractionOptionContext ctx, final ApplicationCommandInteractionOption parentOption) {
