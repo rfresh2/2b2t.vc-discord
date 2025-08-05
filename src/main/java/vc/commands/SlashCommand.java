@@ -28,10 +28,6 @@ public interface SlashCommand {
                 .build());
     }
 
-    default String escape(String message) {
-        return message.replaceAll("_", "\\\\_");
-    }
-
     default EmbedCreateSpec.Builder populateIdentity(final EmbedCreateSpec.Builder builder, ProfileData identity) {
         return builder
             .addField("Player", "[" + identity.name() + "](" + identity.getNameMCLink(identity.uuid()) + ")", true)

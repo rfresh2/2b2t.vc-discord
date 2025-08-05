@@ -284,10 +284,6 @@ public abstract class LiveFeed implements DisposableBean {
         }
     }
 
-    protected String escape(String message) {
-        return message.replaceAll("_", "\\\\_");
-    }
-
     public void onAllGuildsLoaded() {
         syncChannels();
         LOGGER.info("Loaded {} live guilds", liveChannels.size());

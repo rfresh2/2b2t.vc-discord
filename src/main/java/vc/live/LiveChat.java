@@ -15,6 +15,7 @@ import vc.live.dto.DeathsRecord;
 import java.util.List;
 
 import static java.util.Arrays.asList;
+import static vc.util.DiscordMarkdownEscape.escape;
 
 @Component
 public class LiveChat extends LiveFeed {

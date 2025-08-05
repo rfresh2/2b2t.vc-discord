@@ -14,6 +14,7 @@ import vc.openapi.handler.ChatsApi;
 import java.net.http.HttpTimeoutException;
 
 import static org.slf4j.LoggerFactory.getLogger;
+import static vc.util.DiscordMarkdownEscape.escape;
 
 @Component
 public class WordCountCommand implements SlashCommand {

@@ -14,6 +14,8 @@ import vc.openapi.model.PlaytimeAllTimeResponse;
 import java.util.ArrayList;
 import java.util.List;
 
+import static vc.util.DiscordMarkdownEscape.escape;
+
 @Component
 public class PlaytimeTopCommand implements SlashCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(PlaytimeTopCommand.class);

@@ -11,6 +11,7 @@ import vc.openapi.handler.DeathsApi;
 import vc.openapi.model.PlayerDeathOrKillCountResponse;
 
 import static org.slf4j.LoggerFactory.getLogger;
+import static vc.util.DiscordMarkdownEscape.escape;
 
 @Component
 public class KillsTopMonthCommand implements SlashCommand {

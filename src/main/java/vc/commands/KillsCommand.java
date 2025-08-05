@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
+import static vc.util.DiscordMarkdownEscape.escape;
 
 @Component
 public class KillsCommand implements SlashCommand, ButtonCommand {

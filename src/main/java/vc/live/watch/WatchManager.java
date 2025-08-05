@@ -42,6 +42,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static vc.util.DiscordMarkdownEscape.escape;
+
 @Component
 public class WatchManager implements DisposableBean {
     private static final Logger LOGGER = LoggerFactory.getLogger(WatchManager.class);
@@ -568,9 +570,5 @@ public class WatchManager implements DisposableBean {
     public void removeWatchesInGuild(final String guildId) {
         watchConfigManager.removeGuildWatchConfigs(guildId);
         watchConfigManager.removeGuildChatWatchConfigs(guildId);
-    }
-
-    String escape(String message) {
-        return message.replaceAll("_", "\\\\_");
     }
 }

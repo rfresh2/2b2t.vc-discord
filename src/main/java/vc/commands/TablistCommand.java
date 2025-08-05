@@ -18,6 +18,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Comparator;
 
+import static vc.util.DiscordMarkdownEscape.escape;
+
 @Component
 public class TablistCommand implements SlashCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(TablistCommand.class);

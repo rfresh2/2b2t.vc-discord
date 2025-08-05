@@ -13,6 +13,7 @@ import vc.openapi.model.PlaytimeMonthResponse;
 import java.text.DecimalFormat;
 
 import static org.slf4j.LoggerFactory.getLogger;
+import static vc.util.DiscordMarkdownEscape.escape;
 
 @Component
 public class PlaytimeTopMonthCommand implements SlashCommand {

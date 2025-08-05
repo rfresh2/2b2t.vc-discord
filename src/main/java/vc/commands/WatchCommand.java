@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
+import static vc.util.DiscordMarkdownEscape.escape;
+
 @Component
 public class WatchCommand implements SlashCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(WatchCommand.class);
