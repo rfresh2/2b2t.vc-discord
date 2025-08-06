@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.config.live_feed.LiveFeedConfigStore;
-import vc.config.watch.WatchConfigStore;
 import vc.live.LiveFeedManager;
 import vc.live.watch.WatchManager;
 
@@ -21,7 +20,6 @@ public class GuildListener {
     private static final Logger LOGGER = LoggerFactory.getLogger("GuildListener");
     private final LiveFeedConfigStore guildConfigManager;
     private final LiveFeedManager liveFeedManager;
-    private final WatchConfigStore watchConfigManager;
     private final WatchManager watchManager;
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -30,12 +28,10 @@ public class GuildListener {
         final RestClient restClient,
         final LiveFeedConfigStore guildConfigManager,
         final LiveFeedManager liveFeedManager,
-        final WatchConfigStore watchConfigManager,
         final WatchManager watchManager
     ) {
         this.guildConfigManager = guildConfigManager;
         this.liveFeedManager = liveFeedManager;
-        this.watchConfigManager = watchConfigManager;
         this.watchManager = watchManager;
         client.getEventDispatcher().on(GuildCreateEvent.class, this::handleGuildCreateJoin).subscribe();
         client.getEventDispatcher().on(GuildDeleteEvent.class, this::handleGuildDeleteLeave).subscribe();

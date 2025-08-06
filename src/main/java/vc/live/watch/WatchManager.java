@@ -21,7 +21,10 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import vc.api.model.ProfileDataImpl;
-import vc.config.watch.WatchConfigStore;
+import vc.config.watch.GuildChatWatchRepository;
+import vc.config.watch.GuildPlayerWatchRepository;
+import vc.config.watch.UserChatWatchRepository;
+import vc.config.watch.UserPlayerWatchRepository;
 import vc.config.watch.model.GuildPlayerWatchConfig;
 import vc.config.watch.model.GuildWatch;
 import vc.config.watch.model.UserPlayerWatchConfig;
@@ -47,7 +50,10 @@ import static vc.util.DiscordMarkdownEscape.escape;
 @Component
 public class WatchManager implements DisposableBean {
     private static final Logger LOGGER = LoggerFactory.getLogger(WatchManager.class);
-    private final WatchConfigStore watchConfigManager;
+    private final GuildChatWatchRepository guildChatWatchRepository;
+    private final GuildPlayerWatchRepository guildPlayerWatchRepository;
+    private final UserChatWatchRepository userChatWatchRepository;
+    private final UserPlayerWatchRepository userPlayerWatchRepository;
     private final RedisClient redisClient;
     private final GatewayDiscordClient discordClient;
     private final ObjectMapper objectMapper;
@@ -66,28 +72,30 @@ public class WatchManager implements DisposableBean {
     String deathsTopicId;
 
     public WatchManager(
-        final WatchConfigStore watchConfigManager,
+        final GuildChatWatchRepository guildChatWatchRepository,
+        final GuildPlayerWatchRepository guildPlayerWatchRepository,
+        final UserChatWatchRepository userChatWatchRepository,
+        final UserPlayerWatchRepository userPlayerWatchRepository,
         final RedisClient redisClient,
         final GatewayDiscordClient discordClient,
         final ObjectMapper objectMapper,
         @Value("${WATCHES}")
         final String watchesEnabled
     ) {
-        this.watchConfigManager = watchConfigManager;
+        this.guildChatWatchRepository = guildChatWatchRepository;
+        this.guildPlayerWatchRepository = guildPlayerWatchRepository;
+        this.userChatWatchRepository = userChatWatchRepository;
+        this.userPlayerWatchRepository = userPlayerWatchRepository;
         this.redisClient = redisClient;
         this.discordClient = discordClient;
         this.objectMapper = objectMapper;
         this.watchesEnabled = Boolean.parseBoolean(watchesEnabled);
         if (this.watchesEnabled) {
             LOGGER.info("Watch manager enabled");
-            watchConfigManager.loadUserPlayerWatchConfigs();
-            LOGGER.info("Loaded {} user watch configs", watchConfigManager.getAllUserWatchConfigs().size());
-            watchConfigManager.loadGuildPlayerWatchConfigs();
-            LOGGER.info("Loaded {} guild watch configs", watchConfigManager.getAllGuildWatchConfigs().size());
-            watchConfigManager.loadUserChatWatchConfigs();
-            LOGGER.info("Loaded {} user chat watch configs", watchConfigManager.getAllUserChatWatchConfigs().size());
-            watchConfigManager.loadGuildChatWatchConfigs();
-            LOGGER.info("Loaded {} guild chat watch configs", watchConfigManager.getAllGuildChatWatchConfigs().size());
+            LOGGER.info("Loaded {} user player watch configs", userPlayerWatchRepository.getAll().size());
+            LOGGER.info("Loaded {} guild player watch configs", guildPlayerWatchRepository.getAll().size());
+            LOGGER.info("Loaded {} user chat watch configs", userChatWatchRepository.getAll().size());
+            LOGGER.info("Loaded {} guild chat watch configs", guildChatWatchRepository.getAll().size());
             connectionsTopic = this.redisClient.getTopic("ConnectionsTopic");
             connectionsTopicId = connectionsTopic.addListener(String.class, (channel, msg) -> connectionsTopicListener(msg));
             chatsTopic = this.redisClient.getTopic("ChatsTopic");
@@ -171,7 +179,7 @@ public class WatchManager implements DisposableBean {
             while (!chatsKeywordQueue.isEmpty()) {
                 var data = chatsKeywordQueue.poll();
                 if (data == null) continue;
-                var userWatches = watchConfigManager.getAllUserChatWatchConfigs().values();
+                var userWatches = userChatWatchRepository.getAll();
                 for (var userWatch : userWatches) {
                     if (userWatch.caseSensitive()
                         ? !data.chat().contains(userWatch.keyword())
@@ -182,10 +190,10 @@ public class WatchManager implements DisposableBean {
                         "ChatsKeyword",
                         userWatch,
                         () -> chatsKeywordWatchEmbed(data, userWatch.keyword()),
-                        watchConfigManager::removeUserChatWatchConfig
+                        userChatWatchRepository::delete
                     );
                 }
-                var guildWatches = watchConfigManager.getAllGuildChatWatchConfigs().values();
+                var guildWatches = guildChatWatchRepository.getAll();
                 for (var guildWatch : guildWatches) {
                     if (guildWatch.caseSensitive()
                         ? !data.chat().contains(guildWatch.keyword())
@@ -196,7 +204,7 @@ public class WatchManager implements DisposableBean {
                         "ChatsKeyword",
                         guildWatch,
                         () -> chatsKeywordWatchEmbed(data, guildWatch.keyword()),
-                        watchConfigManager::removeGuildChatWatchConfig
+                        guildChatWatchRepository::delete
                     );
                 }
             }
@@ -218,7 +226,7 @@ public class WatchManager implements DisposableBean {
             while (!queue.isEmpty()) {
                 var data = queue.poll();
                 if (data == null) continue;
-                var userWatches = watchConfigManager.getUserWatches(targetUuidProvider.apply(data));
+                var userWatches = userPlayerWatchRepository.getByTargetUuid(targetUuidProvider.apply(data));
                 for (var userWatch : userWatches) {
                     if (!userActivePredicate.apply(data, userWatch)) continue;
                     try {
@@ -226,7 +234,7 @@ public class WatchManager implements DisposableBean {
                             id,
                             userWatch,
                             () -> watchEmbedProvider.apply(data),
-                            watchConfigManager::removeUserPlayerWatchConfig
+                            userPlayerWatchRepository::delete
                         );
                     } catch (Exception e) {
                         LOGGER.error("Error sending user watch notification {}", userWatch, e);
@@ -247,17 +255,17 @@ public class WatchManager implements DisposableBean {
                             userWatch.targetUuid(),
                             targetNameProvider.apply(data)
                         );
-                        watchConfigManager.writeUserPlayerWatchConfig(newConfig);
+                        userPlayerWatchRepository.write(newConfig);
                     }
                 }
-                var guildWatches = watchConfigManager.getGuildWatches(targetUuidProvider.apply(data));
+                var guildWatches = guildPlayerWatchRepository.getByTargetUuid(targetUuidProvider.apply(data));
                 for (var guildWatch : guildWatches) {
                     if (!guildActivePredicate.apply(data, guildWatch)) continue;
                     sendGuildNotification(
                         id,
                         guildWatch,
                         () -> watchEmbedProvider.apply(data),
-                        watchConfigManager::removeGuildPlayerWatchConfig
+                        guildPlayerWatchRepository::delete
                     );
                 }
                 for (var guildWatch : guildWatches) {
@@ -278,7 +286,7 @@ public class WatchManager implements DisposableBean {
                             guildWatch.targetUuid(),
                             targetNameProvider.apply(data)
                         );
-                        watchConfigManager.writeGuildPlayerWatchConfig(newConfig);
+                        guildPlayerWatchRepository.write(newConfig);
                     }
                 }
             }
@@ -568,7 +576,7 @@ public class WatchManager implements DisposableBean {
     }
 
     public void removeWatchesInGuild(final String guildId) {
-        watchConfigManager.removeGuildWatchConfigs(guildId);
-        watchConfigManager.removeGuildChatWatchConfigs(guildId);
+        guildPlayerWatchRepository.deleteByGuildId(guildId);
+        guildChatWatchRepository.deleteByGuildId(guildId);
     }
 }
