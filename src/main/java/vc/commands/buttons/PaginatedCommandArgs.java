@@ -5,7 +5,8 @@ import org.springframework.lang.Nullable;
 import java.time.LocalDate;
 
 public record PaginatedCommandArgs(
-    String playerName,
+    @Nullable String playerName,
+    @Nullable String word,
     int page,
     @Nullable LocalDate startDate,
     @Nullable LocalDate endDate,

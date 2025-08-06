@@ -6,7 +6,13 @@
       "name": "player",
       "description": "The player to get the chat history of",
       "type": 3,
-      "required": true
+      "required": false
+    },
+    {
+      "name": "word",
+      "description": "The word to search",
+      "type": 3,
+      "required": false
     },
     {
       "name": "page",

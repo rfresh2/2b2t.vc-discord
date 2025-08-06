@@ -49,15 +49,20 @@ public class PaginatedButtonHandler {
     }
 
     public Possible<List<Button>> getButtons(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
+        return getButtons(objectMapper, commandName, totalPageCount, page, identity, null, startDate, endDate);
+    }
+
+    public Possible<List<Button>> getButtons(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, String word, LocalDate startDate, LocalDate endDate) {
         List<Button> buttons = new ArrayList<>();
+        String playerName = identity != null ? identity.name() : null;
         if (page > 1) {
             String padding = null;
             if (1 == page - 1) {
                 padding = "0";
             }
-            var firstPageArgs = new PaginatedCommandArgs(identity.name(), 1, startDate, endDate, padding);
+            var firstPageArgs = new PaginatedCommandArgs(playerName, word, 1, startDate, endDate, padding);
             addButtonSafe(encodeButtonId(objectMapper, commandName, firstPageArgs), Emoji.unicode("⏮"), buttons);
-            var prevPageArgs = new PaginatedCommandArgs(identity.name(), page - 1, startDate, endDate, null);
+            var prevPageArgs = new PaginatedCommandArgs(playerName, word, page - 1, startDate, endDate, null);
             addButtonSafe(encodeButtonId(objectMapper, commandName, prevPageArgs), Emoji.unicode("◀"), buttons);
         } else {
             addDisabledButton(Emoji.unicode("⏮"), buttons);
@@ -68,9 +73,9 @@ public class PaginatedButtonHandler {
             if (page + 1 >= totalPageCount) {
                 padding = "0";
             }
-            var nextPageArgs = new PaginatedCommandArgs(identity.name(), page + 1, startDate, endDate, padding);
+            var nextPageArgs = new PaginatedCommandArgs(playerName, word, page + 1, startDate, endDate, padding);
             addButtonSafe(encodeButtonId(objectMapper, commandName, nextPageArgs), Emoji.unicode("▶"), buttons);
-            var lastPageArgs = new PaginatedCommandArgs(identity.name(), totalPageCount, startDate, endDate, null);
+            var lastPageArgs = new PaginatedCommandArgs(playerName, word, totalPageCount, startDate, endDate, null);
             addButtonSafe(encodeButtonId(objectMapper, commandName, lastPageArgs), Emoji.unicode("⏭"), buttons);
         } else {
             addDisabledButton(Emoji.unicode("▶"), buttons);
@@ -80,7 +85,11 @@ public class PaginatedButtonHandler {
     }
 
     public Possible<List<ActionRow>> getButtonRow(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
-        return getButtons(objectMapper, commandName, totalPageCount, page, identity, startDate, endDate)
+        return getButtonRow(objectMapper, commandName, totalPageCount, page, identity, null, startDate, endDate);
+    }
+
+    public Possible<List<ActionRow>> getButtonRow(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, String word, LocalDate startDate, LocalDate endDate) {
+        return getButtons(objectMapper, commandName, totalPageCount, page, identity, word, startDate, endDate)
             .map(buttons -> List.of(ActionRow.of(buttons)));
     }
 

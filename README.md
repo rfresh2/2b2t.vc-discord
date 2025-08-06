@@ -10,7 +10,7 @@ Invite link: [bot.2b2t.vc](https://bot.2b2t.vc)
 * `/liveconnections` -> Configures a live join/leave feed channel in your server
 * `/queue` -> Shows 2b2t's current queue lengths and ETA
 * `/seen` -> When a player was last and first seen on 2b2t
-* `/chats` -> Prints a player's chat history 
+* `/chats` -> Searches chats with filters for player, word, and date
 * `/connections` -> Prints a player's join/leave history 
 * `/deaths` -> Prints a player's death history
 * `/deathsmonth` -> Leaderboard for top deaths in the last 30 days
@@ -24,6 +24,5 @@ Invite link: [bot.2b2t.vc](https://bot.2b2t.vc)
 * `/priodata` -> Dumps a JSON list of all players who currently have priority queue (probably)
 * `/stats` -> Prints a player's stats on 2b2t
 * `/wordcount` -> Counts how many times a word has been seen in chat
-* `/search` -> Searches for chats containing a specific word
 * `/watch` -> DM Notifications on player joins, leaves, deaths, or kills
 * `/watch-guild` -> Discord server channel notifications on player joins, leaves, deaths, or kills

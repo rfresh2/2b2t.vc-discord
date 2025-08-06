@@ -927,12 +927,11 @@
         "operationId": "chats",
         "parameters": [
           {
-            "name": "uuid",
+            "name": "word",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "string"
             }
           },
           {
@@ -941,6 +940,15 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "uuid",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -959,6 +967,18 @@
             "schema": {
               "type": "string",
               "format": "date"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           },
           {
@@ -982,20 +1002,20 @@
         ],
         "responses": {
           "200": {
-            "description": "Chat history for given player",
+            "description": "Search for chat messages with optional filters",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChatsResponse"
+                  "$ref": "#/components/schemas/ChatSearchResponse"
                 }
               }
             }
           },
           "204": {
-            "description": "No data for player"
+            "description": "No data"
           },
           "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
+            "description": "Bad request.\n\nIf word is provided, it must be between 3 and 50 valid chat characters.\n\nIf uuid or playerName is provided, it must be for a valid and existing account.\n\nIf pageSize is provided, it must be between 1 and 100.\n\nIf startDate and endDate are provided, they must be valid dates in ISO 8601 format, example: \"2022-10-31\".\n"
           }
         }
       }
@@ -1105,90 +1125,6 @@
           },
           "400": {
             "description": "Bad request. startDate must be provided"
-          }
-        }
-      }
-    },
-    "/chats/search": {
-      "get": {
-        "tags": [
-          "Chats"
-        ],
-        "operationId": "chatSearch",
-        "parameters": [
-          {
-            "name": "word",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "startDate",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "date"
-            }
-          },
-          {
-            "name": "endDate",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "date"
-            }
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ]
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Find chat messages containing a specific word",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChatSearchResponse"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No data"
-          },
-          "400": {
-            "description": "Bad request."
           }
         }
       }
@@ -1748,25 +1684,13 @@
           }
         }
       },
-      "Chat": {
-        "type": "object",
-        "properties": {
-          "time": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "chat": {
-            "type": "string"
-          }
-        }
-      },
-      "ChatsResponse": {
+      "ChatSearchResponse": {
         "type": "object",
         "properties": {
           "chats": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Chat"
+              "$ref": "#/components/schemas/PlayerChat"
             }
           },
           "total": {
@@ -1776,26 +1700,6 @@
           "pageCount": {
             "type": "integer",
             "format": "int32"
-          }
-        }
-      },
-      "WordCount": {
-        "type": "object",
-        "properties": {
-          "count": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "ChatWindowResponse": {
-        "type": "object",
-        "properties": {
-          "chats": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PlayerChat"
-            }
           }
         }
       },
@@ -1818,7 +1722,16 @@
           }
         }
       },
-      "ChatSearchResponse": {
+      "WordCount": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ChatWindowResponse": {
         "type": "object",
         "properties": {
           "chats": {
@@ -1826,14 +1739,6 @@
             "items": {
               "$ref": "#/components/schemas/PlayerChat"
             }
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageCount": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },

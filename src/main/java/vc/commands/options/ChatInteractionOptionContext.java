@@ -11,6 +11,7 @@ public class ChatInteractionOptionContext {
     public final ChatInputInteractionEvent event;
     public int page;
     public ProfileData profileData;
+    public String word;
     public LocalDate startDate;
     public LocalDate endDate;
 
