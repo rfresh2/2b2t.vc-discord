@@ -20,7 +20,7 @@ jobs:
         run: chmod +x ./mvnw
 
       - name: Build 2b2t.vc-discord
-        run: ./mvnw install
+        run: ./mvnw install spring-boot:repackage
 
       - name: Upload Java Artifact
         uses: actions/upload-artifact@v4
