@@ -9,4 +9,8 @@ public record LiveFeedConfig(
     @ColumnName("live_chat_channel_id") String liveChatChannelId,
     @ColumnName("live_connections_enabled") boolean liveConnectionsEnabled,
     @ColumnName("live_connections_channel_id") String liveConnectionsChannelId
-) {}
+) {
+    public static LiveFeedConfig defaultConfig(String guildId, String guildName) {
+        return new LiveFeedConfig(guildId, guildName, false, "", false, "");
+    }
+}

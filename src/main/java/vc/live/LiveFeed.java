@@ -21,7 +21,7 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
-import vc.config.live_feed.LiveFeedConfigStore;
+import vc.config.live_feed.LiveFeedRepository;
 import vc.config.live_feed.model.LiveFeedConfig;
 
 import java.io.UncheckedIOException;
@@ -48,7 +48,7 @@ public abstract class LiveFeed implements DisposableBean {
     protected final GatewayDiscordClient discordClient;
     protected final Map<String, RestChannel> liveChannels;
     protected final Map<InputQueue, TopicListener> inputTopics;
-    protected final LiveFeedConfigStore guildConfigManager;
+    protected final LiveFeedRepository liveFeedRepository;
     private final PriorityBlockingQueue<Message> messageQueue;
     private final ObjectMapper objectMapper;
     private final Cache<String, AtomicInteger> guildMessageSendFailCountCache = CacheBuilder.newBuilder()
@@ -58,14 +58,14 @@ public abstract class LiveFeed implements DisposableBean {
     public LiveFeed(
         final RedisClient redisClient,
         final GatewayDiscordClient discordClient,
-        final LiveFeedConfigStore guildConfigManager,
+        final LiveFeedRepository liveFeedRepository,
         final ObjectMapper objectMapper,
         final boolean liveFeedEnabled
     ) {
         this.redisClient = redisClient;
         this.discordClient = discordClient;
+        this.liveFeedRepository = liveFeedRepository;
         this.liveChannels = new ConcurrentHashMap<>();
-        this.guildConfigManager = guildConfigManager;
         this.messageQueue = new PriorityBlockingQueue<>(MESSAGE_Q_CAPACITY);
         this.inputTopics = new ConcurrentHashMap<>();
         this.objectMapper = objectMapper;
@@ -83,6 +83,7 @@ public abstract class LiveFeed implements DisposableBean {
         String id
     ) {}
 
+    protected abstract List<LiveFeedConfig> getAllEnabled();
     protected abstract boolean channelEnabledPredicate(final LiveFeedConfig guildConfigRecord);
     protected abstract String liveChannelId(final LiveFeedConfig guildConfigRecord);
 
@@ -130,9 +131,8 @@ public abstract class LiveFeed implements DisposableBean {
 
     public void syncChannels() {
         liveChannels.clear();
-        var allConfigs = guildConfigManager.getAllGuildConfigs();
+        var allConfigs = getAllEnabled();
         for (var config : allConfigs) {
-            if (!channelEnabledPredicate(config)) continue;
             try {
                 var channel = discordClient
                     .getChannelById(Snowflake.of(liveChannelId(config)))
@@ -150,32 +150,35 @@ public abstract class LiveFeed implements DisposableBean {
     }
 
     public void disableFeed(final String guildId) {
-        this.guildConfigManager.getLiveFeedConfig(guildId)
-            .ifPresentOrElse(guildConfigRecord -> {
+        liveFeedRepository.getByGuild(guildId)
+            .ifPresent(guildConfigRecord -> {
                 final LiveFeedConfig newRecord = disableRecordInternal(guildConfigRecord);
-                this.guildConfigManager.updateLiveFeedConfig(newRecord);
+                liveFeedRepository.write(newRecord);
                 LOGGER.info("Disabled {} for guild {}, {}", feedName(), guildId, guildConfigRecord.guildName());
-            }, () -> LOGGER.info("Guild: {} config not found while disabling {} feed", guildId, feedName()));
+            });
         this.liveChannels.remove(guildId);
     }
 
     public void enableFeed(final String guildId, final String channelId) {
-        Optional<LiveFeedConfig> guildConfigOptional = this.guildConfigManager.getLiveFeedConfig(guildId);
+        Optional<LiveFeedConfig> guildConfigOptional = liveFeedRepository.getByGuild(guildId);
         if (guildConfigOptional.isEmpty()) {
             try {
-                this.guildConfigManager.loadGuild(guildId).block();
-                guildConfigOptional = this.guildConfigManager.getLiveFeedConfig(guildId);
+                var guild = discordClient.getGuildById(Snowflake.of(guildId)).block();
+                var guildData = guild.getData();
+                var config = LiveFeedConfig.defaultConfig(guildId, guildData.name());
+                liveFeedRepository.write(config);
+                guildConfigOptional = liveFeedRepository.getByGuild(guildId);
             } catch (final Exception e) {
                 LOGGER.error("Error loading guild data to create record for guild: {}", guildId, e);
             }
             if (guildConfigOptional.isEmpty()) {
                 LOGGER.error("Error getting guild data to create record for guild: {}", guildId);
-                guildConfigOptional = Optional.of(new LiveFeedConfig(guildId, "", false, "", false, ""));
+                guildConfigOptional = Optional.of(LiveFeedConfig.defaultConfig(guildId, ""));
             }
         }
         var guildConfigRecord = guildConfigOptional.get();
         final LiveFeedConfig newRecord = enableRecordInternal(guildConfigRecord, guildId, channelId);
-        this.guildConfigManager.updateLiveFeedConfig(newRecord);
+        liveFeedRepository.write(newRecord);
         this.liveChannels.put(guildId, getRestChannel(channelId));
         LOGGER.info("Enabled {} for guild {}, {}", feedName(), guildId, guildConfigRecord.guildName());
     }

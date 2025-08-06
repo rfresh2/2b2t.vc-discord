@@ -44,6 +44,10 @@ public class DiscordMarkdownEscape {
             input = input.replace("[", "\\[");
         }
 
+        if (input.contains(">")) {
+            input = input.replace(">", "\\>");
+        }
+
         return input;
     }
 }

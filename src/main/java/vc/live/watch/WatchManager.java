@@ -488,7 +488,7 @@ public class WatchManager implements DisposableBean {
                 .addField("\u200B", "\u200B", true);
         }
         embed
-            .addField("Death Message", escape(death.deathMessage().replace(death.victimPlayerName(), "**" + death.victimPlayerName() + "**")), false)
+            .addField("Death Message", escape(death.deathMessage()).replace(escape(death.victimPlayerName()), "**" + escape(death.victimPlayerName()) + "**"), false)
             .thumbnail(profile.getAvatarURL())
             .timestamp(death.time().toInstant())
             .color(Color.RUBY)
@@ -509,7 +509,7 @@ public class WatchManager implements DisposableBean {
             .addField("Victim", "[" + victimProfile.name() + "](" + victimProfile.getNameMCLink(victimProfile.uuid()) + ")", true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
-            .addField("Death Message", escape(death.deathMessage().replace(killerProfile.name(), "**" + killerProfile.name() + "**")), false)
+            .addField("Death Message", escape(death.deathMessage()).replace(escape(killerProfile.name()), "**" + escape(killerProfile.name()) + "**"), false)
             .thumbnail(killerProfile.getAvatarURL())
             .timestamp(death.time().toInstant())
             .color(Color.SEA_GREEN)

@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import vc.config.live_feed.LiveFeedConfigStore;
+import vc.config.live_feed.LiveFeedRepository;
 import vc.live.LiveFeedManager;
 import vc.live.watch.WatchManager;
 
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Component
 public class GuildListener {
     private static final Logger LOGGER = LoggerFactory.getLogger("GuildListener");
-    private final LiveFeedConfigStore guildConfigManager;
+    private final LiveFeedRepository liveFeedRepository;
     private final LiveFeedManager liveFeedManager;
     private final WatchManager watchManager;
     private final AtomicBoolean initialized = new AtomicBoolean(false);
@@ -26,18 +26,17 @@ public class GuildListener {
     public GuildListener(
         final GatewayDiscordClient client,
         final RestClient restClient,
-        final LiveFeedConfigStore guildConfigManager,
+        final LiveFeedRepository liveFeedRepository,
         final LiveFeedManager liveFeedManager,
         final WatchManager watchManager
     ) {
-        this.guildConfigManager = guildConfigManager;
+        this.liveFeedRepository = liveFeedRepository;
         this.liveFeedManager = liveFeedManager;
         this.watchManager = watchManager;
         client.getEventDispatcher().on(GuildCreateEvent.class, this::handleGuildCreateJoin).subscribe();
         client.getEventDispatcher().on(GuildDeleteEvent.class, this::handleGuildDeleteLeave).subscribe();
         restClient.getGuilds().collectList().subscribe(guilds -> {
             LOGGER.info("Connected to {} guilds", guilds.size());
-            guilds.forEach(guildConfigManager::loadGuild);
             liveFeedManager.onAllGuildsLoaded();
             watchManager.onAllGuildsLoaded(guilds);
             initialized.set(true);
@@ -46,7 +45,6 @@ public class GuildListener {
 
     private Mono<Void> handleGuildCreateJoin(final GuildCreateEvent event) {
         if (initialized.get()) LOGGER.info("Joined guild: {}", event.getGuild().getName());
-        guildConfigManager.loadGuild(event.getGuild().getData());
         return Mono.empty();
     }
 

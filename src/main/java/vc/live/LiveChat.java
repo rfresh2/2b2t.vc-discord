@@ -7,7 +7,7 @@ import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import vc.config.live_feed.LiveFeedConfigStore;
+import vc.config.live_feed.LiveFeedRepository;
 import vc.config.live_feed.model.LiveFeedConfig;
 import vc.live.dto.ChatsRecord;
 import vc.live.dto.DeathsRecord;
@@ -23,20 +23,26 @@ public class LiveChat extends LiveFeed {
     // todo: we aren't receiving system messages from the existing chat queue
     //  so no restart msgs
 
-    public LiveChat(final RedisClient redisClient,
-                    final GatewayDiscordClient discordClient,
-                    final LiveFeedConfigStore guildConfigManager,
-                    final ObjectMapper objectMapper,
-                    @Value("${LIVE_FEEDS}")
-                    final String liveFeedsEnabled
+    public LiveChat(
+        final RedisClient redisClient,
+        final GatewayDiscordClient discordClient,
+        final LiveFeedRepository liveFeedRepository,
+        final ObjectMapper objectMapper,
+        @Value("${LIVE_FEEDS}")
+        final String liveFeedsEnabled
     ) {
         super(
             redisClient,
             discordClient,
-            guildConfigManager,
+            liveFeedRepository,
             objectMapper,
             Boolean.parseBoolean(liveFeedsEnabled)
         );
+    }
+
+    @Override
+    protected List<LiveFeedConfig> getAllEnabled() {
+        return liveFeedRepository.getByLiveChatEnabled();
     }
 
     @Override
@@ -67,7 +73,7 @@ public class LiveChat extends LiveFeed {
 
     private EmbedData getChatEmbed(final ChatsRecord chat) {
         return EmbedCreateSpec.builder()
-            .description(escape("**" + chat.playerName() + ":** " + chat.chat()))
+            .description("**" + escape(chat.playerName()) + ":** " + escape(chat.chat()))
             .footer("\u200b", avatarUrl(chat.playerUuid()).toString())
             .color(chat.chat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.BLACK)
             .timestamp(chat.time().toInstant())
@@ -81,7 +87,7 @@ public class LiveChat extends LiveFeed {
 
     private EmbedData getDeathEmbed(final DeathsRecord death) {
         return EmbedCreateSpec.builder()
-            .description(escape(death.deathMessage().replace(death.victimPlayerName(), "**" + death.victimPlayerName() + "**")))
+            .description(escape(death.deathMessage()).replace(escape(death.victimPlayerName()), "**" + escape(death.victimPlayerName()) + "**"))
             .footer("\u200b", avatarUrl(death.victimPlayerUuid()).toString())
             .color(Color.RUBY)
             .timestamp(death.time().toInstant())

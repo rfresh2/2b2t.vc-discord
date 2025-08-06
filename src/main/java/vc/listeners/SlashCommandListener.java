@@ -1,11 +1,11 @@
 package vc.listeners;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteraction;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +14,6 @@ import reactor.core.publisher.Mono;
 import vc.commands.SlashCommand;
 import vc.commands.buttons.ButtonCommand;
 import vc.commands.buttons.PaginatedButtonHandler;
-import vc.config.live_feed.LiveFeedConfigStore;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -28,14 +27,12 @@ public class SlashCommandListener {
     private static final Logger LOGGER = LoggerFactory.getLogger("CommandListener");
     private final Map<String, SlashCommand> commandMap;
     private final Map<String, ButtonCommand> buttonListenerMap;
-    private final LiveFeedConfigStore guildConfigManager;
 
-    public SlashCommandListener(List<SlashCommand> slashCommands, GatewayDiscordClient client, final LiveFeedConfigStore guildConfigManager) {
+    public SlashCommandListener(List<SlashCommand> slashCommands, GatewayDiscordClient client) {
         this.commandMap = slashCommands.stream().collect(Collectors.toMap(SlashCommand::getName, c -> c));
         this.buttonListenerMap = slashCommands.stream()
             .filter(c -> c instanceof ButtonCommand)
             .collect(Collectors.toMap(SlashCommand::getName, c -> (ButtonCommand) c));
-        this.guildConfigManager = guildConfigManager;
         client.on(ChatInputInteractionEvent.class, this::handleChatInteraction).subscribe();
         client.on(ButtonInteractionEvent.class, this::handleButtonInteraction).subscribe();
     }
@@ -70,15 +67,14 @@ public class SlashCommandListener {
         try {
             Instant afterTime = Instant.now();
             String username = event.getInteraction().getUser().getTag();
-            String guild = event.getInteraction().getGuildId()
-                .map(Snowflake::asString)
-                .flatMap(guildConfigManager::getLiveFeedConfig)
-                .map(config -> "(" + config.guildId() + " - " + config.guildName() + ")")
-                .orElse("(?)");
+            var guildData = event.getInteraction().getGuild()
+                .map(Guild::getData)
+                .block();
+            String guildLog = guildData == null ? "(?)" : "(" + guildData.id().asString() + " - " + guildData.name() + ")";
             LOGGER.info("[{}ms] {} {} clicked button: {}",
                 afterTime.toEpochMilli() - beforeTime.toEpochMilli(),
                 username,
-                guild,
+                guildLog,
                 event.getCustomId());
             if (error != null) {
                 LOGGER.error("Error handling button", error);
@@ -107,15 +103,14 @@ public class SlashCommandListener {
                 })
                 .map(s -> s.getName() + s.getValue().map(v -> ":" + v.getRaw()).orElse(""))
                 .collect(Collectors.joining(" "));
-            String guild = event.getInteraction().getGuildId()
-                .map(Snowflake::asString)
-                .flatMap(guildConfigManager::getLiveFeedConfig)
-                .map(config -> "(" + config.guildId() + " - " + config.guildName() + ")")
-                .orElse("(?)");
+            var guildData = event.getInteraction().getGuild()
+                .map(Guild::getData)
+                .block();
+            String guildLog = guildData == null ? "(?)" : "(" + guildData.id().asString() + " - " + guildData.name() + ")";
             LOGGER.info("[{}ms] {} {} executed {}{}",
                 afterTime.toEpochMilli() - beforeTime.toEpochMilli(),
                 username,
-                guild,
+                guildLog,
                 command.getName(),
                 !dataOptions.isEmpty() ? " : " + dataOptions : "");
             if (error != null) {

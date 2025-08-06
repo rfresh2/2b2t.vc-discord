@@ -7,7 +7,7 @@ import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import vc.config.live_feed.LiveFeedConfigStore;
+import vc.config.live_feed.LiveFeedRepository;
 import vc.config.live_feed.model.LiveFeedConfig;
 import vc.live.dto.ConnectionsRecord;
 import vc.live.dto.enums.Connectiontype;
@@ -22,7 +22,7 @@ public class LiveConnections extends LiveFeed {
     public LiveConnections(
         final RedisClient redisClient,
         final GatewayDiscordClient discordClient,
-        final LiveFeedConfigStore guildConfigManager,
+        final LiveFeedRepository liveFeedRepository,
         final ObjectMapper objectMapper,
         @Value("${LIVE_FEEDS}")
         final String liveFeedsEnabled
@@ -30,10 +30,15 @@ public class LiveConnections extends LiveFeed {
         super(
             redisClient,
             discordClient,
-            guildConfigManager,
+            liveFeedRepository,
             objectMapper,
             Boolean.parseBoolean(liveFeedsEnabled)
         );
+    }
+
+    @Override
+    protected List<LiveFeedConfig> getAllEnabled() {
+        return liveFeedRepository.getByLiveConnectionsEnabled();
     }
 
     @Override
