@@ -188,6 +188,7 @@ public class WatchManager implements DisposableBean {
                     }
                     sendUserWatchNotification(
                         "ChatsKeyword",
+                        userWatch.keyword(),
                         userWatch,
                         () -> chatsKeywordWatchEmbed(data, userWatch.keyword()),
                         userChatWatchRepository::delete
@@ -202,6 +203,7 @@ public class WatchManager implements DisposableBean {
                     }
                     sendGuildNotification(
                         "ChatsKeyword",
+                        guildWatch.keyword(),
                         guildWatch,
                         () -> chatsKeywordWatchEmbed(data, guildWatch.keyword()),
                         guildChatWatchRepository::delete
@@ -232,12 +234,13 @@ public class WatchManager implements DisposableBean {
                     try {
                         sendUserWatchNotification(
                             id,
+                            userWatch.targetName(),
                             userWatch,
                             () -> watchEmbedProvider.apply(data),
                             userPlayerWatchRepository::delete
                         );
                     } catch (Exception e) {
-                        LOGGER.error("Error sending user watch notification {}", userWatch, e);
+                        LOGGER.error("Error sending user watch target {} notification {}", userWatch.targetName(), userWatch, e);
                     }
                 }
                 for (var userWatch : userWatches) {
@@ -263,6 +266,7 @@ public class WatchManager implements DisposableBean {
                     if (!guildActivePredicate.apply(data, guildWatch)) continue;
                     sendGuildNotification(
                         id,
+                        guildWatch.targetName(),
                         guildWatch,
                         () -> watchEmbedProvider.apply(data),
                         guildPlayerWatchRepository::delete
@@ -297,13 +301,14 @@ public class WatchManager implements DisposableBean {
 
     private <T extends UserWatch> void sendUserWatchNotification(
         String id,
+        String targetName,
         T userWatch,
         Supplier<EmbedCreateSpec> embedSupplier,
         Consumer<T> removeWatchConsumer
     ) {
         try {
             var channel = discordClient.getUserById(Snowflake.of(userWatch.ownerUserId()))
-                .doOnSuccess(user -> LOGGER.info("[{}] Sending user notification to {}", id, user.getUsername()))
+                .doOnSuccess(user -> LOGGER.info("[{}] Sending {} user notification to {}", id, targetName, user.getUsername()))
                 .flatMap(User::getPrivateChannel)
                 .block(Duration.ofSeconds(10));
 
@@ -312,36 +317,37 @@ public class WatchManager implements DisposableBean {
                 .build();
 
             channel.createMessage(msg)
-                .doOnError(error -> LOGGER.error("Error sending user notification to: {}", userWatch.ownerUserName()))
+                .doOnError(error -> LOGGER.error("Error sending {} user notification to: {}", targetName, userWatch.ownerUserName()))
                 .timeout(Duration.ofSeconds(3))
                 .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
                     .filter(error -> error instanceof TimeoutException)
                     .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
-                        "Retries exhausted sending notification to user: " + userWatch.ownerUserName() + ", channelId: " + channel.getId().asString(),
+                        "Retries exhausted sending " + targetName + " notification to user: " + userWatch.ownerUserName() + ", channelId: " + channel.getId().asString(),
                         signal.failure())))
                 .onErrorResume(error -> {
                     if (Exceptions.isRetryExhausted(error)) {
                         if (error instanceof ClientException e) {
                             int code = e.getStatus().code();
                             if (code == 429) {
-                                LOGGER.error("Rate limited while sending notification to user: {}", userWatch.ownerUserName());
+                                LOGGER.error("Rate limited while sending {} notification to user: {}", targetName, userWatch.ownerUserName());
                             } else if (code == 403 || code == 404) {
-                                LOGGER.error("Missing permissions while sending notification to user: {}. Removing watch.", userWatch.ownerUserName());
+                                LOGGER.error("Missing permissions while sending {} notification to user: {}. Removing watch.", targetName, userWatch.ownerUserName());
                                 removeWatchConsumer.accept(userWatch);
                             }
                         }
                     }
-                    LOGGER.error("Error sending user notification to: {}", userWatch.ownerUserName(), error);
+                    LOGGER.error("Error sending {} user notification to: {}", targetName, userWatch.ownerUserName(), error);
                     return Mono.empty();
                 })
                 .block(Duration.ofSeconds(10));
         } catch (Exception e) {
-            LOGGER.error("Error sending user notification to {}", userWatch.ownerUserId(), e);
+            LOGGER.error("Error sending {} user notification to {}", targetName, userWatch.ownerUserId(), e);
         }
     }
 
     private <T extends GuildWatch> void sendGuildNotification(
         String id,
+        String targetName,
         T guildWatch,
         Supplier<EmbedCreateSpec> embedSupplier,
         Consumer<T> removeGuildWatchFunction
@@ -362,7 +368,7 @@ public class WatchManager implements DisposableBean {
                 return;
             }
 
-            LOGGER.info("[{}] Sending guild watch notification to {} ({})", id, guild.getName(), channel.getName());
+            LOGGER.info("[{}] Sending guild watch {} notification to {} ({})", id, targetName, guild.getName(), channel.getName());
             var msgBuilder = MessageCreateSpec.builder()
                 .addEmbed(embedSupplier.get());
 
@@ -375,31 +381,31 @@ public class WatchManager implements DisposableBean {
             }
 
             channel.getRestChannel().createMessage(msgBuilder.build().asRequest())
-                .doOnError(error -> LOGGER.error("Error sending guild notification to guild: {}, channelId: {}", guildWatch.guildId(), channel.getId()))
+                .doOnError(error -> LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}", targetName, guildWatch.guildId(), channel.getId()))
                 .timeout(Duration.ofSeconds(3))
                 .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
                     .filter(error -> error instanceof TimeoutException)
                     .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
-                        "Retries exhausted sending notification to guild: " + guildWatch.guildId() + ", channelId: " + channel.getId().asString(),
+                        "Retries exhausted sending " + targetName + " notification to guild: " + guildWatch.guildId() + ", channelId: " + channel.getId().asString(),
                         signal.failure())))
                 .onErrorResume(error -> {
                     if (Exceptions.isRetryExhausted(error)) {
                         if (error instanceof ClientException e) {
                             int code = e.getStatus().code();
                             if (code == 429) {
-                                LOGGER.error("Rate limited while sending notification to guild: {}, channelId: {}.", guildWatch.guildId(), channel.getId());
+                                LOGGER.error("Rate limited while sending {} notification to guild: {}, channelId: {}.", targetName, guildWatch.guildId(), channel.getId());
                             } else if (code == 403 || code == 404) {
-                                LOGGER.error("Missing permissions while sending notification to guild: {}, channelId: {}. Removing watch.", guildWatch.guildId(), channel.getId());
+                                LOGGER.error("Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.", targetName, guildWatch.guildId(), channel.getId());
                                 removeGuildWatchFunction.accept(guildWatch);
                             }
                         }
                     }
-                    LOGGER.error("Error sending guild notification to guild: {}, channelId: {}", guildWatch.guildId(), channel.getId(), error);
+                    LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}", targetName, guildWatch.guildId(), channel.getId(), error);
                     return Mono.empty();
                 })
                 .block(Duration.ofSeconds(10));
         } catch (Exception e) {
-            LOGGER.error("Error sending guild notification to guild: {}, channelId: {}", guildWatch.guildId(), guildWatch.channelId(), e);
+            LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}", targetName, guildWatch.guildId(), guildWatch.channelId(), e);
         }
     }
 
