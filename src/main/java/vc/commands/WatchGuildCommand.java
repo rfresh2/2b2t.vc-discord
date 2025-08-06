@@ -93,6 +93,9 @@ public class WatchGuildCommand implements SlashCommand {
             if (keyword.length() < 3 || keyword.length() > 50) {
                 return error(event, "Keyword must be between 3 and 50 characters");
             }
+            if (!Validator.isValidChat(keyword)) {
+                return error(event, "Keyword contains invalid chat characters");
+            }
             boolean caseSensitive = addOption.getOption("case-sensitive")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asBoolean)

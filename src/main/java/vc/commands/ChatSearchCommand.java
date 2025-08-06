@@ -20,6 +20,7 @@ import vc.commands.options.TimeRangeOption;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ChatsApi;
 import vc.openapi.model.ChatSearchResponse;
+import vc.util.Validator;
 
 import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
@@ -61,6 +62,9 @@ public class ChatSearchCommand implements SlashCommand, ButtonCommand {
         String word = wordOptional.get();
         if (word.length() < 3 || word.length() > 50) {
             return error(event, "Word must be between 3 and 50 characters");
+        }
+        if (!Validator.isValidChat(word)) {
+            return error(event, "Word contains invalid chat characters");
         }
         var ctx = resolver.resolveOptions(event);
         if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());

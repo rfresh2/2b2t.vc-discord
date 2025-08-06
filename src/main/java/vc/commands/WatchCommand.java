@@ -74,6 +74,9 @@ public class WatchCommand implements SlashCommand {
             if (keyword.length() < 3 || keyword.length() > 50) {
                 return error(event, "Keyword must be between 3 and 50 characters");
             }
+            if (!Validator.isValidChat(keyword)) {
+                return error(event, "Keyword contains invalid chat characters");
+            }
             boolean caseSensitive = addOption.getOption("case-sensitive")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asBoolean)
@@ -98,8 +101,8 @@ public class WatchCommand implements SlashCommand {
                     .description("""
                          Watch added!
                          
-                         You will be DM'd on chats containing the keyword
-                         """)
+                         You will be DM'd on chats containing `%s`
+                         """.formatted(keyword))
                     .build());
         } else if (option.getOption("delete").isPresent()) {
             var deleteOption = option.getOption("delete").get();

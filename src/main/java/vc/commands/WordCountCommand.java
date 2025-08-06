@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.openapi.handler.ApiException;
 import vc.openapi.handler.ChatsApi;
+import vc.util.Validator;
 
 import java.net.http.HttpTimeoutException;
 
@@ -39,6 +40,9 @@ public class WordCountCommand implements SlashCommand {
         String word = wordOptional.get();
         if (word.length() < 3 || word.length() > 50) {
             return error(event, "Word must be between 3 and 50 characters");
+        }
+        if (!Validator.isValidChat(word)) {
+            return error(event, "Word contains invalid chat characters");
         }
         return Mono.defer(() -> {
             Integer count = null;

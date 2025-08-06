@@ -7,4 +7,18 @@ public class Validator {
     public static boolean isValidPlayerName(String playerName) {
         return playerName.matches("[a-zA-Z0-9_]{1,16}");
     }
+
+    public static boolean isValidChat(String chat) {
+        if (chat == null || chat.isBlank()) return false;
+        for (char c0 : chat.toCharArray()) {
+            if (!isAllowedChatCharacter(c0)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean isAllowedChatCharacter(char c0) {
+        return c0 != 167 && c0 >= 32 && c0 != 127;
+    }
 }
