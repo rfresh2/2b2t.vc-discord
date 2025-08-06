@@ -24,3 +24,9 @@ jobs:
 
       - name: Build 2b2t.vc-discord
         run: ./mvnw install
+
+      - name: Upload Java Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2b2t.vc-discord
+          path: target/2b2t.vc-discord-*.jar
