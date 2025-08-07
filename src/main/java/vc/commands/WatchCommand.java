@@ -98,11 +98,8 @@ public class WatchCommand implements SlashCommand {
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
                     .color(Color.SEA_GREEN)
-                    .description("""
-                         Watch added!
-                         
-                         You will be DM'd on chats containing `%s`
-                         """.formatted(keyword))
+                    .title("Chat Watch Added")
+                    .description("You will be DM'd on chats containing `%s`".formatted(keyword))
                     .build());
         } else if (option.getOption("delete").isPresent()) {
             var deleteOption = option.getOption("delete").get();
@@ -119,12 +116,13 @@ public class WatchCommand implements SlashCommand {
                     userChatWatchRepository.delete(watch);
                     return event.createFollowup()
                         .withEmbeds(EmbedCreateSpec.builder()
+                            .title("Chat Watch Deleted")
                             .color(Color.SEA_GREEN)
-                            .description("Watch deleted!")
+                            .description("Chat watch `%s` deleted!".formatted(keyword))
                             .build());
                 }
             }
-            return error(event, "No watch found for `" + keyword + "`");
+            return error(event, "No chat watch found for `%s`".formatted(keyword));
         } else if (option.getOption("list").isPresent()) {
             var watches = userChatWatchRepository.getByOwnerId(event.getUser().getId().asString());
             Collections.sort(watches, (a, b) -> a.keyword().compareToIgnoreCase(b.keyword()));
@@ -148,7 +146,7 @@ public class WatchCommand implements SlashCommand {
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                    .title("Watch List")
+                    .title("Chat Watch List")
                     .description(description)
                     .color(Color.CYAN)
                     .build());
@@ -159,8 +157,12 @@ public class WatchCommand implements SlashCommand {
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                    .title("All Watches Cleared")
-                    .description("Removed " + watches.size() + " watches.")
+                    .title("All Chat Watches Cleared")
+                    .description("Removed " + watches.size() + " watches.\n"
+                        + watches.stream()
+                        .map(UserChatWatchConfig::keyword)
+                        .map("`%s`"::formatted)
+                        .reduce("", (a, b) -> a + "\n" + b))
                     .color(Color.CYAN)
                     .build());
         }
@@ -218,11 +220,8 @@ public class WatchCommand implements SlashCommand {
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
                     .color(Color.SEA_GREEN)
-                    .description("""
-                         Watch added!
-                         
-                         You will be DM'd on watched events
-                         """)
+                    .title("Player Watch Added")
+                    .description("You will be DM'd on events for `%s`".formatted(profile.name()))
                     .thumbnail(profile.getAvatarURL())
                     .build());
         } else if (option.getOption("delete").isPresent()) {
@@ -246,13 +245,14 @@ public class WatchCommand implements SlashCommand {
                     userPlayerWatchRepository.delete(watch);
                     return event.createFollowup()
                         .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
+                            .title("Player Watch Deleted")
                             .color(Color.SEA_GREEN)
-                            .description("Watch deleted!")
+                            .description("Player watch for `%s` deleted!".formatted(profile.name()))
                             .thumbnail(profile.getAvatarURL())
                             .build());
                 }
             }
-            return error(event, "No watch found for " + profile.name() + " (" + profile.uuid() + ")");
+            return error(event, "No player watch found for `%s` (%s)".formatted(profile.name(), profile.uuid()));
         } else if (option.getOption("list").isPresent()) {
             var watches = userPlayerWatchRepository.getByOwnerId(event.getUser().getId().asString());
             Collections.sort(watches, (a, b) -> a.targetName().compareToIgnoreCase(b.targetName()));
@@ -296,7 +296,7 @@ public class WatchCommand implements SlashCommand {
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                    .title("Watch List")
+                    .title("Player Watch List")
                     .description(description)
                     .color(Color.CYAN)
                     .build());
@@ -307,8 +307,12 @@ public class WatchCommand implements SlashCommand {
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                    .title("All Watches Cleared")
-                    .description("Removed " + watches.size() + " watches.")
+                    .title("All Player Watches Cleared")
+                    .description("Removed " + watches.size() + " player watches.\n"
+                        + watches.stream()
+                        .map(UserPlayerWatchConfig::targetName)
+                        .map("`%s`"::formatted)
+                        .reduce("", (a, b) -> a + "\n" + b))
                     .color(Color.CYAN)
                     .build());
         }
@@ -328,7 +332,7 @@ public class WatchCommand implements SlashCommand {
         }
         Optional<ProfileData> playerIdentity = playerLookup.getPlayerIdentity(playerName);
         if (playerIdentity.isEmpty()) {
-            ctx.setError("No player named `" + playerName + "` exists");
+            ctx.setError("No player named `%s` exists".formatted(playerName));
             return ctx;
         }
         ctx.profileData = playerIdentity.get();

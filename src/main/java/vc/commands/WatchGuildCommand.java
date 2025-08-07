@@ -86,6 +86,9 @@ public class WatchGuildCommand implements SlashCommand {
                 return error(event, "Channel option is required to add a watch");
             }
             var channel = channelOption.get();
+            if (!testPermissions(event.getInteraction().getGuildId().get().asString(), channel)) {
+                return error(event, "Bot must have permissions to send messages in: " + channel.getMention());
+            }
             String keyword = addOption.getOption("keyword")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString)
@@ -153,11 +156,8 @@ public class WatchGuildCommand implements SlashCommand {
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
                     .color(Color.SEA_GREEN)
-                    .description("""
-                         Watch added!
-                         
-                         Notifications on watched events will be sent to: %s
-                         """.formatted(channel.getMention()))
+                    .title("Chat Watch Added")
+                    .description("Notifications on chats containing `%s` will be sent to: %s".formatted(keyword, channel.getMention()))
                     .build());
         } else if (option.getOption("delete").isPresent()) {
             var deleteOption = option.getOption("delete").get();
@@ -174,12 +174,13 @@ public class WatchGuildCommand implements SlashCommand {
                     guildChatWatchRepository.delete(watch);
                     return event.createFollowup()
                         .withEmbeds(EmbedCreateSpec.builder()
+                            .title("Chat Watch Deleted")
                             .color(Color.SEA_GREEN)
-                            .description("Watch deleted!")
+                            .description("Chat Watch for `%s` deleted!".formatted(keyword))
                             .build());
                 }
             }
-            return error(event, "No watch found for `" + keyword + "`");
+            return error(event, "No chat watch found for `%s`".formatted(keyword));
         } else if (option.getOption("list").isPresent()) {
             var watches = guildChatWatchRepository.getByGuildId(event.getInteraction().getGuildId().get().asString());
             Collections.sort(watches, (a, b) -> {
@@ -207,7 +208,7 @@ public class WatchGuildCommand implements SlashCommand {
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                    .title("Watch List")
+                    .title("Chat Watch List")
                     .description(description)
                     .color(Color.CYAN)
                     .build());
@@ -218,8 +219,12 @@ public class WatchGuildCommand implements SlashCommand {
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                    .title("All Watches Cleared")
-                    .description("Removed " + watches.size() + " watches.")
+                    .title("All Chat Watches Cleared")
+                    .description("Removed %d watches.\n".formatted(watches.size())
+                        + watches.stream()
+                        .map(GuildChatWatchConfig::keyword)
+                        .map("`%s`"::formatted)
+                        .reduce("", (a, b) -> a + "\n" + b))
                     .color(Color.CYAN)
                     .build());
         }
@@ -325,11 +330,8 @@ public class WatchGuildCommand implements SlashCommand {
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
                     .color(Color.SEA_GREEN)
-                    .description("""
-                         Watch added!
-                         
-                         Notifications on watched events will be sent to: %s
-                         """.formatted(channel.getMention()))
+                    .title("Player Watch Added")
+                    .description("Notifications on watched events for `%s` will be sent to: %s".formatted(profile.name(), channel.getMention()))
                     .thumbnail(profile.getAvatarURL())
                     .build());
         } else if (option.getOption("delete").isPresent()) {
@@ -353,13 +355,14 @@ public class WatchGuildCommand implements SlashCommand {
                     guildPlayerWatchRepository.delete(watch);
                     return event.createFollowup()
                         .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
+                            .title("Player Watch Deleted")
                             .color(Color.SEA_GREEN)
-                            .description("Watch deleted!")
+                            .description("Player watch for `%s` deleted!".formatted(profile.name()))
                             .thumbnail(profile.getAvatarURL())
                             .build());
                 }
             }
-            return error(event, "No watch found for " + profile.name() + " (" + profile.uuid() + ")");
+            return error(event, "No player watch found for `%s` (%s)".formatted(profile.name(), profile.uuid()));
         } else if (option.getOption("list").isPresent()) {
             var watches = guildPlayerWatchRepository.getByGuildId(event.getInteraction().getGuildId().get().asString());
             Collections.sort(watches, (a, b) -> {
@@ -410,7 +413,7 @@ public class WatchGuildCommand implements SlashCommand {
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                    .title("Watch List")
+                    .title("Player Watch List")
                     .description(description)
                     .color(Color.CYAN)
                     .build());
@@ -421,8 +424,11 @@ public class WatchGuildCommand implements SlashCommand {
             }
             return event.createFollowup()
                 .withEmbeds(EmbedCreateSpec.builder()
-                    .title("All Watches Cleared")
-                    .description("Removed " + watches.size() + " watches.")
+                    .title("All Player Watches Cleared")
+                    .description("Removed %d watches.\n".formatted(watches.size())
+                        + watches.stream()
+                        .map(GuildPlayerWatchConfig::targetName)
+                        .reduce("", (a, b) -> a + "\n" + b))
                     .color(Color.CYAN)
                     .build());
         }
@@ -442,7 +448,7 @@ public class WatchGuildCommand implements SlashCommand {
         }
         Optional<ProfileData> playerIdentity = playerLookup.getPlayerIdentity(playerName);
         if (playerIdentity.isEmpty()) {
-            ctx.setError("No player named `" + playerName + "` exists");
+            ctx.setError("No player named `%s` exists".formatted(playerName));
             return ctx;
         }
         ctx.profileData = playerIdentity.get();
