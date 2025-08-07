@@ -21,7 +21,7 @@ public class GuildChatWatchRepository {
         this.jdbi = jdbi;
     }
 
-    @Cacheable(cacheId)
+    @Cacheable(value = cacheId, key = "#root.methodName")
     public List<GuildChatWatchConfig> getAll() {
         try (var handle = jdbi.open()) {
             return handle.select("SELECT * FROM guild_chat_watch_config")

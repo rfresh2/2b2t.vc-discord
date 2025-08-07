@@ -22,7 +22,7 @@ public class LiveFeedRepository {
         this.jdbi = jdbi;
     }
 
-    @Cacheable(cacheId)
+    @Cacheable(value = cacheId, key = "#root.methodName")
     public List<LiveFeedConfig> getAll() {
         try (var handle = jdbi.open()) {
             return handle.select("SELECT * FROM live_feed_config")
@@ -34,7 +34,7 @@ public class LiveFeedRepository {
         }
     }
 
-    @Cacheable(cacheId)
+    @Cacheable(value = cacheId, key = "#root.methodName")
     public List<LiveFeedConfig> getByLiveChatEnabled() {
         try (var handle = jdbi.open()) {
             return handle.select("SELECT * FROM live_feed_config WHERE live_chat_enabled = 1")
@@ -46,7 +46,7 @@ public class LiveFeedRepository {
         }
     }
 
-    @Cacheable(cacheId)
+    @Cacheable(value = cacheId, key = "#root.methodName")
     public List<LiveFeedConfig> getByLiveConnectionsEnabled() {
         try (var handle = jdbi.open()) {
             return handle.select("SELECT * FROM live_feed_config WHERE live_connections_enabled = 1")

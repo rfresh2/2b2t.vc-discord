@@ -22,7 +22,7 @@ public class GuildPlayerWatchRepository {
         this.jdbi = jdbi;
     }
 
-    @Cacheable(cacheId)
+    @Cacheable(value = cacheId, key = "#root.methodName")
     public List<GuildPlayerWatchConfig> getAll() {
         try (var handle = jdbi.open()) {
             return handle.select("SELECT * FROM guild_player_watch_config")

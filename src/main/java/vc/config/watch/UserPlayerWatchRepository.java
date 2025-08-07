@@ -23,7 +23,7 @@ public class UserPlayerWatchRepository {
         this.jdbi = jdbi;
     }
 
-    @Cacheable(cacheId)
+    @Cacheable(value = cacheId, key = "#root.methodName")
     public List<UserPlayerWatchConfig> getAll() {
         try (var handle = jdbi.open()) {
             return handle.select("SELECT * FROM user_player_watch_config")

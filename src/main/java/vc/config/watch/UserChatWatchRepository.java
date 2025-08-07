@@ -21,7 +21,7 @@ public class UserChatWatchRepository {
         this.jdbi = jdbi;
     }
 
-    @Cacheable(cacheId)
+    @Cacheable(value = cacheId, key = "#root.methodName")
     public List<UserChatWatchConfig> getAll() {
         try (var handle = jdbi.open()) {
             return handle.select("SELECT * FROM user_chat_watch_config")
