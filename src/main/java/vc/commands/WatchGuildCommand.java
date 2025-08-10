@@ -327,11 +327,21 @@ public class WatchGuildCommand implements SlashCommand {
                 }
             }
             guildPlayerWatchRepository.write(watch);
+            StringBuilder eventsList = new StringBuilder();
+            if (joins) eventsList.append("Joins, ");
+            if (leaves) eventsList.append("Leaves, ");
+            if (chats) eventsList.append("Chats, ");
+            if (deaths) eventsList.append("Deaths, ");
+            if (kills) eventsList.append("Kills, ");
+            // Remove trailing comma and space
+            if (!eventsList.isEmpty()) {
+                eventsList.setLength(eventsList.length() - 2);
+            }
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
                     .color(Color.SEA_GREEN)
                     .title("Player Watch Added")
-                    .description("Notifications on watched events for `%s` will be sent to: %s".formatted(profile.name(), channel.getMention()))
+                    .description("Notifications on `%s` events for `%s` will be sent to: %s".formatted(eventsList.toString(), profile.name(), channel.getMention()))
                     .thumbnail(profile.getAvatarURL())
                     .build());
         } else if (option.getOption("delete").isPresent()) {

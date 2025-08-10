@@ -217,11 +217,21 @@ public class WatchCommand implements SlashCommand {
                 }
             }
             userPlayerWatchRepository.write(watch);
+            StringBuilder eventsList = new StringBuilder();
+            if (joins) eventsList.append("Joins, ");
+            if (leaves) eventsList.append("Leaves, ");
+            if (chats) eventsList.append("Chats, ");
+            if (deaths) eventsList.append("Deaths, ");
+            if (kills) eventsList.append("Kills, ");
+            // Remove trailing comma and space
+            if (!eventsList.isEmpty()) {
+                eventsList.setLength(eventsList.length() - 2);
+            }
             return event.createFollowup()
                 .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
                     .color(Color.SEA_GREEN)
                     .title("Player Watch Added")
-                    .description("You will be DM'd on events for `%s`".formatted(profile.name()))
+                    .description("You will be DM'd on `%s` events for `%s`".formatted(eventsList.toString(), profile.name()))
                     .thumbnail(profile.getAvatarURL())
                     .build());
         } else if (option.getOption("delete").isPresent()) {
