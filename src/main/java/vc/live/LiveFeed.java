@@ -250,10 +250,21 @@ public abstract class LiveFeed implements DisposableBean {
                 LOGGER.error("Rate limited while broadcasting message to channel: {}", channel.getId().asString());
                 return;
             } else if (code == 403 || code == 404) {
-                // missing permissions or channel deleted, disable immediately
-                LOGGER.error("Missing permissions while broadcasting message to channel: {}", channel.getId().asString());
-                disableFeed(guildId);
-                return;
+                var cloudflareError = e.getErrorResponse()
+                    .map(r -> r.getFields().get("body"))
+                    .filter(body -> body instanceof String)
+                    .map(body -> (String) body)
+                    .map(body -> body.contains("cloudflare"))
+                    .orElse(false);
+                if (cloudflareError) {
+                    LOGGER.error("Cloudflare error while broadcasting message to channel: {}", channel.getId().asString(), error);
+                    return;
+                } else {
+                    // missing permissions or channel deleted, disable immediately
+                    LOGGER.error("Missing permissions while broadcasting message to channel: {}", channel.getId().asString());
+                    disableFeed(guildId);
+                    return;
+                }
             }
         }
         // for any unknown error, count it and disable if we get too many

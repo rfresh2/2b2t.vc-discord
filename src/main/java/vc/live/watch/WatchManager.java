@@ -331,8 +331,16 @@ public class WatchManager implements DisposableBean {
                             if (code == 429) {
                                 LOGGER.error("Rate limited while sending {} notification to user: {}", targetName, userWatch.ownerUserName());
                             } else if (code == 403 || code == 404) {
-                                LOGGER.error("Missing permissions while sending {} notification to user: {}. Removing watch.", targetName, userWatch.ownerUserName());
-                                removeWatchConsumer.accept(userWatch);
+                                var cloudflareError = e.getErrorResponse()
+                                    .map(r -> r.getFields().get("body"))
+                                    .filter(body -> body instanceof String)
+                                    .map(body -> (String) body)
+                                    .map(body -> body.contains("cloudflare"))
+                                    .orElse(false);
+                                if (!cloudflareError) {
+                                    LOGGER.error("Missing permissions while sending {} notification to user: {}. Removing watch.", targetName, userWatch.ownerUserName());
+                                    removeWatchConsumer.accept(userWatch);
+                                }
                             }
                         }
                     }
@@ -395,8 +403,16 @@ public class WatchManager implements DisposableBean {
                             if (code == 429) {
                                 LOGGER.error("Rate limited while sending {} notification to guild: {}, channelId: {}.", targetName, guildWatch.guildId(), channel.getId());
                             } else if (code == 403 || code == 404) {
-                                LOGGER.error("Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.", targetName, guildWatch.guildId(), channel.getId());
-                                removeGuildWatchFunction.accept(guildWatch);
+                                var cloudflareError = e.getErrorResponse()
+                                    .map(r -> r.getFields().get("body"))
+                                    .filter(body -> body instanceof String)
+                                    .map(body -> (String) body)
+                                    .map(body -> body.contains("cloudflare"))
+                                    .orElse(false);
+                                if (!cloudflareError) {
+                                    LOGGER.error("Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.", targetName, guildWatch.guildId(), channel.getId());
+                                    removeGuildWatchFunction.accept(guildWatch);
+                                }
                             }
                         }
                     }
