@@ -1,4 +1,4 @@
 {
   "name": "tablist",
-  "description": "Gets the current 2b2t tablist"
+  "description": "Prints all online players right now on 2b2t"
 }

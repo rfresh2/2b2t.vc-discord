@@ -1,16 +1,16 @@
 {
   "name": "chats",
-  "description": "Gets a player's chat history",
+  "description": "Searches chats by player, word, and date",
   "options": [
     {
       "name": "player",
-      "description": "The player to get the chat history of",
+      "description": "Player",
       "type": 3,
       "required": false
     },
     {
       "name": "word",
-      "description": "The word to search",
+      "description": "Word",
       "type": 3,
       "required": false
     },

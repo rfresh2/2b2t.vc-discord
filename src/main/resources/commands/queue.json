@@ -1,4 +1,4 @@
 {
   "name": "queue",
-  "description": "Gets 2b2t queue status"
+  "description": "Shows 2b2t's current queue lengths and ETA"
 }

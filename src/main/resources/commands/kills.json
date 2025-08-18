@@ -1,10 +1,10 @@
 {
   "name": "kills",
-  "description": "Gets kills by a player",
+  "description": "Prints a player's kill history",
   "options": [
     {
       "name": "player",
-      "description": "The player to get kills for",
+      "description": "Player",
       "type": 3,
       "required": true
     },

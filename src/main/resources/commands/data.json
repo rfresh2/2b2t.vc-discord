@@ -1,10 +1,10 @@
 {
   "name": "data",
-  "description": "Gets a dump of all a player's data on 2b2t",
+  "description": "Dumps all data on a player as a CSV file",
   "options": [
     {
       "name": "player",
-      "description": "The player to get the data for",
+      "description": "Player",
       "type": 3,
       "required": true
     }

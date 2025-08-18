@@ -1,6 +1,6 @@
 {
   "name": "liveconnections",
-  "description": "Configures the live connections feature",
+  "description": "Configures a live join/leave feed channel in your server",
   "options": [
     {
       "name": "enable",

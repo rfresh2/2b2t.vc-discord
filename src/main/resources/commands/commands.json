@@ -1,4 +1,4 @@
 {
   "name": "commands",
-  "description": "Lists commands the bot supports"
+  "description": "Lists all commands and their description"
 }

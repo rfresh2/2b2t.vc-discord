@@ -1,62 +1,62 @@
 {
   "name": "watch-guild",
-  "description": "Server notifications on player events",
+  "description": "Discord server channel notifications on player joins, leaves, deaths, kills, and chats",
   "options": [
     {
       "name": "player",
-      "description": "Watch for events about a specific player",
+      "description": "Player watch",
       "type": 2,
       "options": [
         {
           "name": "add",
-          "description": "Add a watch",
+          "description": "Add player watch",
           "type": 1,
           "options": [
             {
               "name": "player",
-              "description": "Player Name",
+              "description": "Player",
               "type": 3,
               "required": true
             },
             {
               "name": "channel",
-              "description": "Notification channel",
+              "description": "Channel",
               "type": 7,
               "required": true
             },
             {
               "name": "mention",
-              "description": "User or role to mention in notifications",
+              "description": "User or role to mention",
               "type": 9,
               "required": false
             },
             {
               "name": "joins",
-              "description": "On player join",
+              "description": "Joins",
               "type": 5,
               "required": false
             },
             {
               "name": "leaves",
-              "description": "On player disconnects",
+              "description": "Leaves",
               "type": 5,
               "required": false
             },
             {
               "name": "chats",
-              "description": "On player chats",
+              "description": "Chats",
               "type": 5,
               "required": false
             },
             {
               "name": "deaths",
-              "description": "On player deaths",
+              "description": "Deaths",
               "type": 5,
               "required": false
             },
             {
               "name": "kills",
-              "description": "On player kills",
+              "description": "Kills",
               "type": 5,
               "required": false
             }
@@ -64,12 +64,12 @@
         },
         {
           "name": "delete",
-          "description": "Remove a watch",
+          "description": "Remove player watch",
           "type": 1,
           "options": [
             {
               "name": "player",
-              "description": "Player Name",
+              "description": "Player",
               "type": 3,
               "required": true
             }
@@ -77,12 +77,12 @@
         },
         {
           "name": "list",
-          "description": "List all watches",
+          "description": "List all player watches",
           "type": 1
         },
         {
           "name": "clear",
-          "description": "Remove all watches",
+          "description": "Remove all player watches",
           "type": 1
         }
       ]
@@ -94,42 +94,42 @@
       "options": [
         {
           "name": "add",
-          "description": "Add a watch",
+          "description": "Add a chat watch",
           "type": 1,
           "options": [
             {
               "name": "keyword",
-              "description": "Set a keyword",
+              "description": "Keyword",
               "type": 3,
               "required": true
             },
             {
               "name": "channel",
-              "description": "Notification channel",
+              "description": "Channel",
               "type": 7,
               "required": true
             },
             {
               "name": "mention",
-              "description": "User or role to mention in notifications",
+              "description": "User or role to mention",
               "type": 9,
               "required": false
             },
             {
               "name": "case-sensitive",
-              "description": "Set whether keyword matches regardless of upper/lowercase letters",
+              "description": "Whether keyword matches regardless of upper/lowercase letters",
               "type": 5
             }
           ]
         },
         {
           "name": "delete",
-          "description": "Remove a watch",
+          "description": "Remove chat watch",
           "type": 1,
           "options": [
             {
               "name": "keyword",
-              "description": "Keyword to remove",
+              "description": "Keyword",
               "type": 3,
               "required": true
             }
@@ -137,12 +137,12 @@
         },
         {
           "name": "list",
-          "description": "List all watches",
+          "description": "List all chat watches",
           "type": 1
         },
         {
           "name": "clear",
-          "description": "Remove all watches",
+          "description": "Remove all chat watches",
           "type": 1
         }
       ]

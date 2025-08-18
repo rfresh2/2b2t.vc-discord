@@ -1,10 +1,10 @@
 {
   "name": "connections",
-  "description": "Gets a player's join and leave events on 2b2t",
+  "description": "Prints a player's join/leave history",
   "options": [
     {
       "name": "player",
-      "description": "The player to get the join and leave events for",
+      "description": "Player",
       "type": 3,
       "required": true
     },

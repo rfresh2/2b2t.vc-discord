@@ -1,10 +1,10 @@
 {
   "name": "seen",
-  "description": "Get when a player was last and first seen on 2b2t",
+  "description": "When a player was last and first seen on 2b2t",
   "options": [
     {
       "name": "player",
-      "description": "The player to lookup",
+      "description": "Player",
       "type": 3,
       "required": true
     }

@@ -1,10 +1,10 @@
 {
   "name": "playtime",
-  "description": "2b2t playtime",
+  "description": "Gets a player's total playtime",
   "options": [
     {
       "name": "player",
-      "description": "The player to lookup",
+      "description": "Player",
       "type": 3,
       "required": true
     }

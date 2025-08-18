@@ -1,6 +1,6 @@
 {
   "name": "livechat",
-  "description": "Configures the live chat feature",
+  "description": "Configures a live chat feed channel in your server",
   "options": [
     {
       "name": "enable",

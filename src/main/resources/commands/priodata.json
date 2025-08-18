@@ -1,4 +1,4 @@
 {
   "name": "priodata",
-  "description": "Dump all players who probably have priority queue"
+  "description": "Dumps a JSON list of all players who currently have priority queue (probably)"
 }
