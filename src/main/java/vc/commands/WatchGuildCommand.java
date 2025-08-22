@@ -92,7 +92,8 @@ public class WatchGuildCommand implements SlashCommand {
             String keyword = addOption.getOption("keyword")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString)
-                .orElse("");
+                .orElse("")
+                .replace("< >", " ");
             if (keyword.length() < 3 || keyword.length() > 50) {
                 return error(event, "Keyword must be between 3 and 50 characters");
             }
@@ -164,7 +165,8 @@ public class WatchGuildCommand implements SlashCommand {
             String keyword = deleteOption.getOption("keyword")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString)
-                .orElse("");
+                .orElse("")
+                .replace("< >", " ");
             if (keyword.length() < 3 || keyword.length() > 50) {
                 return error(event, "Keyword must be between 3 and 50 characters");
             }
@@ -194,7 +196,9 @@ public class WatchGuildCommand implements SlashCommand {
             } else {
                 for (var watch : watches) {
                     builder
-                        .append(escape(watch.keyword()));
+                        .append("`")
+                        .append(watch.keyword())
+                        .append("`");
                     if (watch.caseSensitive()) {
                         builder.append(" (case-sensitive)");
                     }
