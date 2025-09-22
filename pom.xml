@@ -19,7 +19,7 @@
         <maven-plugin-version>1.0.0</maven-plugin-version>
         <junit-version>4.13.1</junit-version>
         <default.package>vc.openapi</default.package>
-        <spring.version>3.5.5</spring.version>
+        <spring.version>3.5.6</spring.version>
     </properties>
 
     <repositories>
@@ -96,7 +96,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.4.8-jre</version>
+            <version>33.5.0-jre</version>
         </dependency>
         <dependency>
             <groupId>org.redisson</groupId>
@@ -172,7 +172,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.5.5</version>
+                <version>3.5.6</version>
                 <executions>
                     <execution>
                         <configuration>
