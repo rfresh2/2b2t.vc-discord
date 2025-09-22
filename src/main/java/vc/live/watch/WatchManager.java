@@ -325,22 +325,20 @@ public class WatchManager implements DisposableBean {
                         "Retries exhausted sending " + targetName + " notification to user: " + userWatch.ownerUserName() + ", channelId: " + channel.getId().asString(),
                         signal.failure())))
                 .onErrorResume(error -> {
-                    if (Exceptions.isRetryExhausted(error)) {
-                        if (error instanceof ClientException e) {
-                            int code = e.getStatus().code();
-                            if (code == 429) {
-                                LOGGER.error("Rate limited while sending {} notification to user: {}", targetName, userWatch.ownerUserName());
-                            } else if (code == 403 || code == 404) {
-                                var cloudflareError = e.getErrorResponse()
-                                    .map(r -> r.getFields().get("body"))
-                                    .filter(body -> body instanceof String)
-                                    .map(body -> (String) body)
-                                    .map(body -> body.contains("cloudflare"))
-                                    .orElse(false);
-                                if (!cloudflareError) {
-                                    LOGGER.error("Missing permissions while sending {} notification to user: {}. Removing watch.", targetName, userWatch.ownerUserName());
-                                    removeWatchConsumer.accept(userWatch);
-                                }
+                    if (error instanceof ClientException e) {
+                        int code = e.getStatus().code();
+                        if (code == 429) {
+                            LOGGER.error("Rate limited while sending {} notification to user: {}", targetName, userWatch.ownerUserName());
+                        } else if (code == 403 || code == 404) {
+                            var cloudflareError = e.getErrorResponse()
+                                .map(r -> r.getFields().get("body"))
+                                .filter(body -> body instanceof String)
+                                .map(body -> (String) body)
+                                .map(body -> body.contains("cloudflare"))
+                                .orElse(false);
+                            if (!cloudflareError) {
+                                LOGGER.error("Missing permissions while sending {} notification to user: {}. Removing watch.", targetName, userWatch.ownerUserName());
+                                removeWatchConsumer.accept(userWatch);
                             }
                         }
                     }
@@ -397,22 +395,20 @@ public class WatchManager implements DisposableBean {
                         "Retries exhausted sending " + targetName + " notification to guild: " + guildWatch.guildId() + ", channelId: " + channel.getId().asString(),
                         signal.failure())))
                 .onErrorResume(error -> {
-                    if (Exceptions.isRetryExhausted(error)) {
-                        if (error instanceof ClientException e) {
-                            int code = e.getStatus().code();
-                            if (code == 429) {
-                                LOGGER.error("Rate limited while sending {} notification to guild: {}, channelId: {}.", targetName, guildWatch.guildId(), channel.getId());
-                            } else if (code == 403 || code == 404) {
-                                var cloudflareError = e.getErrorResponse()
-                                    .map(r -> r.getFields().get("body"))
-                                    .filter(body -> body instanceof String)
-                                    .map(body -> (String) body)
-                                    .map(body -> body.contains("cloudflare"))
-                                    .orElse(false);
-                                if (!cloudflareError) {
-                                    LOGGER.error("Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.", targetName, guildWatch.guildId(), channel.getId());
-                                    removeGuildWatchFunction.accept(guildWatch);
-                                }
+                    if (error instanceof ClientException e) {
+                        int code = e.getStatus().code();
+                        if (code == 429) {
+                            LOGGER.error("Rate limited while sending {} notification to guild: {}, channelId: {}.", targetName, guildWatch.guildId(), channel.getId());
+                        } else if (code == 403 || code == 404) {
+                            var cloudflareError = e.getErrorResponse()
+                                .map(r -> r.getFields().get("body"))
+                                .filter(body -> body instanceof String)
+                                .map(body -> (String) body)
+                                .map(body -> body.contains("cloudflare"))
+                                .orElse(false);
+                            if (!cloudflareError) {
+                                LOGGER.error("Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.", targetName, guildWatch.guildId(), channel.getId());
+                                removeGuildWatchFunction.accept(guildWatch);
                             }
                         }
                     }
