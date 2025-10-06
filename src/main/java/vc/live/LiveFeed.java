@@ -38,6 +38,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -122,6 +123,22 @@ public abstract class LiveFeed implements DisposableBean {
             }
         } catch (JsonProcessingException e) {
             LOGGER.error("Failed to deserialize message: {}", message, e);
+        }
+    }
+
+    @Scheduled(initialDelay = 1, fixedRate = 1, timeUnit = HOURS)
+    private void refreshTopicListeners() {
+        for (var entry : inputTopics.entrySet()) {
+            try {
+                var topicListener = entry.getValue();
+                topicListener.topic().removeListener(topicListener.id());
+                String id = topicListener.topic().addListener(String.class, (channel, message) -> topicMessageListener(entry.getKey(), message));
+                inputTopics.remove(entry.getKey());
+                inputTopics.put(entry.getKey(), new TopicListener(topicListener.topic(), id));
+                LOGGER.info("Refreshed {} topic listener {}", entry.getKey().topicName(), id);
+            } catch (Exception e) {
+                LOGGER.error("Error refreshing topic listener for {}", entry.getKey().topicName(), e);
+            }
         }
     }
 
