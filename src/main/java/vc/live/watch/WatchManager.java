@@ -45,6 +45,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static java.util.concurrent.TimeUnit.HOURS;
 import static vc.util.DiscordMarkdownEscape.escape;
 
 @Component
@@ -212,6 +213,23 @@ public class WatchManager implements DisposableBean {
             }
         } catch (Exception e) {
             LOGGER.error("Error while processing chat keyword watch queue", e);
+        }
+    }
+
+    @Scheduled(initialDelay = 1, fixedRate = 1, timeUnit = HOURS)
+    private void refreshTopicListeners() {
+        if (!watchesEnabled) return;
+        try {
+            LOGGER.info("Refreshing watch topic listeners");
+            connectionsTopic.removeListener(connectionsTopicId);
+            connectionsTopicId = connectionsTopic.addListener(String.class, (channel, msg) -> connectionsTopicListener(msg));
+            chatsTopic.removeListener(chatsTopicId);
+            chatsTopicId = chatsTopic.addListener(String.class, (channel, msg) -> chatsTopicListener(msg));
+            deathsTopic.removeListener(deathsTopicId);
+            deathsTopicId = deathsTopic.addListener(String.class, (channel, msg) -> deathsTopicListener(msg));
+            LOGGER.info("Watch topic listeners refreshed");
+        } catch (Exception e) {
+            LOGGER.error("Failed to refresh watch topic listeners", e);
         }
     }
 
