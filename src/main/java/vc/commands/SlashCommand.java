@@ -30,7 +30,7 @@ public interface SlashCommand {
 
     default EmbedCreateSpec.Builder populateIdentity(final EmbedCreateSpec.Builder builder, ProfileData identity) {
         return builder
-            .addField("Player", "[" + identity.name() + "](" + identity.getNameMCLink(identity.uuid()) + ")", true)
+            .addField("Player", identity.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true);
     }

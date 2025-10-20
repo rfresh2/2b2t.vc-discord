@@ -445,7 +445,7 @@ public class WatchManager implements DisposableBean {
         var profile = new ProfileDataImpl(connection.playerName(), connection.playerUuid());
         EmbedCreateSpec embed = EmbedCreateSpec.builder()
             .title("Watched Player Online")
-            .addField("Player", "[" + profile.name() + "](" + profile.getNameMCLink(profile.uuid()) + ")", true)
+            .addField("Player", profile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
             .thumbnail(profile.getAvatarURL())
@@ -461,7 +461,7 @@ public class WatchManager implements DisposableBean {
         var profile = new ProfileDataImpl(connection.playerName(), connection.playerUuid());
         EmbedCreateSpec embed = EmbedCreateSpec.builder()
             .title("Watched Player Offline")
-            .addField("Player", "[" + profile.name() + "](" + profile.getNameMCLink(profile.uuid()) + ")", true)
+            .addField("Player", profile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
             .thumbnail(profile.getAvatarURL())
@@ -477,7 +477,7 @@ public class WatchManager implements DisposableBean {
         var profile = new ProfileDataImpl(chat.playerName(), chat.playerUuid());
         EmbedCreateSpec embed = EmbedCreateSpec.builder()
             .title("Watched Player Chat")
-            .addField("Player", "[" + profile.name() + "](" + profile.getNameMCLink(profile.uuid()) + ")", true)
+            .addField("Player", profile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
             .addField("Message", escape(chat.chat()), false)
@@ -495,7 +495,7 @@ public class WatchManager implements DisposableBean {
         var profile = new ProfileDataImpl(chat.playerName(), chat.playerUuid());
         EmbedCreateSpec embed = EmbedCreateSpec.builder()
             .title("Watched Keyword in Chat")
-            .addField("Player", "[" + profile.name() + "](" + profile.getNameMCLink(profile.uuid()) + ")", true)
+            .addField("Player", profile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
             .addField("Message", escape(chat.chat()), false)
@@ -513,13 +513,13 @@ public class WatchManager implements DisposableBean {
         var profile = new ProfileDataImpl(death.victimPlayerName(), death.victimPlayerUuid());
         var embed = EmbedCreateSpec.builder()
             .title("Watched Player Death")
-            .addField("Victim", "[" + profile.name() + "](" + profile.getNameMCLink(profile.uuid()) + ")", true)
+            .addField("Victim", profile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true);
         if (death.killerPlayerUuid() != null) {
             var killerProfile = new ProfileDataImpl(death.killerPlayerName(), death.killerPlayerUuid());
             embed
-                .addField("Killer", "[" + killerProfile.name() + "](" + killerProfile.getNameMCLink(killerProfile.uuid()) + ")", true)
+                .addField("Killer", killerProfile.toDiscordFieldValue(), true)
                 .addField("\u200B", "\u200B", true)
                 .addField("\u200B", "\u200B", true);
         }
@@ -539,10 +539,10 @@ public class WatchManager implements DisposableBean {
         var victimProfile = new ProfileDataImpl(death.victimPlayerName(), death.victimPlayerUuid());
         return EmbedCreateSpec.builder()
             .title("Watched Player Kill")
-            .addField("Killer", "[" + killerProfile.name() + "](" + killerProfile.getNameMCLink(killerProfile.uuid()) + ")", true)
+            .addField("Killer", killerProfile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
-            .addField("Victim", "[" + victimProfile.name() + "](" + victimProfile.getNameMCLink(victimProfile.uuid()) + ")", true)
+            .addField("Victim", victimProfile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
             .addField("Death Message", escape(death.deathMessage()).replace(escape(killerProfile.name()), "**" + escape(killerProfile.name()) + "**"), false)
