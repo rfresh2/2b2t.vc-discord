@@ -8,8 +8,8 @@ public interface ProfileData {
     String name();
     UUID uuid();
 
-    default String getNameMCLink(UUID uuid) {
-        return "https://namemc.com/profile/" + uuid.toString();
+    default String getNameMCLink() {
+        return "https://namemc.com/profile/" + uuid().toString();
     }
 
     default String getAvatarURL() {
@@ -27,8 +27,8 @@ public interface ProfileData {
             // discord markdown does not support escaping inside links
             // well, it does, but the backslashes are always visible so its arguably worse
             // https://github.com/discord/discord-api-docs/issues/6185
-            fmt = "%s ([link](%s))";
+            fmt = "[`%s`](%s)";
         }
-        return String.format(fmt, nameEscaped, getNameMCLink(uuid()));
+        return String.format(fmt, name(), getNameMCLink());
     }
 }
