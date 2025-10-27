@@ -19,7 +19,7 @@
         <maven-plugin-version>1.0.0</maven-plugin-version>
         <junit-version>4.13.1</junit-version>
         <default.package>vc.openapi</default.package>
-        <spring.version>3.5.6</spring.version>
+        <spring.version>3.5.7</spring.version>
     </properties>
 
     <repositories>
@@ -91,7 +91,7 @@
         <dependency>
             <groupId>org.openapitools</groupId>
             <artifactId>jackson-databind-nullable</artifactId>
-            <version>0.2.7</version>
+            <version>0.2.8</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -177,7 +177,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.5.6</version>
+                <version>3.5.7</version>
                 <executions>
                     <execution>
                         <configuration>
