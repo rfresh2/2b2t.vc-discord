@@ -1,0 +1,12 @@
+{
+  "name": "names",
+  "description": "Searches for all associated profiles with a username",
+  "options": [
+    {
+      "name": "player",
+      "description": "Player",
+      "type": 3,
+      "required": true
+    }
+  ]
+}
