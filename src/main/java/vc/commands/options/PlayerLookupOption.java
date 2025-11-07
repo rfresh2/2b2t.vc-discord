@@ -33,7 +33,7 @@ public class PlayerLookupOption implements ChatInteractionOption {
         }
         Optional<ProfileData> playerIdentity = playerLookup.getPlayerIdentity(playerName);
         if (playerIdentity.isEmpty()) {
-            context.setError("No player named `" + playerName + "` exists");
+            context.setError("No player named `" + playerName + "` exists\nCheck for previous accounts with `/names`");
             return;
         }
         context.profileData = playerIdentity.get();

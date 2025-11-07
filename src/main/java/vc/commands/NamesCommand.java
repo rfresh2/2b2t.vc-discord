@@ -11,6 +11,7 @@ import vc.api.LabyRestClient;
 import vc.api.model.LabyProfileSearchResponse;
 import vc.openapi.handler.ApiException;
 import vc.util.DiscordMarkdownEscape;
+import vc.util.Validator;
 
 import java.net.http.HttpTimeoutException;
 
@@ -35,6 +36,9 @@ public class NamesCommand implements SlashCommand {
         var player = event.getOptionAsString("player").orElse(null);
         if (player == null) {
             return error(event, "`player` option is required");
+        }
+        if (!Validator.isValidPlayerName(player)) {
+            return error(event, "Invalid player name");
         }
         LabyProfileSearchResponse searchResponse;
         try {

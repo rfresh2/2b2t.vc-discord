@@ -346,7 +346,7 @@ public class WatchCommand implements SlashCommand {
         }
         Optional<ProfileData> playerIdentity = playerLookup.getPlayerIdentity(playerName);
         if (playerIdentity.isEmpty()) {
-            ctx.setError("No player named `%s` exists".formatted(playerName));
+            ctx.setError("No player named `%s` exists\nCheck for previous accounts with `/names`".formatted(playerName));
             return ctx;
         }
         ctx.profileData = playerIdentity.get();
