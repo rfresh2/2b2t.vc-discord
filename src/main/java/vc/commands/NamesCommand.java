@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import vc.api.LabyRestClient;
-import vc.api.model.LabyProfileSearchResponse;
+import vc.api.model.LabyProfileSearch;
 import vc.openapi.handler.ApiException;
 import vc.util.DiscordMarkdownEscape;
 import vc.util.Validator;
@@ -40,9 +40,9 @@ public class NamesCommand implements SlashCommand {
         if (!Validator.isValidPlayerName(player)) {
             return error(event, "Invalid player name");
         }
-        LabyProfileSearchResponse searchResponse;
+        LabyProfileSearch search;
         try {
-            searchResponse = labyRestClient.searchProfiles(player);
+            search = labyRestClient.searchProfiles(player);
         } catch (Exception e) {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
@@ -61,7 +61,7 @@ public class NamesCommand implements SlashCommand {
             .addField("Source", "[LabyMod API](https://laby.net/@" + player + ")", true)
             .color(Color.CYAN);
         var sb = new StringBuilder();
-        var currentProfile = searchResponse.currentProfile();
+        var currentProfile = search.currentProfile();
         sb.append("**Current Profile**\n\n");
         if (currentProfile != null) {
             sb.append(currentProfile.toDiscordFieldValue()).append("\n");
@@ -69,7 +69,7 @@ public class NamesCommand implements SlashCommand {
         } else {
             sb.append("(none)\n");
         }
-        var prevUsernames = searchResponse.previousUsernames();
+        var prevUsernames = search.previousUsernames();
         sb.append("\n**Previous Usernames**\n\n");
         if (!prevUsernames.isEmpty()) {
             for (var name : prevUsernames) {
@@ -78,7 +78,7 @@ public class NamesCommand implements SlashCommand {
         } else {
             sb.append("(none)\n");
         }
-        var historicalProfiles = searchResponse.historicalProfiles();
+        var historicalProfiles = search.historicalProfiles();
         sb.append("\n**Previous Accounts**\n\n");
         if (!historicalProfiles.isEmpty()) {
             for (var historicalProfile : historicalProfiles) {
@@ -87,11 +87,11 @@ public class NamesCommand implements SlashCommand {
         } else {
             sb.append("(none)\n");
         }
-        var names = searchResponse.associatedUsernames();
+        var names = search.associatedUsernames();
         sb.append("\n**Previous Account Usernames**\n\n");
         if (!names.isEmpty()) {
             for (var name : names) {
-                sb.append(name).append("\n");
+                sb.append(DiscordMarkdownEscape.escape(name)).append("\n");
             }
         } else {
             sb.append("(none)\n");

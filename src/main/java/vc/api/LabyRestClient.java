@@ -3,6 +3,7 @@ package vc.api;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import vc.api.model.LabyProfileSearch;
 import vc.api.model.LabyProfileSearchResponse;
 
 @Component
@@ -17,10 +18,11 @@ public class LabyRestClient {
             .build();
     }
 
-    public LabyProfileSearchResponse searchProfiles(String username) {
-        return restClient.get()
+    public LabyProfileSearch searchProfiles(String username) {
+        var response = restClient.get()
             .uri("/search/profiles/{username}", username)
             .retrieve()
             .body(LabyProfileSearchResponse.class);
+        return new LabyProfileSearch(username, response);
     }
 }
