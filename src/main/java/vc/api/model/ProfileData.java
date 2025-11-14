@@ -13,7 +13,7 @@ public interface ProfileData {
     }
 
     default String getAvatarURL() {
-        return String.format("https://api.mineatar.io/body/full/%s", uuid());
+        return String.format("https://mc-heads.net/body/%s", uuid());
     }
 
     default String getHeadURL() {
