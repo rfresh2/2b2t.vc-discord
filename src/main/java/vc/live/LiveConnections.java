@@ -14,7 +14,6 @@ import vc.live.dto.enums.Connectiontype;
 
 import java.util.List;
 
-import static java.util.Arrays.asList;
 import static vc.util.DiscordMarkdownEscape.escape;
 
 @Component
@@ -63,7 +62,7 @@ public class LiveConnections extends LiveFeed {
 
     @Override
     protected List<InputQueue> inputQueues() {
-        return asList(new InputQueue<>(
+        return List.of(new InputQueue<>(
             "ConnectionsTopic",
             ConnectionsRecord.class,
             this::buildConnectionsEmbed,

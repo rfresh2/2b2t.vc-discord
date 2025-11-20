@@ -119,19 +119,12 @@ public class VcDataDumpApi {
         String localVarPath = "/dump/player";
 
         List<Pair> localVarQueryParams = new ArrayList<>();
-        StringJoiner localVarQueryStringJoiner = new StringJoiner("&");
-        String localVarQueryParameterBaseName;
-        localVarQueryParameterBaseName = "uuid";
         localVarQueryParams.addAll(ApiClient.parameterToPairs("uuid", uuid));
-        localVarQueryParameterBaseName = "playerName";
         localVarQueryParams.addAll(ApiClient.parameterToPairs("playerName", playerName));
 
-        if (!localVarQueryParams.isEmpty() || localVarQueryStringJoiner.length() != 0) {
+        if (!localVarQueryParams.isEmpty()) {
             StringJoiner queryJoiner = new StringJoiner("&");
             localVarQueryParams.forEach(p -> queryJoiner.add(p.getName() + '=' + p.getValue()));
-            if (localVarQueryStringJoiner.length() != 0) {
-                queryJoiner.add(localVarQueryStringJoiner.toString());
-            }
             localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath + '?' + queryJoiner.toString()));
         } else {
             localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));

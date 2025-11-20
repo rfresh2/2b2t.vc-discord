@@ -18,12 +18,11 @@ import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 
@@ -72,11 +71,10 @@ public class Application {
     }
 
     @Bean
-    public RestTemplate restTemplate(ObjectMapper objectMapper, ClientHttpRequestFactory clientHttpRequestFactory) {
+    public RestTemplate restTemplate(ClientHttpRequestFactory clientHttpRequestFactory) {
         return new RestTemplateBuilder()
             .requestFactory(() -> clientHttpRequestFactory)
             .defaultHeader("User-Agent", "2b2t.vc-discord")
-            .additionalMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
             .build();
     }
 
@@ -84,7 +82,7 @@ public class Application {
     @Primary
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.configure(DeserializationFeature.FAIL_ON_INVALID_SUBTYPE, false);
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);

@@ -1,6 +1,6 @@
 package vc.commands.buttons;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
 

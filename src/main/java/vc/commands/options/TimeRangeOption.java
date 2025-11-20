@@ -1,7 +1,7 @@
 package vc.commands.options;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
 
