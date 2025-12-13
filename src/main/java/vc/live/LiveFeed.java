@@ -309,7 +309,7 @@ public abstract class LiveFeed implements DisposableBean {
 
     protected URL avatarUrl(final UUID uuid) {
         try {
-            return URI.create(String.format("https://minotar.net/helm/%s/64", uuid.toString().replace("-", ""))).toURL();
+            return URI.create(String.format("https://mc-heads.net/avatar/%s/64", uuid.toString().replace("-", ""))).toURL();
         } catch (final MalformedURLException e) {
             throw new UncheckedIOException(e);
         }
