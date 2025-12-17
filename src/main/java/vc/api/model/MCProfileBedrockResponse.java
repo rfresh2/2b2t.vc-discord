@@ -14,7 +14,7 @@ public record MCProfileBedrockResponse(
 ) implements ProfileData {
     @Override
     public String name() {
-        return gamertag;
+        return "." + gamertag;
     }
 
     @Override
@@ -24,7 +24,7 @@ public record MCProfileBedrockResponse(
 
     @Override
     public String toDiscordFieldValue() {
-        var fmt = "`.%s` (Bedrock)";
+        var fmt = "`%s` (Bedrock)";
         return String.format(fmt, name(), getNameMCLink());
     }
 }
