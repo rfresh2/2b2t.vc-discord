@@ -54,7 +54,8 @@ public class PlayerLookup {
         if (identityFromCache != null)
             return Optional.of(identityFromCache);
         if (isBedrockUsername(playerName)) {
-            var bedrockName = playerName.substring(1); // chop off . prefix
+            // https://github.com/GeyserMC/Floodgate/blob/a7729114bf00a3f5c6756cd66f9c94e2bfcb8ed0/core/src/main/java/org/geysermc/floodgate/addon/data/HandshakeDataImpl.java#L69-L77
+            var bedrockName = playerName.substring(1).replace("_", " "); // chop off . prefix
             var playerIdentity = lookupIdentityBedrock(bedrockName);
             playerIdentity.ifPresent(identity -> uuidCache.put(playerName.toLowerCase().trim(), identity));
             return playerIdentity.map(r -> (ProfileData) r);
