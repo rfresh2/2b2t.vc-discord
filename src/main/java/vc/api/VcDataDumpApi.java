@@ -34,7 +34,7 @@ public class VcDataDumpApi {
     private final Consumer<HttpRequest.Builder> memberVarInterceptor;
     private final Duration memberVarReadTimeout;
     private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
-    private final Consumer<HttpResponse<String>> memberVarAsyncResponseInterceptor;
+    private final Consumer<HttpResponse<InputStream>> memberVarAsyncResponseInterceptor;
 
     public VcDataDumpApi() {
         this(new ApiClient());
