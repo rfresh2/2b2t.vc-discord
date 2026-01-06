@@ -326,7 +326,10 @@ public class WatchManager implements DisposableBean {
     ) {
         try {
             var channel = discordClient.getUserById(Snowflake.of(userWatch.ownerUserId()))
-                .doOnSuccess(user -> LOGGER.info("[{}] Sending {} user notification to {}", id, targetName, user.getUsername()))
+                .doOnSuccess(user -> LOGGER.info("[{}] Sending {} user notification to {}",
+                    id,
+                    targetName,
+                    user.getUsername()))
                 .flatMap(User::getPrivateChannel)
                 .block(Duration.ofSeconds(10));
 
@@ -335,18 +338,23 @@ public class WatchManager implements DisposableBean {
                 .build();
 
             channel.createMessage(msg)
-                .doOnError(error -> LOGGER.error("Error sending {} user notification to: {}", targetName, userWatch.ownerUserName()))
+                .doOnError(error -> LOGGER.error("Error sending {} user notification to: {}",
+                    targetName,
+                    userWatch.ownerUserName()))
                 .timeout(Duration.ofSeconds(3))
                 .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
                     .filter(error -> error instanceof TimeoutException)
                     .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
-                        "Retries exhausted sending " + targetName + " notification to user: " + userWatch.ownerUserName() + ", channelId: " + channel.getId().asString(),
+                        "Retries exhausted sending " + targetName + " notification to user: " + userWatch.ownerUserName() + ", channelId: " + channel.getId()
+                            .asString(),
                         signal.failure())))
                 .onErrorResume(error -> {
                     if (error instanceof ClientException e) {
                         int code = e.getStatus().code();
                         if (code == 429) {
-                            LOGGER.error("Rate limited while sending {} notification to user: {}", targetName, userWatch.ownerUserName());
+                            LOGGER.error("Rate limited while sending {} notification to user: {}",
+                                targetName,
+                                userWatch.ownerUserName());
                         } else if (code == 403 || code == 404) {
                             var cloudflareError = e.getErrorResponse()
                                 .map(r -> r.getFields().get("body"))
@@ -355,15 +363,43 @@ public class WatchManager implements DisposableBean {
                                 .map(body -> body.contains("cloudflare"))
                                 .orElse(false);
                             if (!cloudflareError) {
-                                LOGGER.error("Missing permissions while sending {} notification to user: {}. Removing watch.", targetName, userWatch.ownerUserName());
+                                LOGGER.error(
+                                    "Missing permissions while sending {} notification to user: {}. Removing watch.",
+                                    targetName,
+                                    userWatch.ownerUserName());
                                 removeWatchConsumer.accept(userWatch);
                             }
                         }
                     }
-                    LOGGER.error("Error sending {} user notification to: {}", targetName, userWatch.ownerUserName(), error);
+                    LOGGER.error("Error sending {} user notification to: {}",
+                        targetName,
+                        userWatch.ownerUserName(),
+                        error);
                     return Mono.empty();
                 })
                 .block(Duration.ofSeconds(10));
+        } catch (ClientException e) {
+            int code = e.getStatus().code();
+            if (code == 429) {
+                LOGGER.error("Rate limited while sending {} notification to user: {}",
+                    targetName,
+                    userWatch.ownerUserName());
+            } else if (code == 403 || code == 404) {
+                var cloudflareError = e.getErrorResponse()
+                    .map(r -> r.getFields().get("body"))
+                    .filter(body -> body instanceof String)
+                    .map(body -> (String) body)
+                    .map(body -> body.contains("cloudflare"))
+                    .orElse(false);
+                if (!cloudflareError) {
+                    LOGGER.error(
+                        "Missing permissions while sending {} notification to user: {}. Removing watch.",
+                        targetName,
+                        userWatch.ownerUserName());
+                    removeWatchConsumer.accept(userWatch);
+                }
+            }
+            LOGGER.error("Error sending {} user notification to {}", targetName, userWatch.ownerUserId(), e);
         } catch (Exception e) {
             LOGGER.error("Error sending {} user notification to {}", targetName, userWatch.ownerUserId(), e);
         }
@@ -392,7 +428,11 @@ public class WatchManager implements DisposableBean {
                 return;
             }
 
-            LOGGER.info("[{}] Sending guild watch {} notification to {} ({})", id, targetName, guild.getName(), channel.getName());
+            LOGGER.info("[{}] Sending guild watch {} notification to {} ({})",
+                id,
+                targetName,
+                guild.getName(),
+                channel.getName());
             var msgBuilder = MessageCreateSpec.builder()
                 .addEmbed(embedSupplier.get());
 
@@ -405,18 +445,25 @@ public class WatchManager implements DisposableBean {
             }
 
             channel.getRestChannel().createMessage(msgBuilder.build().asRequest())
-                .doOnError(error -> LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}", targetName, guildWatch.guildId(), channel.getId()))
+                .doOnError(error -> LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}",
+                    targetName,
+                    guildWatch.guildId(),
+                    channel.getId()))
                 .timeout(Duration.ofSeconds(3))
                 .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
                     .filter(error -> error instanceof TimeoutException)
                     .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
-                        "Retries exhausted sending " + targetName + " notification to guild: " + guildWatch.guildId() + ", channelId: " + channel.getId().asString(),
+                        "Retries exhausted sending " + targetName + " notification to guild: " + guildWatch.guildId() + ", channelId: " + channel.getId()
+                            .asString(),
                         signal.failure())))
                 .onErrorResume(error -> {
                     if (error instanceof ClientException e) {
                         int code = e.getStatus().code();
                         if (code == 429) {
-                            LOGGER.error("Rate limited while sending {} notification to guild: {}, channelId: {}.", targetName, guildWatch.guildId(), channel.getId());
+                            LOGGER.error("Rate limited while sending {} notification to guild: {}, channelId: {}.",
+                                targetName,
+                                guildWatch.guildId(),
+                                channel.getId());
                         } else if (code == 403 || code == 404) {
                             var cloudflareError = e.getErrorResponse()
                                 .map(r -> r.getFields().get("body"))
@@ -425,15 +472,40 @@ public class WatchManager implements DisposableBean {
                                 .map(body -> body.contains("cloudflare"))
                                 .orElse(false);
                             if (!cloudflareError) {
-                                LOGGER.error("Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.", targetName, guildWatch.guildId(), channel.getId());
+                                LOGGER.error(
+                                    "Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.",
+                                    targetName,
+                                    guildWatch.guildId(),
+                                    channel.getId());
                                 removeGuildWatchFunction.accept(guildWatch);
                             }
                         }
                     }
-                    LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}", targetName, guildWatch.guildId(), channel.getId(), error);
+                    LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}",
+                        targetName,
+                        guildWatch.guildId(),
+                        channel.getId(),
+                        error);
                     return Mono.empty();
                 })
                 .block(Duration.ofSeconds(10));
+        } catch (ClientException e) {
+            int code = e.getStatus().code();
+            if (code == 429) {
+                LOGGER.error("Rate limited while sending {} notification to guild: {}, channelId: {}.", targetName, guildWatch.guildId(), guildWatch.channelId());
+            } else if (code == 403 || code == 404) {
+                var cloudflareError = e.getErrorResponse()
+                    .map(r -> r.getFields().get("body"))
+                    .filter(body -> body instanceof String)
+                    .map(body -> (String) body)
+                    .map(body -> body.contains("cloudflare"))
+                    .orElse(false);
+                if (!cloudflareError) {
+                    LOGGER.error("Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.", targetName, guildWatch.guildId(), guildWatch.channelId());
+                    removeGuildWatchFunction.accept(guildWatch);
+                }
+            }
+            LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}", targetName, guildWatch.guildId(), guildWatch.channelId(), e);
         } catch (Exception e) {
             LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}", targetName, guildWatch.guildId(), guildWatch.channelId(), e);
         }
