@@ -77,7 +77,7 @@ public class ChatsCommand implements SlashCommand, ButtonCommand {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                     return event.createFollowup()
-                        .withEmbeds(populateSearchTerm(EmbedCreateSpec.builder(), identity, word)
+                        .withEmbeds(populateSearchTerm(embed(event), identity, word)
                             .color(Color.RUBY)
                             .description("No chats found")
                             .build());
@@ -92,7 +92,7 @@ public class ChatsCommand implements SlashCommand, ButtonCommand {
         }
         if (chatsResponse == null || chatsResponse.getChats() == null || chatsResponse.getChats().isEmpty())
             return event.createFollowup()
-                .withEmbeds(populateSearchTerm(EmbedCreateSpec.builder(), identity, word)
+                .withEmbeds(populateSearchTerm(embed(event), identity, word)
                     .color(Color.RUBY)
                     .description("No chats found")
                     .build());
@@ -114,7 +114,7 @@ public class ChatsCommand implements SlashCommand, ButtonCommand {
         if (!result.isEmpty()) result.deleteCharAt(result.length() - 1); // cut off the last newline
         if (truncated.get()) LOGGER.warn("Truncated chat response");
         return event.createFollowup()
-            .withEmbeds(populateSearchTerm(EmbedCreateSpec.builder(), identity, word)
+            .withEmbeds(populateSearchTerm(embed(event), identity, word)
                 .color(Color.CYAN)
                 .description(result.toString())
                 .addField("Total", ""+chatsResponse.getTotal(), true)

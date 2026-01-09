@@ -5,7 +5,6 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +96,7 @@ public class WatchCommand implements SlashCommand {
             }
             userChatWatchRepository.write(watch);
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .color(Color.SEA_GREEN)
                     .title("Chat Watch Added")
                     .description("You will be DM'd on chats containing `%s`".formatted(keyword))
@@ -117,7 +116,7 @@ public class WatchCommand implements SlashCommand {
                 if (watch.keyword().equals(keyword)) {
                     userChatWatchRepository.delete(watch);
                     return event.createFollowup()
-                        .withEmbeds(EmbedCreateSpec.builder()
+                        .withEmbeds(embed(event)
                             .title("Chat Watch Deleted")
                             .color(Color.SEA_GREEN)
                             .description("Chat watch `%s` deleted!".formatted(keyword))
@@ -149,7 +148,7 @@ public class WatchCommand implements SlashCommand {
                 description = description.substring(0, 4000) + "\n... (truncated)";
             }
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .title("Chat Watch List")
                     .description(description)
                     .color(Color.CYAN)
@@ -160,7 +159,7 @@ public class WatchCommand implements SlashCommand {
                 userChatWatchRepository.delete(watch);
             }
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .title("All Chat Watches Cleared")
                     .description("Removed " + watches.size() + " watches.\n"
                         + watches.stream()
@@ -232,7 +231,7 @@ public class WatchCommand implements SlashCommand {
                 eventsList.setLength(eventsList.length() - 2);
             }
             return event.createFollowup()
-                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
+                .withEmbeds(populateIdentity(embed(event), profile)
                     .color(Color.SEA_GREEN)
                     .title("Player Watch Added")
                     .description("You will be DM'd on `%s` events for `%s`".formatted(eventsList.toString(), profile.name()))
@@ -258,7 +257,7 @@ public class WatchCommand implements SlashCommand {
                 if (watch.targetName().equalsIgnoreCase(playerName)) {
                     userPlayerWatchRepository.delete(watch);
                     return event.createFollowup()
-                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
+                        .withEmbeds(populateIdentity(embed(event), profile)
                             .title("Player Watch Deleted")
                             .color(Color.SEA_GREEN)
                             .description("Player watch for `%s` deleted!".formatted(profile.name()))
@@ -309,7 +308,7 @@ public class WatchCommand implements SlashCommand {
                 description = description.substring(0, 4000) + "\n... (truncated)";
             }
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .title("Player Watch List")
                     .description(description)
                     .color(Color.CYAN)
@@ -320,7 +319,7 @@ public class WatchCommand implements SlashCommand {
                 userPlayerWatchRepository.delete(watch);
             }
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .title("All Player Watches Cleared")
                     .description("Removed " + watches.size() + " player watches.\n"
                         + watches.stream()

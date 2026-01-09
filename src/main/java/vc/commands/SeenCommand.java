@@ -3,7 +3,6 @@ package vc.commands;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -58,7 +57,7 @@ public class SeenCommand implements SlashCommand {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                     return event.createFollowup()
-                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                        .withEmbeds(populateIdentity(embed(event), identity)
                             .color(Color.RUBY)
                             .description("Never Seen")
                             .thumbnail(identity.getAvatarURL())
@@ -74,13 +73,13 @@ public class SeenCommand implements SlashCommand {
         }
         if (isNull(seenResponse))
             return event.createFollowup()
-                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                .withEmbeds(populateIdentity(embed(event), identity)
                     .color(Color.RUBY)
                     .description("Never Seen")
                     .thumbnail(identity.getAvatarURL())
                     .build());
         return event.createFollowup()
-            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+            .withEmbeds(populateIdentity(embed(event), identity)
                 .addField("First seen", getSeenString(seenResponse.getFirstSeen()), false)
                 .addField("Last seen", getSeenString(seenResponse.getLastSeen()), false)
                 .color(Color.CYAN)

@@ -3,7 +3,6 @@ package vc.commands;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -52,7 +51,7 @@ public class WordCountCommand implements SlashCommand {
                 if (e instanceof ApiException apiException) {
                     if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                         return event.createFollowup()
-                            .withEmbeds(EmbedCreateSpec.builder()
+                            .withEmbeds(embed(event)
                                 .color(Color.RUBY)
                                 .description("No chats containing this word were found. That's pretty rare!")
                                 .build());
@@ -69,7 +68,7 @@ public class WordCountCommand implements SlashCommand {
                 return error(event, "No chats containing this word were found. That's pretty rare!");
             }
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .title("Word Count")
                     .color(Color.CYAN)
                     .addField("Count", count+"", false)

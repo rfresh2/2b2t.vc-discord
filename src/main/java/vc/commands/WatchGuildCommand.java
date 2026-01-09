@@ -155,7 +155,7 @@ public class WatchGuildCommand implements SlashCommand {
             }
             guildChatWatchRepository.write(watch);
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .color(Color.SEA_GREEN)
                     .title("Chat Watch Added")
                     .description("Notifications on chats containing `%s` will be sent to: %s".formatted(keyword, channel.getMention()))
@@ -175,7 +175,7 @@ public class WatchGuildCommand implements SlashCommand {
                 if (watch.keyword().equals(keyword)) {
                     guildChatWatchRepository.delete(watch);
                     return event.createFollowup()
-                        .withEmbeds(EmbedCreateSpec.builder()
+                        .withEmbeds(embed(event)
                             .title("Chat Watch Deleted")
                             .color(Color.SEA_GREEN)
                             .description("Chat Watch for `%s` deleted!".formatted(keyword))
@@ -211,7 +211,7 @@ public class WatchGuildCommand implements SlashCommand {
                 description = description.substring(0, 4000) + "\n... (truncated)";
             }
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .title("Chat Watch List")
                     .description(description)
                     .color(Color.CYAN)
@@ -222,7 +222,7 @@ public class WatchGuildCommand implements SlashCommand {
                 guildChatWatchRepository.delete(watch);
             }
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .title("All Chat Watches Cleared")
                     .description("Removed %d watches.\n".formatted(watches.size())
                         + watches.stream()
@@ -342,7 +342,7 @@ public class WatchGuildCommand implements SlashCommand {
                 eventsList.setLength(eventsList.length() - 2);
             }
             return event.createFollowup()
-                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
+                .withEmbeds(populateIdentity(embed(event), profile)
                     .color(Color.SEA_GREEN)
                     .title("Player Watch Added")
                     .description("Notifications on `%s` events for `%s` will be sent to: %s".formatted(eventsList.toString(), profile.name(), channel.getMention()))
@@ -368,7 +368,7 @@ public class WatchGuildCommand implements SlashCommand {
                 if (watch.targetName().equalsIgnoreCase(playerName)) {
                     guildPlayerWatchRepository.delete(watch);
                     return event.createFollowup()
-                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), profile)
+                        .withEmbeds(populateIdentity(embed(event), profile)
                             .title("Player Watch Deleted")
                             .color(Color.SEA_GREEN)
                             .description("Player watch for `%s` deleted!".formatted(profile.name()))
@@ -426,7 +426,7 @@ public class WatchGuildCommand implements SlashCommand {
                 description = description.substring(0, 4000) + "\n... (truncated)";
             }
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .title("Player Watch List")
                     .description(description)
                     .color(Color.CYAN)
@@ -437,7 +437,7 @@ public class WatchGuildCommand implements SlashCommand {
                 guildPlayerWatchRepository.delete(watch);
             }
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .title("All Player Watches Cleared")
                     .description("Removed %d watches.\n".formatted(watches.size())
                         + watches.stream()

@@ -2,7 +2,6 @@ package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -53,7 +52,7 @@ public class NamesCommand implements SlashCommand {
             LOGGER.error("Error searching for names: {}", player, e);
             return error(event, "Error searching. Try again later");
         }
-        var builder = EmbedCreateSpec.builder()
+        var builder = embed(event)
             .title("Name Search")
             .addField("Searched Name", DiscordMarkdownEscape.escape(player), true)
             .addField("\u200B", "\u200B", true)

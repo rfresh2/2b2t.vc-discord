@@ -2,7 +2,6 @@ package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +54,7 @@ public class PlaytimeTopCommand implements SlashCommand {
                 result.deleteCharAt(result.length() - 1);
             }
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .title("Top Playtime")
                     .color(Color.CYAN)
                     .description(result.toString())

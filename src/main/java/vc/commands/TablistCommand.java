@@ -3,7 +3,6 @@ package vc.commands;
 import de.siegmar.fastcsv.writer.CsvWriter;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateFields;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
@@ -60,7 +59,7 @@ public class TablistCommand implements SlashCommand {
         }
         return event.createFollowup()
             .withFiles(MessageCreateFields.File.of("tablist.csv", new ByteArrayInputStream(bos.toByteArray())))
-            .withEmbeds(EmbedCreateSpec.builder()
+            .withEmbeds(embed(event)
                 .description(escape(response.getHeader()))
                 .addField("Player Count", entries.size()+"", false)
                 .color(Color.CYAN)

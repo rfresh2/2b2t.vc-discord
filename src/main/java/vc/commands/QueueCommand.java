@@ -2,7 +2,6 @@ package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -39,7 +38,7 @@ public class QueueCommand implements SlashCommand {
             }
             if (isNull(queuelength)) return error(event, "Unable to resolve queue length");
             return event.createFollowup()
-                .withEmbeds(EmbedCreateSpec.builder()
+                .withEmbeds(embed(event)
                     .color(Color.CYAN)
                     .addField("Prio", queuelength.getPrio().toString(), true)
                     .addField("Regular", queuelength.getRegular().toString(), true)

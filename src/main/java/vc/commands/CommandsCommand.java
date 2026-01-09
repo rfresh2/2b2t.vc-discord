@@ -2,7 +2,6 @@ package vc.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
@@ -30,7 +29,7 @@ public class CommandsCommand implements SlashCommand {
             .map(c -> "`/" + c.name() + "` -> " + c.description().toOptional().orElse(""))
             .toList();
         return event.createFollowup()
-            .withEmbeds(EmbedCreateSpec.builder()
+            .withEmbeds(embed(event)
                 .title("Commands")
                 .description(String.join("\n", commandInfos))
                 .color(Color.CYAN)

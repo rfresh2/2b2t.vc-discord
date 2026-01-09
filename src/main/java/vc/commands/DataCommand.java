@@ -3,7 +3,6 @@ package vc.commands;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateFields;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
@@ -53,7 +52,7 @@ public class DataCommand implements SlashCommand {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                     return event.createFollowup()
-                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                        .withEmbeds(populateIdentity(embed(event), identity)
                             .color(Color.RUBY)
                             .description("No Data")
                             .thumbnail(identity.getAvatarURL())
@@ -70,14 +69,14 @@ public class DataCommand implements SlashCommand {
         int dataCount = playerDataDump != null ? (int) playerDataDump.lines().count() : 0;
         if (playerDataDump == null || dataCount == 0)
             return event.createFollowup()
-                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                .withEmbeds(populateIdentity(embed(event), identity)
                     .color(Color.RUBY)
                     .description("No Data")
                     .thumbnail(identity.getAvatarURL())
                     .build());
         return event.createFollowup()
             .withFiles(MessageCreateFields.File.of(identity.name() + ".csv", new ByteArrayInputStream(playerDataDump.getBytes())))
-            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+            .withEmbeds(populateIdentity(embed(event), identity)
                 .addField("Data Count", ""+dataCount, true)
                 .description("CSV Generated!")
                 .color(Color.CYAN)

@@ -8,6 +8,8 @@ import discord4j.rest.util.Color;
 import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
 
+import java.time.Instant;
+
 /**
  * A simple interface defining our slash command class contract.
  *  a getName() method to provide the case-sensitive name of the command.
@@ -33,5 +35,15 @@ public interface SlashCommand {
             .addField("Player", identity.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true);
+    }
+
+    default EmbedCreateSpec.Builder defaultDecoration(final EmbedCreateSpec.Builder builder, DeferrableInteractionEvent event) {
+        return builder
+            .footer("Requested by @" + event.getUser().getUsername(), event.getUser().getAvatarUrl())
+            .timestamp(Instant.now());
+    }
+
+    default EmbedCreateSpec.Builder embed(DeferrableInteractionEvent event) {
+        return defaultDecoration(EmbedCreateSpec.builder(), event);
     }
 }

@@ -3,7 +3,6 @@ package vc.commands;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -55,7 +54,7 @@ public class PlaytimeCommand implements SlashCommand {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                     return event.createFollowup()
-                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                        .withEmbeds(populateIdentity(embed(event), identity)
                             .color(Color.RUBY)
                             .description("Never Played")
                             .thumbnail(identity.getAvatarURL())
@@ -71,7 +70,7 @@ public class PlaytimeCommand implements SlashCommand {
         }
         if (isNull(playtime))
             return event.createFollowup()
-                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                .withEmbeds(populateIdentity(embed(event), identity)
                     .color(Color.RUBY)
                     .description("Never Played")
                     .thumbnail(identity.getAvatarURL())
@@ -79,7 +78,7 @@ public class PlaytimeCommand implements SlashCommand {
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();
         String durationStr = formatDuration(playtimeSeconds);
         return event.createFollowup()
-            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+            .withEmbeds(populateIdentity(embed(event), identity)
                 .color(Color.CYAN)
                 .description(durationStr)
                 .thumbnail(identity.getAvatarURL())

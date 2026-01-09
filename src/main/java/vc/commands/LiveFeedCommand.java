@@ -48,7 +48,7 @@ public abstract class LiveFeedCommand implements SlashCommand {
                         }
                         liveFeed.enableFeed(guildId, channel.getId().asString());
                         return event.createFollowup()
-                            .withEmbeds(EmbedCreateSpec.builder()
+                            .withEmbeds(embed(event)
                                 .title(feedName() + " Enabled")
                                 .color(Color.CYAN)
                                 .addField("Channel", channel.getMention(), true)
@@ -61,7 +61,7 @@ public abstract class LiveFeedCommand implements SlashCommand {
             try {
                 liveFeed.disableFeed(guildId);
                 return event.createFollowup()
-                    .withEmbeds(EmbedCreateSpec.builder()
+                    .withEmbeds(embed(event)
                         .title(feedName() + " Disabled")
                         .color(Color.CYAN)
                         .build());

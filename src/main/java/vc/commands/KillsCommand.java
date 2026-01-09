@@ -6,7 +6,6 @@ import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -71,7 +70,7 @@ public class KillsCommand implements SlashCommand, ButtonCommand {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
                     return event.createFollowup()
-                        .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                        .withEmbeds(populateIdentity(embed(event), identity)
                             .color(Color.RUBY)
                             .description("No kills found")
                             .thumbnail(identity.getAvatarURL())
@@ -87,7 +86,7 @@ public class KillsCommand implements SlashCommand, ButtonCommand {
         }
         if (killsResponse == null || killsResponse.getKills() == null || killsResponse.getKills().isEmpty())
             return event.createFollowup()
-                .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+                .withEmbeds(populateIdentity(embed(event), identity)
                     .color(Color.RUBY)
                     .description("No kills found")
                     .thumbnail(identity.getAvatarURL())
@@ -107,7 +106,7 @@ public class KillsCommand implements SlashCommand, ButtonCommand {
         if (!result.isEmpty()) result.deleteCharAt(result.length() - 1); // cut off the last newline
         if (truncated.get()) LOGGER.warn("Truncated kills response");
         return event.createFollowup()
-            .withEmbeds(populateIdentity(EmbedCreateSpec.builder(), identity)
+            .withEmbeds(populateIdentity(embed(event), identity)
                 .color(Color.CYAN)
                 .description(result.toString())
                 .addField("Total", ""+killsResponse.getTotal(), true)
