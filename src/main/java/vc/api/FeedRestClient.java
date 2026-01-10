@@ -57,7 +57,7 @@ public class FeedRestClient {
             .uri(uri)
             .responseContent()
             .asString()
-            .timeout(Duration.ofDays(1))
+            .timeout(Duration.ofMinutes(2))
             .flatMapIterable(s -> Arrays.asList(s.split("\n")))
             .filter(s -> s.startsWith("data:"))
             .map(s -> s.substring("data:".length()).trim())
@@ -65,7 +65,10 @@ public class FeedRestClient {
             .map(s -> objectMapper.readValue(s, clazz))
             .retryWhen(Retry.fixedDelay(Long.MAX_VALUE, Duration.ofSeconds(2))
                 .doBeforeRetry(retrySignal ->
-                    LOGGER.warn("Feed {} reconnecting (error: {})", uri, retrySignal.failure().getMessage())))
-            .onErrorContinue((ex, s) -> LOGGER.error("Error processing {} data: {}", uri, s, ex));
+                    LOGGER.warn("Feed {} reconnecting (reason: {})", uri,
+                        retrySignal.failure() != null ? retrySignal.failure().getMessage() : "Connection closed")))
+            .doOnError(e -> LOGGER.error("Feed {} error", uri, e))
+            .onErrorComplete()
+            .repeat();
     }
 }
