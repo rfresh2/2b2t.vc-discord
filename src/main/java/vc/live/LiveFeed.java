@@ -1,6 +1,5 @@
 package vc.live;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -13,14 +12,15 @@ import discord4j.discordjson.json.MessageCreateRequest;
 import discord4j.rest.entity.RestChannel;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.MultipartRequest;
-import org.redisson.api.RReliableTopic;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.annotation.Scheduled;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
+import vc.api.FeedRestClient;
 import vc.config.live_feed.LiveFeedRepository;
 import vc.config.live_feed.model.LiveFeedConfig;
 
@@ -37,38 +37,38 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
-import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public abstract class LiveFeed implements DisposableBean {
     private final Logger LOGGER = getLogger(getClass().getSimpleName());
     private static final int MESSAGE_Q_CAPACITY = 1000;
-    protected final RedisClient redisClient;
     protected final GatewayDiscordClient discordClient;
     protected final Map<String, RestChannel> liveChannels;
-    protected final Map<InputQueue, TopicListener> inputTopics;
+    protected final Map<InputQueue, Disposable> fluxListeners;
     protected final LiveFeedRepository liveFeedRepository;
     private final PriorityBlockingQueue<Message> messageQueue;
     private final ObjectMapper objectMapper;
     private final Cache<String, AtomicInteger> guildMessageSendFailCountCache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, MINUTES)
         .build();
+    protected final FeedRestClient feedRestClient;
 
     public LiveFeed(
-        final RedisClient redisClient,
+        final FeedRestClient feedRestClient,
         final GatewayDiscordClient discordClient,
         final LiveFeedRepository liveFeedRepository,
         final ObjectMapper objectMapper,
         final boolean liveFeedEnabled
     ) {
-        this.redisClient = redisClient;
+        this.feedRestClient = feedRestClient;
         this.discordClient = discordClient;
         this.liveFeedRepository = liveFeedRepository;
         this.liveChannels = new ConcurrentHashMap<>();
         this.messageQueue = new PriorityBlockingQueue<>(MESSAGE_Q_CAPACITY);
-        this.inputTopics = new ConcurrentHashMap<>();
+        this.fluxListeners = new ConcurrentHashMap<>();
         this.objectMapper = objectMapper;
         if (liveFeedEnabled) {
             LOGGER.info("Starting {} live feed", getClass().getSimpleName());
@@ -78,11 +78,6 @@ public abstract class LiveFeed implements DisposableBean {
             LOGGER.info("Live feed {} disabled", getClass().getSimpleName());
         }
     }
-
-    record TopicListener(
-        RReliableTopic topic,
-        String id
-    ) {}
 
     protected abstract List<LiveFeedConfig> getAllEnabled();
     protected abstract boolean channelEnabledPredicate(final LiveFeedConfig guildConfigRecord);
@@ -95,7 +90,8 @@ public abstract class LiveFeed implements DisposableBean {
     protected abstract List<InputQueue> inputQueues();
 
     record InputQueue<T>(
-        String topicName,
+        String name,
+        Supplier<Flux<T>> flux,
         Class<T> deserializedType,
         Function<T, EmbedData> embedBuilderFunction,
         Function<T, Long> timestampFunction
@@ -109,38 +105,32 @@ public abstract class LiveFeed implements DisposableBean {
     }
 
     private void registerInputQueue(final InputQueue inputQueue) {
-        final RReliableTopic topic = this.redisClient.getTopic(inputQueue.topicName());
-        String id = topic.addListener(String.class, (channel, message) -> topicMessageListener(inputQueue, message));
-        inputTopics.put(inputQueue, new TopicListener(topic, id));
-        LOGGER.info("Registered {} topic listener {}", inputQueue.topicName(), id);
+        var disposable = ((Flux) inputQueue.flux().get()).subscribe((v) -> fluxListener(inputQueue, v));
+        fluxListeners.put(inputQueue, disposable);
+        LOGGER.info("Registered {} listener", inputQueue.name());
     }
 
-    private void topicMessageListener(final InputQueue inputQueue, final String message) {
-        try {
-            var data = objectMapper.readValue(message, inputQueue.deserializedType());
-            synchronized (this.messageQueue) {
-                this.messageQueue.add(new Message((EmbedData) inputQueue.embedBuilderFunction().apply(data), (long) inputQueue.timestampFunction().apply(data)));
-            }
-        } catch (JsonProcessingException e) {
-            LOGGER.error("Failed to deserialize message: {}", message, e);
+    private void fluxListener(final InputQueue inputQueue, final Object value) {
+        synchronized (this.messageQueue) {
+            this.messageQueue.add(new Message((EmbedData) inputQueue.embedBuilderFunction().apply(value), (long) inputQueue.timestampFunction().apply(value)));
         }
     }
 
-    @Scheduled(initialDelay = 1, fixedRate = 1, timeUnit = HOURS)
-    private void refreshTopicListeners() {
-        for (var entry : inputTopics.entrySet()) {
-            try {
-                var topicListener = entry.getValue();
-                topicListener.topic().removeListener(topicListener.id());
-                String id = topicListener.topic().addListener(String.class, (channel, message) -> topicMessageListener(entry.getKey(), message));
-                inputTopics.remove(entry.getKey());
-                inputTopics.put(entry.getKey(), new TopicListener(topicListener.topic(), id));
-                LOGGER.info("Refreshed {} topic listener {}", entry.getKey().topicName(), id);
-            } catch (Exception e) {
-                LOGGER.error("Error refreshing topic listener for {}", entry.getKey().topicName(), e);
-            }
-        }
-    }
+//    @Scheduled(initialDelay = 15, fixedRate = 15, timeUnit = MINUTES)
+//    private void refreshFluxListeners() {
+//        for (var entry : fluxListeners.entrySet()) {
+//            try {
+//                var topicListener = entry.getValue();
+//                topicListener.dispose();
+//                fluxListeners.remove(entry.getKey());
+//                var disposable = ((Flux) entry.getKey().flux().get()).subscribe(v -> fluxListener(entry.getKey(), v));
+//                fluxListeners.put(entry.getKey(), disposable);
+//                LOGGER.info("Refreshed {} flux listener", entry.getKey().name());
+//            } catch (Exception e) {
+//                LOGGER.error("Error refreshing flux listener for {}", entry.getKey().name(), e);
+//            }
+//        }
+//    }
 
     private String feedName() {
         return getClass().getSimpleName();
@@ -323,12 +313,6 @@ public abstract class LiveFeed implements DisposableBean {
     @Override
     public void destroy() {
         LOGGER.info("Shutting down {} live feed", getClass().getSimpleName());
-        inputTopics.values().forEach(topicListener -> {
-            try {
-                topicListener.topic.removeListener(topicListener.id);
-            } catch (final Exception e) {
-                LOGGER.error("Error removing topic listener for {}", topicListener.topic.getName(), e);
-            }
-        });
+        fluxListeners.values().forEach(Disposable::dispose);
     }
 }

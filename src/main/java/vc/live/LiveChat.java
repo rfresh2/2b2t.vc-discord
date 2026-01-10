@@ -7,6 +7,7 @@ import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import vc.api.FeedRestClient;
 import vc.config.live_feed.LiveFeedRepository;
 import vc.config.live_feed.model.LiveFeedConfig;
 import vc.live.dto.ChatsRecord;
@@ -24,7 +25,7 @@ public class LiveChat extends LiveFeed {
     //  so no restart msgs
 
     public LiveChat(
-        final RedisClient redisClient,
+        final FeedRestClient feedRestClient,
         final GatewayDiscordClient discordClient,
         final LiveFeedRepository liveFeedRepository,
         final ObjectMapper objectMapper,
@@ -32,7 +33,7 @@ public class LiveChat extends LiveFeed {
         final String liveFeedsEnabled
     ) {
         super(
-            redisClient,
+            feedRestClient,
             discordClient,
             liveFeedRepository,
             objectMapper,
@@ -67,8 +68,8 @@ public class LiveChat extends LiveFeed {
 
     @Override
     protected List<InputQueue> inputQueues() {
-        return asList(new InputQueue<>("ChatsTopic", ChatsRecord.class, this::getChatEmbed, this::getChatTimestamp),
-            new InputQueue<>("DeathsTopic", DeathsRecord.class, this::getDeathEmbed, this::getDeathTimestamp));
+        return asList(new InputQueue<>("Chats", feedRestClient::getChats, ChatsRecord.class, this::getChatEmbed, this::getChatTimestamp),
+            new InputQueue<>("Deaths", feedRestClient::getDeaths, DeathsRecord.class, this::getDeathEmbed, this::getDeathTimestamp));
     }
 
     private EmbedData getChatEmbed(final ChatsRecord chat) {

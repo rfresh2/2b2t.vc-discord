@@ -1,6 +1,7 @@
 package vc.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -31,7 +32,7 @@ public class VcApi {
             .setReadTimeout(Duration.ofSeconds(30))
             .setRequestInterceptor((builder) -> builder.headers(
                 "X-API-Key", apiKey,
-                "User-Agent", "2b2t.vc-discord"
+                HttpHeaderNames.USER_AGENT.toString(), "2b2t.vc-discord"
             ));
     }
 
@@ -93,5 +94,10 @@ public class VcApi {
     @Bean
     public PriorityPlayersApi priorityPlayersApi(final ApiClient apiClient) {
         return new PriorityPlayersApi(apiClient);
+    }
+
+    @Bean
+    public FeedApi feedApi(final ApiClient apiClient) {
+        return new FeedApi(apiClient);
     }
 }

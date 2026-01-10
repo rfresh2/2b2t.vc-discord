@@ -7,6 +7,7 @@ import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import vc.api.FeedRestClient;
 import vc.config.live_feed.LiveFeedRepository;
 import vc.config.live_feed.model.LiveFeedConfig;
 import vc.live.dto.ConnectionsRecord;
@@ -19,7 +20,7 @@ import static vc.util.DiscordMarkdownEscape.escape;
 @Component
 public class LiveConnections extends LiveFeed {
     public LiveConnections(
-        final RedisClient redisClient,
+        final FeedRestClient feedRestClient,
         final GatewayDiscordClient discordClient,
         final LiveFeedRepository liveFeedRepository,
         final ObjectMapper objectMapper,
@@ -27,7 +28,7 @@ public class LiveConnections extends LiveFeed {
         final String liveFeedsEnabled
     ) {
         super(
-            redisClient,
+            feedRestClient,
             discordClient,
             liveFeedRepository,
             objectMapper,
@@ -63,7 +64,8 @@ public class LiveConnections extends LiveFeed {
     @Override
     protected List<InputQueue> inputQueues() {
         return List.of(new InputQueue<>(
-            "ConnectionsTopic",
+            "Connections",
+            feedRestClient::getConnections,
             ConnectionsRecord.class,
             this::buildConnectionsEmbed,
             this::getConnectionTimestamp)

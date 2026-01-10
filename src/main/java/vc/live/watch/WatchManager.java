@@ -10,16 +10,17 @@ import discord4j.core.util.MentionUtil;
 import discord4j.discordjson.json.UserGuildData;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.Color;
-import org.redisson.api.RReliableTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
+import vc.api.FeedRestClient;
 import vc.api.model.ProfileDataImpl;
 import vc.config.watch.GuildChatWatchRepository;
 import vc.config.watch.GuildPlayerWatchRepository;
@@ -29,7 +30,6 @@ import vc.config.watch.model.GuildPlayerWatchConfig;
 import vc.config.watch.model.GuildWatch;
 import vc.config.watch.model.UserPlayerWatchConfig;
 import vc.config.watch.model.UserWatch;
-import vc.live.RedisClient;
 import vc.live.dto.ChatsRecord;
 import vc.live.dto.ConnectionsRecord;
 import vc.live.dto.DeathsRecord;
@@ -45,7 +45,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static java.util.concurrent.TimeUnit.HOURS;
 import static vc.util.DiscordMarkdownEscape.escape;
 
 @Component
@@ -55,7 +54,7 @@ public class WatchManager implements DisposableBean {
     private final GuildPlayerWatchRepository guildPlayerWatchRepository;
     private final UserChatWatchRepository userChatWatchRepository;
     private final UserPlayerWatchRepository userPlayerWatchRepository;
-    private final RedisClient redisClient;
+    protected final FeedRestClient feedRestClient;
     private final GatewayDiscordClient discordClient;
     private final ObjectMapper objectMapper;
     private final boolean watchesEnabled;
@@ -65,19 +64,16 @@ public class WatchManager implements DisposableBean {
     private final ConcurrentLinkedDeque<ChatsRecord> chatsKeywordQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<DeathsRecord> deathsQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<DeathsRecord> killsQueue = new ConcurrentLinkedDeque<>();
-    RReliableTopic connectionsTopic;
-    RReliableTopic chatsTopic;
-    RReliableTopic deathsTopic;
-    String connectionsTopicId;
-    String chatsTopicId;
-    String deathsTopicId;
+    private Disposable connectionsDisposable;
+    private Disposable chatsDisposable;
+    private Disposable deathsDisposable;
 
     public WatchManager(
         final GuildChatWatchRepository guildChatWatchRepository,
         final GuildPlayerWatchRepository guildPlayerWatchRepository,
         final UserChatWatchRepository userChatWatchRepository,
         final UserPlayerWatchRepository userPlayerWatchRepository,
-        final RedisClient redisClient,
+        final FeedRestClient feedRestClient,
         final GatewayDiscordClient discordClient,
         final ObjectMapper objectMapper,
         @Value("${WATCHES}")
@@ -87,7 +83,7 @@ public class WatchManager implements DisposableBean {
         this.guildPlayerWatchRepository = guildPlayerWatchRepository;
         this.userChatWatchRepository = userChatWatchRepository;
         this.userPlayerWatchRepository = userPlayerWatchRepository;
-        this.redisClient = redisClient;
+        this.feedRestClient = feedRestClient;
         this.discordClient = discordClient;
         this.objectMapper = objectMapper;
         this.watchesEnabled = Boolean.parseBoolean(watchesEnabled);
@@ -97,12 +93,12 @@ public class WatchManager implements DisposableBean {
             LOGGER.info("Loaded {} guild player watch configs", guildPlayerWatchRepository.getAll().size());
             LOGGER.info("Loaded {} user chat watch configs", userChatWatchRepository.getAll().size());
             LOGGER.info("Loaded {} guild chat watch configs", guildChatWatchRepository.getAll().size());
-            connectionsTopic = this.redisClient.getTopic("ConnectionsTopic");
-            connectionsTopicId = connectionsTopic.addListener(String.class, (channel, msg) -> connectionsTopicListener(msg));
-            chatsTopic = this.redisClient.getTopic("ChatsTopic");
-            chatsTopicId = chatsTopic.addListener(String.class, (channel, msg) -> chatsTopicListener(msg));
-            deathsTopic = this.redisClient.getTopic("DeathsTopic");
-            deathsTopicId = deathsTopic.addListener(String.class, (channel, msg) -> deathsTopicListener(msg));
+            var connectionsFlux = this.feedRestClient.getConnections();
+            connectionsDisposable = connectionsFlux.subscribe(this::connectionsListener);
+            var chatsFlux = this.feedRestClient.getChats();
+            chatsDisposable = chatsFlux.subscribe(this::chatsListener);
+            var deathsFlux = this.feedRestClient.getDeaths();
+            deathsDisposable = deathsFlux.subscribe(this::deathsListener);
             LOGGER.info("Watch manager initialized");
         } else {
             LOGGER.info("Watch manager disabled");
@@ -216,22 +212,22 @@ public class WatchManager implements DisposableBean {
         }
     }
 
-    @Scheduled(initialDelay = 1, fixedRate = 1, timeUnit = HOURS)
-    private void refreshTopicListeners() {
-        if (!watchesEnabled) return;
-        try {
-            LOGGER.info("Refreshing watch topic listeners");
-            connectionsTopic.removeListener(connectionsTopicId);
-            connectionsTopicId = connectionsTopic.addListener(String.class, (channel, msg) -> connectionsTopicListener(msg));
-            chatsTopic.removeListener(chatsTopicId);
-            chatsTopicId = chatsTopic.addListener(String.class, (channel, msg) -> chatsTopicListener(msg));
-            deathsTopic.removeListener(deathsTopicId);
-            deathsTopicId = deathsTopic.addListener(String.class, (channel, msg) -> deathsTopicListener(msg));
-            LOGGER.info("Watch topic listeners refreshed");
-        } catch (Exception e) {
-            LOGGER.error("Failed to refresh watch topic listeners", e);
-        }
-    }
+//    @Scheduled(initialDelay = 1, fixedRate = 1, timeUnit = HOURS)
+//    private void refreshListeners() {
+//        if (!watchesEnabled) return;
+//        try {
+//            LOGGER.info("Refreshing watch listeners");
+//            if (connectionsDisposable != null) connectionsDisposable.dispose();
+//            connectionsDisposable = feedRestClient.getConnections().subscribe(this::connectionsListener);
+//            if (chatsDisposable != null) chatsDisposable.dispose();
+//            chatsDisposable = feedRestClient.getChats().subscribe(this::chatsListener);
+//            if (deathsDisposable != null) deathsDisposable.dispose();
+//            deathsDisposable = feedRestClient.getDeaths().subscribe(this::deathsListener);
+//            LOGGER.info("Watch listeners refreshed");
+//        } catch (Exception e) {
+//            LOGGER.error("Failed to refresh watch listeners", e);
+//        }
+//    }
 
     private <T> void processQueue(
         String id,
@@ -624,59 +620,32 @@ public class WatchManager implements DisposableBean {
             .build();
     }
 
-    private void connectionsTopicListener(final String msg) {
-        try {
-            var data = objectMapper.readValue(msg, ConnectionsRecord.class);
-            if (data.connection() == Connectiontype.JOIN) {
-                joinsQueue.add(data);
-            } else if (data.connection() == Connectiontype.LEAVE) {
-                leavesQueue.add(data);
-            }
-        } catch (Exception e) {
-            LOGGER.error("Failed to parse ConnectionsRecord from Redis message: {}", msg, e);
+    private void connectionsListener(final ConnectionsRecord data) {
+        if (data.connection() == Connectiontype.JOIN) {
+            joinsQueue.add(data);
+        } else if (data.connection() == Connectiontype.LEAVE) {
+            leavesQueue.add(data);
         }
     }
 
-    private void chatsTopicListener(final String msg) {
-        try {
-            var data = objectMapper.readValue(msg, ChatsRecord.class);
-            chatsQueue.add(data);
-            chatsKeywordQueue.add(data);
-        } catch (Exception e) {
-            LOGGER.error("Failed to parse ChatsRecord from Redis message: {}", msg, e);
-        }
+    private void chatsListener(final ChatsRecord data) {
+        chatsQueue.add(data);
+        chatsKeywordQueue.add(data);
     }
 
-    private void deathsTopicListener(final String msg) {
-        try {
-            var data = objectMapper.readValue(msg, DeathsRecord.class);
-            deathsQueue.add(data);
-            if (data.killerPlayerUuid() != null) {
-                killsQueue.add(data);
-            }
-        } catch (Exception e) {
-            LOGGER.error("Failed to parse DeathsRecord from Redis message: {}", msg, e);
+    private void deathsListener(final DeathsRecord data) {
+        deathsQueue.add(data);
+        if (data.killerPlayerUuid() != null) {
+            killsQueue.add(data);
         }
     }
 
     @Override
     public void destroy() throws Exception {
-        LOGGER.info("Shutting down watch topics");
-        try {
-            connectionsTopic.removeListener(connectionsTopicId);
-        } catch (Exception e) {
-            LOGGER.error("Failed to remove Redis topic listener: {}", connectionsTopicId, e);
-        }
-        try {
-            chatsTopic.removeListener(chatsTopicId);
-        } catch (Exception e) {
-            LOGGER.error("Failed to remove Redis topic listener: {}", chatsTopicId, e);
-        }
-        try {
-            deathsTopic.removeListener(deathsTopicId);
-        } catch (Exception e) {
-            LOGGER.error("Failed to remove Redis topic listener: {}", deathsTopicId, e);
-        }
+        LOGGER.info("Shutting down watch listeners");
+        if (connectionsDisposable != null) connectionsDisposable.dispose();
+        if (chatsDisposable != null) chatsDisposable.dispose();
+        if (deathsDisposable != null) deathsDisposable.dispose();
     }
 
     public void onAllGuildsLoaded(final List<UserGuildData> guilds) {
