@@ -57,7 +57,7 @@ public class FeedRestClient {
             .uri(uri)
             .responseContent()
             .asString()
-            .timeout(Duration.ofMinutes(2))
+            .timeout(Duration.ofMinutes(5))
             .flatMapIterable(s -> Arrays.asList(s.split("\n")))
             .filter(s -> s.startsWith("data:"))
             .map(s -> s.substring("data:".length()).trim())
