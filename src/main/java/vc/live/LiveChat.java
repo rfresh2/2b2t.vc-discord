@@ -83,7 +83,7 @@ public class LiveChat extends LiveFeed {
     }
 
     protected long getChatTimestamp(final ChatsRecord chat) {
-        return chat.time().toEpochSecond();
+        return chat.time().toInstant().toEpochMilli();
     }
 
     private EmbedData getDeathEmbed(final DeathsRecord death) {
@@ -97,6 +97,6 @@ public class LiveChat extends LiveFeed {
     }
 
     protected long getDeathTimestamp(final DeathsRecord death) {
-        return death.time().toEpochSecond();
+        return death.time().toInstant().toEpochMilli();
     }
 }

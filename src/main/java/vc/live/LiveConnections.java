@@ -84,6 +84,6 @@ public class LiveConnections extends LiveFeed {
     }
 
     protected long getConnectionTimestamp(final ConnectionsRecord con) {
-        return con.time().toEpochSecond();
+        return con.time().toInstant().toEpochMilli();
     }
 }

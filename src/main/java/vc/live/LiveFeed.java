@@ -202,9 +202,9 @@ public abstract class LiveFeed implements DisposableBean {
             final List<EmbedData> embeds = new ArrayList<>(4);
             synchronized (this.messageQueue) {
                 Message message;
-                var now = Instant.now().getEpochSecond();
+                var now = Instant.now().toEpochMilli();
                 while (embeds.size() < 10 && (message = messageQueue.poll()) != null) {
-                    if (now - message.timestamp > MINUTES.toSeconds(20)) continue;
+                    if (now - message.timestamp > MINUTES.toMillis(20)) continue;
                     embeds.add(message.embedData());
                 }
             }
