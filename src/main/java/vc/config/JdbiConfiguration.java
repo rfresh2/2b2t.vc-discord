@@ -42,7 +42,7 @@ public class JdbiConfiguration {
         @Value("${DB_REMOTE_DOWNLOAD}") final String dbRemoteDownload,
         Connection connection
     ) {
-        if (Boolean.getBoolean(dbRemoteDownload)) {
+        if (Boolean.parseBoolean(dbRemoteDownload)) {
             remoteDatabaseBackup.syncFromRemote();
         }
         Jdbi jdbi = Jdbi.create(connection);

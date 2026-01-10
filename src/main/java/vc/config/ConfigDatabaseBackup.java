@@ -43,7 +43,7 @@ public class ConfigDatabaseBackup implements DisposableBean {
         this.connection = connection;
         this.jdbi = jdbi;
         this.remoteDatabaseBackup = remoteDatabaseBackup;
-        this.dbRemoteBackup = Boolean.getBoolean(dbRemoteBackup);
+        this.dbRemoteBackup = Boolean.parseBoolean(dbRemoteBackup);
     }
 
     @Override
