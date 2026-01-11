@@ -1,6 +1,5 @@
 package vc.live.watch;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.entity.User;
@@ -12,15 +11,12 @@ import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
-import vc.api.FeedRestClient;
 import vc.api.model.ProfileDataImpl;
 import vc.config.watch.GuildChatWatchRepository;
 import vc.config.watch.GuildPlayerWatchRepository;
@@ -30,6 +26,7 @@ import vc.config.watch.model.GuildPlayerWatchConfig;
 import vc.config.watch.model.GuildWatch;
 import vc.config.watch.model.UserPlayerWatchConfig;
 import vc.config.watch.model.UserWatch;
+import vc.live.FeedApiManager;
 import vc.live.dto.ChatsRecord;
 import vc.live.dto.ConnectionsRecord;
 import vc.live.dto.DeathsRecord;
@@ -48,15 +45,14 @@ import java.util.function.Supplier;
 import static vc.util.DiscordMarkdownEscape.escape;
 
 @Component
-public class WatchManager implements DisposableBean {
+public class WatchManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(WatchManager.class);
     private final GuildChatWatchRepository guildChatWatchRepository;
     private final GuildPlayerWatchRepository guildPlayerWatchRepository;
     private final UserChatWatchRepository userChatWatchRepository;
     private final UserPlayerWatchRepository userPlayerWatchRepository;
-    protected final FeedRestClient feedRestClient;
+    private final FeedApiManager feedListener;
     private final GatewayDiscordClient discordClient;
-    private final ObjectMapper objectMapper;
     private final boolean watchesEnabled;
     private final ConcurrentLinkedDeque<ConnectionsRecord> joinsQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<ConnectionsRecord> leavesQueue = new ConcurrentLinkedDeque<>();
@@ -64,18 +60,14 @@ public class WatchManager implements DisposableBean {
     private final ConcurrentLinkedDeque<ChatsRecord> chatsKeywordQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<DeathsRecord> deathsQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<DeathsRecord> killsQueue = new ConcurrentLinkedDeque<>();
-    private Disposable connectionsDisposable;
-    private Disposable chatsDisposable;
-    private Disposable deathsDisposable;
 
     public WatchManager(
         final GuildChatWatchRepository guildChatWatchRepository,
         final GuildPlayerWatchRepository guildPlayerWatchRepository,
         final UserChatWatchRepository userChatWatchRepository,
         final UserPlayerWatchRepository userPlayerWatchRepository,
-        final FeedRestClient feedRestClient,
+        final FeedApiManager feedListener,
         final GatewayDiscordClient discordClient,
-        final ObjectMapper objectMapper,
         @Value("${WATCHES}")
         final String watchesEnabled
     ) {
@@ -83,9 +75,8 @@ public class WatchManager implements DisposableBean {
         this.guildPlayerWatchRepository = guildPlayerWatchRepository;
         this.userChatWatchRepository = userChatWatchRepository;
         this.userPlayerWatchRepository = userPlayerWatchRepository;
-        this.feedRestClient = feedRestClient;
+        this.feedListener = feedListener;
         this.discordClient = discordClient;
-        this.objectMapper = objectMapper;
         this.watchesEnabled = Boolean.parseBoolean(watchesEnabled);
         if (this.watchesEnabled) {
             LOGGER.info("Watch manager enabled");
@@ -93,12 +84,9 @@ public class WatchManager implements DisposableBean {
             LOGGER.info("Loaded {} guild player watch configs", guildPlayerWatchRepository.getAll().size());
             LOGGER.info("Loaded {} user chat watch configs", userChatWatchRepository.getAll().size());
             LOGGER.info("Loaded {} guild chat watch configs", guildChatWatchRepository.getAll().size());
-            var connectionsFlux = this.feedRestClient.getConnections();
-            connectionsDisposable = connectionsFlux.subscribe(this::connectionsListener);
-            var chatsFlux = this.feedRestClient.getChats();
-            chatsDisposable = chatsFlux.subscribe(this::chatsListener);
-            var deathsFlux = this.feedRestClient.getDeaths();
-            deathsDisposable = deathsFlux.subscribe(this::deathsListener);
+            this.feedListener.addConnectionListener(this::connectionsListener);
+            this.feedListener.addChatListener(this::chatsListener);
+            this.feedListener.addDeathsListener(this::deathsListener);
             LOGGER.info("Watch manager initialized");
         } else {
             LOGGER.info("Watch manager disabled");
@@ -211,23 +199,6 @@ public class WatchManager implements DisposableBean {
             LOGGER.error("Error while processing chat keyword watch queue", e);
         }
     }
-
-//    @Scheduled(initialDelay = 1, fixedRate = 1, timeUnit = HOURS)
-//    private void refreshListeners() {
-//        if (!watchesEnabled) return;
-//        try {
-//            LOGGER.info("Refreshing watch listeners");
-//            if (connectionsDisposable != null) connectionsDisposable.dispose();
-//            connectionsDisposable = feedRestClient.getConnections().subscribe(this::connectionsListener);
-//            if (chatsDisposable != null) chatsDisposable.dispose();
-//            chatsDisposable = feedRestClient.getChats().subscribe(this::chatsListener);
-//            if (deathsDisposable != null) deathsDisposable.dispose();
-//            deathsDisposable = feedRestClient.getDeaths().subscribe(this::deathsListener);
-//            LOGGER.info("Watch listeners refreshed");
-//        } catch (Exception e) {
-//            LOGGER.error("Failed to refresh watch listeners", e);
-//        }
-//    }
 
     private <T> void processQueue(
         String id,
@@ -638,14 +609,6 @@ public class WatchManager implements DisposableBean {
         if (data.killerPlayerUuid() != null) {
             killsQueue.add(data);
         }
-    }
-
-    @Override
-    public void destroy() throws Exception {
-        LOGGER.info("Shutting down watch listeners");
-        if (connectionsDisposable != null) connectionsDisposable.dispose();
-        if (chatsDisposable != null) chatsDisposable.dispose();
-        if (deathsDisposable != null) deathsDisposable.dispose();
     }
 
     public void onAllGuildsLoaded(final List<UserGuildData> guilds) {

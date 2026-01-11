@@ -1,6 +1,5 @@
 package vc.live;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
@@ -13,14 +12,11 @@ import discord4j.rest.entity.RestChannel;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.MultipartRequest;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.annotation.Scheduled;
-import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
-import vc.api.FeedRestClient;
 import vc.config.live_feed.LiveFeedRepository;
 import vc.config.live_feed.model.LiveFeedConfig;
 
@@ -36,40 +32,35 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public abstract class LiveFeed implements DisposableBean {
+public abstract class LiveFeed {
     private final Logger LOGGER = getLogger(getClass().getSimpleName());
     private static final int MESSAGE_Q_CAPACITY = 1000;
     protected final GatewayDiscordClient discordClient;
     protected final Map<String, RestChannel> liveChannels;
-    protected final Map<InputQueue, Disposable> fluxListeners;
     protected final LiveFeedRepository liveFeedRepository;
     private final PriorityBlockingQueue<Message> messageQueue;
-    private final ObjectMapper objectMapper;
     private final Cache<String, AtomicInteger> guildMessageSendFailCountCache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, MINUTES)
         .build();
-    protected final FeedRestClient feedRestClient;
+    protected final FeedApiManager feedListener;
 
     public LiveFeed(
-        final FeedRestClient feedRestClient,
+        final FeedApiManager feedListener,
         final GatewayDiscordClient discordClient,
         final LiveFeedRepository liveFeedRepository,
-        final ObjectMapper objectMapper,
         final boolean liveFeedEnabled
     ) {
-        this.feedRestClient = feedRestClient;
+        this.feedListener = feedListener;
         this.discordClient = discordClient;
         this.liveFeedRepository = liveFeedRepository;
         this.liveChannels = new ConcurrentHashMap<>();
         this.messageQueue = new PriorityBlockingQueue<>(MESSAGE_Q_CAPACITY);
-        this.fluxListeners = new ConcurrentHashMap<>();
-        this.objectMapper = objectMapper;
         if (liveFeedEnabled) {
             LOGGER.info("Starting {} live feed", getClass().getSimpleName());
             syncChannels();
@@ -80,7 +71,7 @@ public abstract class LiveFeed implements DisposableBean {
     }
 
     protected abstract List<LiveFeedConfig> getAllEnabled();
-    protected abstract boolean channelEnabledPredicate(final LiveFeedConfig guildConfigRecord);
+
     protected abstract String liveChannelId(final LiveFeedConfig guildConfigRecord);
 
     protected abstract LiveFeedConfig disableRecordInternal(final LiveFeedConfig in);
@@ -91,11 +82,12 @@ public abstract class LiveFeed implements DisposableBean {
 
     record InputQueue<T>(
         String name,
-        Supplier<Flux<T>> flux,
+        Consumer<Consumer> feedConsumer,
         Class<T> deserializedType,
         Function<T, EmbedData> embedBuilderFunction,
         Function<T, Long> timestampFunction
-    ) {}
+    ) {
+    }
 
     record Message(EmbedData embedData, long timestamp) implements Comparable<Message> {
         @Override
@@ -105,32 +97,15 @@ public abstract class LiveFeed implements DisposableBean {
     }
 
     private void registerInputQueue(final InputQueue inputQueue) {
-        var disposable = ((Flux) inputQueue.flux().get()).subscribe((v) -> fluxListener(inputQueue, v));
-        fluxListeners.put(inputQueue, disposable);
+        ((Consumer<Consumer>) inputQueue.feedConsumer()).accept(v -> inputQueueListener(inputQueue, v));
         LOGGER.info("Registered {} listener", inputQueue.name());
     }
 
-    private void fluxListener(final InputQueue inputQueue, final Object value) {
+    private void inputQueueListener(final InputQueue inputQueue, final Object value) {
         synchronized (this.messageQueue) {
             this.messageQueue.add(new Message((EmbedData) inputQueue.embedBuilderFunction().apply(value), (long) inputQueue.timestampFunction().apply(value)));
         }
     }
-
-//    @Scheduled(initialDelay = 15, fixedRate = 15, timeUnit = MINUTES)
-//    private void refreshFluxListeners() {
-//        for (var entry : fluxListeners.entrySet()) {
-//            try {
-//                var topicListener = entry.getValue();
-//                topicListener.dispose();
-//                fluxListeners.remove(entry.getKey());
-//                var disposable = ((Flux) entry.getKey().flux().get()).subscribe(v -> fluxListener(entry.getKey(), v));
-//                fluxListeners.put(entry.getKey(), disposable);
-//                LOGGER.info("Refreshed {} flux listener", entry.getKey().name());
-//            } catch (Exception e) {
-//                LOGGER.error("Error refreshing flux listener for {}", entry.getKey().name(), e);
-//            }
-//        }
-//    }
 
     private String feedName() {
         return getClass().getSimpleName();
@@ -308,11 +283,5 @@ public abstract class LiveFeed implements DisposableBean {
     public void onAllGuildsLoaded() {
         syncChannels();
         LOGGER.info("Loaded {} live guilds", liveChannels.size());
-    }
-
-    @Override
-    public void destroy() {
-        LOGGER.info("Shutting down {} live feed", getClass().getSimpleName());
-        fluxListeners.values().forEach(Disposable::dispose);
     }
 }

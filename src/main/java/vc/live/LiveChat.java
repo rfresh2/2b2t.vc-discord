@@ -1,13 +1,11 @@
 package vc.live;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import vc.api.FeedRestClient;
 import vc.config.live_feed.LiveFeedRepository;
 import vc.config.live_feed.model.LiveFeedConfig;
 import vc.live.dto.ChatsRecord;
@@ -25,18 +23,16 @@ public class LiveChat extends LiveFeed {
     //  so no restart msgs
 
     public LiveChat(
-        final FeedRestClient feedRestClient,
+        final FeedApiManager feedListener,
         final GatewayDiscordClient discordClient,
         final LiveFeedRepository liveFeedRepository,
-        final ObjectMapper objectMapper,
         @Value("${LIVE_FEEDS}")
         final String liveFeedsEnabled
     ) {
         super(
-            feedRestClient,
+            feedListener,
             discordClient,
             liveFeedRepository,
-            objectMapper,
             Boolean.parseBoolean(liveFeedsEnabled)
         );
     }
@@ -44,11 +40,6 @@ public class LiveChat extends LiveFeed {
     @Override
     protected List<LiveFeedConfig> getAllEnabled() {
         return liveFeedRepository.getByLiveChatEnabled();
-    }
-
-    @Override
-    protected boolean channelEnabledPredicate(final LiveFeedConfig guildConfigRecord) {
-        return guildConfigRecord.liveChatEnabled();
     }
 
     @Override
@@ -68,8 +59,8 @@ public class LiveChat extends LiveFeed {
 
     @Override
     protected List<InputQueue> inputQueues() {
-        return asList(new InputQueue<>("Chats", feedRestClient::getChats, ChatsRecord.class, this::getChatEmbed, this::getChatTimestamp),
-            new InputQueue<>("Deaths", feedRestClient::getDeaths, DeathsRecord.class, this::getDeathEmbed, this::getDeathTimestamp));
+        return asList(new InputQueue<>("Chats", feedListener::addChatListener, ChatsRecord.class, this::getChatEmbed, this::getChatTimestamp),
+            new InputQueue<>("Deaths", feedListener::addDeathsListener, DeathsRecord.class, this::getDeathEmbed, this::getDeathTimestamp));
     }
 
     private EmbedData getChatEmbed(final ChatsRecord chat) {

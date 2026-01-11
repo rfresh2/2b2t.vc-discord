@@ -1,13 +1,11 @@
 package vc.live;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import vc.api.FeedRestClient;
 import vc.config.live_feed.LiveFeedRepository;
 import vc.config.live_feed.model.LiveFeedConfig;
 import vc.live.dto.ConnectionsRecord;
@@ -20,18 +18,16 @@ import static vc.util.DiscordMarkdownEscape.escape;
 @Component
 public class LiveConnections extends LiveFeed {
     public LiveConnections(
-        final FeedRestClient feedRestClient,
+        final FeedApiManager feedListener,
         final GatewayDiscordClient discordClient,
         final LiveFeedRepository liveFeedRepository,
-        final ObjectMapper objectMapper,
         @Value("${LIVE_FEEDS}")
         final String liveFeedsEnabled
     ) {
         super(
-            feedRestClient,
+            feedListener,
             discordClient,
             liveFeedRepository,
-            objectMapper,
             Boolean.parseBoolean(liveFeedsEnabled)
         );
     }
@@ -39,11 +35,6 @@ public class LiveConnections extends LiveFeed {
     @Override
     protected List<LiveFeedConfig> getAllEnabled() {
         return liveFeedRepository.getByLiveConnectionsEnabled();
-    }
-
-    @Override
-    public boolean channelEnabledPredicate(final LiveFeedConfig guildConfigRecord) {
-        return guildConfigRecord.liveConnectionsEnabled();
     }
 
     @Override
@@ -65,7 +56,7 @@ public class LiveConnections extends LiveFeed {
     protected List<InputQueue> inputQueues() {
         return List.of(new InputQueue<>(
             "Connections",
-            feedRestClient::getConnections,
+            feedListener::addConnectionListener,
             ConnectionsRecord.class,
             this::buildConnectionsEmbed,
             this::getConnectionTimestamp)
