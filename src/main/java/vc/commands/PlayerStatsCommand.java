@@ -1,12 +1,12 @@
 package vc.commands;
 
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.rest.util.Color;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.utils.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 import vc.commands.options.ChatInteractionOptionResolver;
 import vc.commands.options.PlayerLookupOption;
 import vc.openapi.handler.ApiException;
@@ -18,8 +18,8 @@ import java.net.http.HttpTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
+import static vc.discord.DiscordTimestampFormat.SHORT_DATE_TIME;
 
 @Component
 public class PlayerStatsCommand implements SlashCommand {
@@ -39,7 +39,7 @@ public class PlayerStatsCommand implements SlashCommand {
     }
 
     @Override
-    public Mono<Message> handle(final ChatInputInteractionEvent event) {
+    public WebhookMessageCreateAction<Message> handle(final SlashCommandInteractionEvent event) {
         var ctx = resolver.resolveOptions(event);
         if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
         var identity = ctx.profileData;
@@ -49,52 +49,42 @@ public class PlayerStatsCommand implements SlashCommand {
         } catch (final Exception e) {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
-                    return event.createFollowup()
-                        .withEmbeds(populateIdentity(embed(event), identity)
-                                        .color(Color.RUBY)
-                                        .description("No Data")
-                                        .thumbnail(identity.getAvatarURL())
-                                        .build());
+                    return event.getHook().sendMessageEmbeds(populateIdentity(embed(event), identity)
+                        .setColor(Color.RUBY)
+                        .setDescription("No Data")
+                        .setThumbnail(identity.getAvatarURL())
+                        .build());
                 } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
                     LOGGER.error("Timeout getting stats for: {}", identity.uuid(), httpTimeoutException);
                     return error(event, "Timeout getting stats. Try again in a minute");
                 }
-            } else {
-                LOGGER.error("Failed to get stats for player: {}", identity.uuid(), e);
-                throw new RuntimeException(e);
             }
+            LOGGER.error("Failed to get stats for player: {}", identity.uuid(), e);
+            throw new RuntimeException(e);
         }
-        if (playerStats == null)
-            return event.createFollowup()
-                .withEmbeds(populateIdentity(embed(event), identity)
-                                .color(Color.RUBY)
-                                .description("No Data")
-                                .thumbnail(identity.getAvatarURL())
-                                .build());
-        return event.createFollowup()
-            .withEmbeds(populateIdentity(embed(event), identity)
-                            .color(Color.CYAN)
-                            .addField("First Seen", playerStats.getFirstSeen() != null
-                                          ? SHORT_DATE_TIME.format(playerStats.getFirstSeen().toInstant())
-                                          : "Never",
-                                      true)
-                            .addField("Last Seen", playerStats.getLastSeen() != null
-                                          ? SHORT_DATE_TIME.format(playerStats.getLastSeen().toInstant())
-                                          : "Never",
-                                      true)
-                            .addField("\u200B", "\u200B", true)
-                            .addField("Playtime", formatDuration(playerStats.getPlaytimeSeconds()), true)
-                            .addField("Playtime Last 30 Days", formatDuration(playerStats.getPlaytimeSecondsMonth()), true)
-                            .addField("\u200B", "\u200B", true)
-                            .addField("Kills", ""+playerStats.getKillCount(), true)
-                            .addField("Deaths", ""+playerStats.getDeathCount(), true)
-                            .addField("K/D", playerStats.getDeathCount() == 0 ? ""+0 : String.format("%.2f", playerStats.getKillCount().floatValue() / playerStats.getDeathCount().floatValue()), true)
-                            // row break
-                            .addField("Joins", ""+playerStats.getJoinCount(), true)
-                            .addField("Chats", ""+playerStats.getChatsCount(), true)
-                            .addField("Priority Queue", Boolean.TRUE.equals(playerStats.getPrio()) ? "Yes" : "No", true)
-                            .thumbnail(identity.getAvatarURL())
-                            .build());
+        if (playerStats == null) {
+            return event.getHook().sendMessageEmbeds(populateIdentity(embed(event), identity)
+                .setColor(Color.RUBY)
+                .setDescription("No Data")
+                .setThumbnail(identity.getAvatarURL())
+                .build());
+        }
+        return event.getHook().sendMessageEmbeds(populateIdentity(embed(event), identity)
+            .setColor(Color.CYAN)
+            .addField("First Seen", playerStats.getFirstSeen() != null ? SHORT_DATE_TIME.format(playerStats.getFirstSeen().toInstant()) : "Never", true)
+            .addField("Last Seen", playerStats.getLastSeen() != null ? SHORT_DATE_TIME.format(playerStats.getLastSeen().toInstant()) : "Never", true)
+            .addField("\u200B", "\u200B", true)
+            .addField("Playtime", formatDuration(playerStats.getPlaytimeSeconds()), true)
+            .addField("Playtime Last 30 Days", formatDuration(playerStats.getPlaytimeSecondsMonth()), true)
+            .addField("\u200B", "\u200B", true)
+            .addField("Kills", String.valueOf(playerStats.getKillCount()), true)
+            .addField("Deaths", String.valueOf(playerStats.getDeathCount()), true)
+            .addField("K/D", playerStats.getDeathCount() == 0 ? "0" : String.format("%.2f", playerStats.getKillCount().floatValue() / playerStats.getDeathCount().floatValue()), true)
+            .addField("Joins", String.valueOf(playerStats.getJoinCount()), true)
+            .addField("Chats", String.valueOf(playerStats.getChatsCount()), true)
+            .addField("Priority Queue", Boolean.TRUE.equals(playerStats.getPrio()) ? "Yes" : "No", true)
+            .setThumbnail(identity.getAvatarURL())
+            .build());
     }
 
     private String formatDuration(long durationInSeconds) {

@@ -1,49 +1,54 @@
 package vc.commands;
 
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.rest.util.Color;
-import reactor.core.publisher.Mono;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.utils.Color;
 import vc.api.model.ProfileData;
 
 import java.time.Instant;
 
-/**
- * A simple interface defining our slash command class contract.
- *  a getName() method to provide the case-sensitive name of the command.
- *  and a handle() method which will house all the logic for processing each command.
- */
 public interface SlashCommand {
 
     String getName();
 
-    Mono<Message> handle(ChatInputInteractionEvent event);
+    WebhookMessageCreateAction<Message> handle(SlashCommandInteractionEvent event);
 
-    default Mono<Message> error(DeferrableInteractionEvent event, final String message) {
-        return event.createFollowup()
-            .withEmbeds(EmbedCreateSpec.builder()
-                .title("Error")
-                .color(Color.RUBY)
-                .description(message)
-                .build());
+    default WebhookMessageCreateAction<Message> error(SlashCommandInteractionEvent event, final String message) {
+        return error(event.getHook(), message);
     }
 
-    default EmbedCreateSpec.Builder populateIdentity(final EmbedCreateSpec.Builder builder, ProfileData identity) {
+    default WebhookMessageCreateAction<Message> error(InteractionHook hook, final String message) {
+        return hook.sendMessageEmbeds(new EmbedBuilder()
+            .setTitle("Error")
+            .setColor(Color.RUBY)
+            .setDescription(message)
+            .build());
+    }
+
+    default EmbedBuilder populateIdentity(final EmbedBuilder builder, ProfileData identity) {
         return builder
             .addField("Player", identity.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true);
     }
 
-    default EmbedCreateSpec.Builder defaultDecoration(final EmbedCreateSpec.Builder builder, DeferrableInteractionEvent event) {
+    default EmbedBuilder defaultDecoration(final EmbedBuilder builder, SlashCommandInteractionEvent event) {
         return builder
-            .footer("Requested by @" + event.getUser().getUsername(), event.getUser().getAvatarUrl())
-            .timestamp(Instant.now());
+            .setFooter("Requested by @" + event.getUser().getName(), event.getUser().getEffectiveAvatarUrl())
+            .setTimestamp(Instant.now());
     }
 
-    default EmbedCreateSpec.Builder embed(DeferrableInteractionEvent event) {
-        return defaultDecoration(EmbedCreateSpec.builder(), event);
+    default EmbedBuilder embed(SlashCommandInteractionEvent event) {
+        return defaultDecoration(new EmbedBuilder(), event);
+    }
+
+    default EmbedBuilder embed(InteractionHook hook) {
+        var interaction = hook.getInteraction();
+        return new EmbedBuilder()
+            .setFooter("Requested by @" + interaction.getUser().getName(), interaction.getUser().getEffectiveAvatarUrl())
+            .setTimestamp(Instant.now());
     }
 }

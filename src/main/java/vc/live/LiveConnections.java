@@ -1,9 +1,9 @@
 package vc.live;
 
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.discordjson.json.EmbedData;
-import discord4j.rest.util.Color;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.utils.Color;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import vc.config.live_feed.LiveFeedRepository;
@@ -19,17 +19,12 @@ import static vc.util.DiscordMarkdownEscape.escape;
 public class LiveConnections extends LiveFeed {
     public LiveConnections(
         final FeedApiManager feedListener,
-        final GatewayDiscordClient discordClient,
+        final JDA jda,
         final LiveFeedRepository liveFeedRepository,
         @Value("${LIVE_FEEDS}")
         final String liveFeedsEnabled
     ) {
-        super(
-            feedListener,
-            discordClient,
-            liveFeedRepository,
-            Boolean.parseBoolean(liveFeedsEnabled)
-        );
+        super(feedListener, jda, liveFeedRepository, Boolean.parseBoolean(liveFeedsEnabled));
     }
 
     @Override
@@ -63,15 +58,14 @@ public class LiveConnections extends LiveFeed {
         );
     }
 
-    protected EmbedData buildConnectionsEmbed(final ConnectionsRecord con) {
+    protected MessageEmbed buildConnectionsEmbed(final ConnectionsRecord con) {
         boolean isJoin = con.connection() == Connectiontype.JOIN;
-        return EmbedCreateSpec.builder()
-            .description("**" + escape(con.playerName()) + "** " + (isJoin ? "connected" : "disconnected"))
-            .footer("\u200b", avatarUrl(con.playerUuid()).toString())
-            .color(isJoin ? Color.SEA_GREEN : Color.RUBY)
-            .timestamp(con.time().toInstant())
-            .build()
-            .asRequest();
+        return new EmbedBuilder()
+            .setDescription("**" + escape(con.playerName()) + "** " + (isJoin ? "connected" : "disconnected"))
+            .setFooter("\u200b", avatarUrl(con.playerUuid()).toString())
+            .setColor(isJoin ? Color.SEA_GREEN : Color.RUBY)
+            .setTimestamp(con.time().toInstant())
+            .build();
     }
 
     protected long getConnectionTimestamp(final ConnectionsRecord con) {

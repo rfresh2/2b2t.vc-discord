@@ -1,9 +1,9 @@
 package vc.live;
 
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.discordjson.json.EmbedData;
-import discord4j.rest.util.Color;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.utils.Color;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import vc.config.live_feed.LiveFeedRepository;
@@ -19,22 +19,14 @@ import static vc.util.DiscordMarkdownEscape.escape;
 @Component
 public class LiveChat extends LiveFeed {
 
-    // todo: we aren't receiving system messages from the existing chat queue
-    //  so no restart msgs
-
     public LiveChat(
         final FeedApiManager feedListener,
-        final GatewayDiscordClient discordClient,
+        final JDA jda,
         final LiveFeedRepository liveFeedRepository,
         @Value("${LIVE_FEEDS}")
         final String liveFeedsEnabled
     ) {
-        super(
-            feedListener,
-            discordClient,
-            liveFeedRepository,
-            Boolean.parseBoolean(liveFeedsEnabled)
-        );
+        super(feedListener, jda, liveFeedRepository, Boolean.parseBoolean(liveFeedsEnabled));
     }
 
     @Override
@@ -59,32 +51,32 @@ public class LiveChat extends LiveFeed {
 
     @Override
     protected List<InputQueue> inputQueues() {
-        return asList(new InputQueue<>("Chats", feedListener::addChatListener, ChatsRecord.class, this::getChatEmbed, this::getChatTimestamp),
-            new InputQueue<>("Deaths", feedListener::addDeathsListener, DeathsRecord.class, this::getDeathEmbed, this::getDeathTimestamp));
+        return asList(
+            new InputQueue<>("Chats", feedListener::addChatListener, ChatsRecord.class, this::getChatEmbed, this::getChatTimestamp),
+            new InputQueue<>("Deaths", feedListener::addDeathsListener, DeathsRecord.class, this::getDeathEmbed, this::getDeathTimestamp)
+        );
     }
 
-    private EmbedData getChatEmbed(final ChatsRecord chat) {
-        return EmbedCreateSpec.builder()
-            .description("**" + escape(chat.playerName()) + ":** " + escape(chat.chat()))
-            .footer("\u200b", avatarUrl(chat.playerUuid()).toString())
-            .color(chat.chat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.BLACK)
-            .timestamp(chat.time().toInstant())
-            .build()
-            .asRequest();
+    private MessageEmbed getChatEmbed(final ChatsRecord chat) {
+        return new EmbedBuilder()
+            .setDescription("**" + escape(chat.playerName()) + ":** " + escape(chat.chat()))
+            .setFooter("\u200b", avatarUrl(chat.playerUuid()).toString())
+            .setColor(chat.chat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.BLACK)
+            .setTimestamp(chat.time().toInstant())
+            .build();
     }
 
     protected long getChatTimestamp(final ChatsRecord chat) {
         return chat.time().toInstant().toEpochMilli();
     }
 
-    private EmbedData getDeathEmbed(final DeathsRecord death) {
-        return EmbedCreateSpec.builder()
-            .description(escape(death.deathMessage()).replace(escape(death.victimPlayerName()), "**" + escape(death.victimPlayerName()) + "**"))
-            .footer("\u200b", avatarUrl(death.victimPlayerUuid()).toString())
-            .color(Color.RUBY)
-            .timestamp(death.time().toInstant())
-            .build()
-            .asRequest();
+    private MessageEmbed getDeathEmbed(final DeathsRecord death) {
+        return new EmbedBuilder()
+            .setDescription(escape(death.deathMessage()).replace(escape(death.victimPlayerName()), "**" + escape(death.victimPlayerName()) + "**"))
+            .setFooter("\u200b", avatarUrl(death.victimPlayerUuid()).toString())
+            .setColor(Color.RUBY)
+            .setTimestamp(death.time().toInstant())
+            .build();
     }
 
     protected long getDeathTimestamp(final DeathsRecord death) {

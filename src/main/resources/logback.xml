@@ -5,7 +5,7 @@
     <logger name="reactor" level="INFO"/>
     <logger name="proxy" level="INFO"/>
     <logger name="reactor.retry" level="DEBUG"/>
-    <logger name="discord4j" level="INFO"/>
+    <logger name="net.dv8tion.jda" level="INFO"/>
 
     <!-- Appenders -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">

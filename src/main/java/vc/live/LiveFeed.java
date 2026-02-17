@@ -3,20 +3,13 @@ package vc.live;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
-import discord4j.common.util.Snowflake;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.object.entity.channel.Channel;
-import discord4j.discordjson.json.EmbedData;
-import discord4j.discordjson.json.MessageCreateRequest;
-import discord4j.rest.entity.RestChannel;
-import discord4j.rest.http.client.ClientException;
-import discord4j.rest.util.MultipartRequest;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import org.slf4j.Logger;
 import org.springframework.scheduling.annotation.Scheduled;
-import reactor.core.Exceptions;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 import vc.config.live_feed.LiveFeedRepository;
 import vc.config.live_feed.model.LiveFeedConfig;
 
@@ -24,13 +17,11 @@ import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -41,8 +32,8 @@ import static org.slf4j.LoggerFactory.getLogger;
 public abstract class LiveFeed {
     private final Logger LOGGER = getLogger(getClass().getSimpleName());
     private static final int MESSAGE_Q_CAPACITY = 1000;
-    protected final GatewayDiscordClient discordClient;
-    protected final Map<String, RestChannel> liveChannels;
+    protected final JDA jda;
+    protected final Map<String, GuildMessageChannel> liveChannels;
     protected final LiveFeedRepository liveFeedRepository;
     private final PriorityBlockingQueue<Message> messageQueue;
     private final Cache<String, AtomicInteger> guildMessageSendFailCountCache = CacheBuilder.newBuilder()
@@ -52,12 +43,12 @@ public abstract class LiveFeed {
 
     public LiveFeed(
         final FeedApiManager feedListener,
-        final GatewayDiscordClient discordClient,
+        final JDA jda,
         final LiveFeedRepository liveFeedRepository,
         final boolean liveFeedEnabled
     ) {
         this.feedListener = feedListener;
-        this.discordClient = discordClient;
+        this.jda = jda;
         this.liveFeedRepository = liveFeedRepository;
         this.liveChannels = new ConcurrentHashMap<>();
         this.messageQueue = new PriorityBlockingQueue<>(MESSAGE_Q_CAPACITY);
@@ -84,12 +75,12 @@ public abstract class LiveFeed {
         String name,
         Consumer<Consumer> feedConsumer,
         Class<T> deserializedType,
-        Function<T, EmbedData> embedBuilderFunction,
+        Function<T, MessageEmbed> embedBuilderFunction,
         Function<T, Long> timestampFunction
     ) {
     }
 
-    record Message(EmbedData embedData, long timestamp) implements Comparable<Message> {
+    record Message(MessageEmbed embedData, long timestamp) implements Comparable<Message> {
         @Override
         public int compareTo(final Message o) {
             return Long.compare(timestamp(), o.timestamp());
@@ -103,7 +94,7 @@ public abstract class LiveFeed {
 
     private void inputQueueListener(final InputQueue inputQueue, final Object value) {
         synchronized (this.messageQueue) {
-            this.messageQueue.add(new Message((EmbedData) inputQueue.embedBuilderFunction().apply(value), (long) inputQueue.timestampFunction().apply(value)));
+            this.messageQueue.add(new Message((MessageEmbed) inputQueue.embedBuilderFunction().apply(value), (long) inputQueue.timestampFunction().apply(value)));
         }
     }
 
@@ -115,19 +106,13 @@ public abstract class LiveFeed {
         liveChannels.clear();
         var allConfigs = getAllEnabled();
         for (var config : allConfigs) {
-            try {
-                var channel = discordClient
-                    .getChannelById(Snowflake.of(liveChannelId(config)))
-                    .map(Channel::getRestChannel)
-                    .block();
-                liveChannels.put(config.guildId(), channel);
-            } catch (final Exception e) {
-                LOGGER.error("Error getting channel: {} for guild: {} - {}", liveChannelId(config), config.guildId(), e.getMessage());
-                if (e instanceof ClientException clientException && clientException.getStatus().code() == 404) {
-                    LOGGER.info("Disabling {} for guild: {} due to missing channel", feedName(), config.guildId());
-                    disableFeed(config.guildId());
-                }
+            var channel = getGuildMessageChannel(liveChannelId(config));
+            if (channel == null) {
+                LOGGER.info("Disabling {} for guild: {} due to missing channel", feedName(), config.guildId());
+                disableFeed(config.guildId());
+                continue;
             }
+            liveChannels.put(config.guildId(), channel);
         }
     }
 
@@ -144,14 +129,11 @@ public abstract class LiveFeed {
     public void enableFeed(final String guildId, final String channelId) {
         Optional<LiveFeedConfig> guildConfigOptional = liveFeedRepository.getByGuild(guildId);
         if (guildConfigOptional.isEmpty()) {
-            try {
-                var guild = discordClient.getGuildById(Snowflake.of(guildId)).block();
-                var guildData = guild.getData();
-                var config = LiveFeedConfig.defaultConfig(guildId, guildData.name());
+            var guild = jda.getGuildById(guildId);
+            if (guild != null) {
+                var config = LiveFeedConfig.defaultConfig(guildId, guild.getName());
                 liveFeedRepository.write(config);
                 guildConfigOptional = liveFeedRepository.getByGuild(guildId);
-            } catch (final Exception e) {
-                LOGGER.error("Error loading guild data to create record for guild: {}", guildId, e);
             }
             if (guildConfigOptional.isEmpty()) {
                 LOGGER.error("Error getting guild data to create record for guild: {}", guildId);
@@ -161,20 +143,26 @@ public abstract class LiveFeed {
         var guildConfigRecord = guildConfigOptional.get();
         final LiveFeedConfig newRecord = enableRecordInternal(guildConfigRecord, guildId, channelId);
         liveFeedRepository.write(newRecord);
-        this.liveChannels.put(guildId, getRestChannel(channelId));
+        var channel = getGuildMessageChannel(channelId);
+        if (channel != null) this.liveChannels.put(guildId, channel);
         LOGGER.info("Enabled {} for guild {}, {}", feedName(), guildId, guildConfigRecord.guildName());
     }
 
-    private RestChannel getRestChannel(final String channelId) {
-        return discordClient.getChannelById(Snowflake.of(channelId))
-            .map(Channel::getRestChannel)
-            .block();
+    private GuildMessageChannel getGuildMessageChannel(final String channelId) {
+        try {
+            var channel = jda.getGuildChannelById(channelId);
+            if (channel instanceof GuildMessageChannel messageChannel) {
+                return messageChannel;
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     @Scheduled(initialDelay = 5, fixedRate = 10, timeUnit = TimeUnit.SECONDS)
     protected void processMessageQueue() {
         try {
-            final List<EmbedData> embeds = new ArrayList<>(4);
+            final List<MessageEmbed> embeds = new ArrayList<>(4);
             synchronized (this.messageQueue) {
                 Message message;
                 var now = Instant.now().toEpochMilli();
@@ -184,17 +172,14 @@ public abstract class LiveFeed {
                 }
             }
             if (embeds.isEmpty()) return;
-            final MultipartRequest<MessageCreateRequest> request = MultipartRequest.ofRequest(MessageCreateRequest.builder()
-                .embeds(embeds)
-                .build());
+
             var channels = new ArrayList<>(liveChannels.entrySet());
             Collections.shuffle(channels);
             Lists.partition(channels, 50).forEach(c -> {
                 long before = System.currentTimeMillis();
-                Flux.fromIterable(c)
-                    .flatMap(entry -> processSend(entry.getKey(), entry.getValue(), request))
-                    .doOnError(error -> LOGGER.error("Error processing message queue", error))
-                    .blockLast();
+                for (var entry : c) {
+                    processSend(entry.getKey(), entry.getValue(), embeds);
+                }
                 long after = System.currentTimeMillis();
                 if (after - before > 20000) {
                     LOGGER.info("[{}] Sent {} events in {}ms", feedName(), embeds.size(), after - before);
@@ -205,53 +190,26 @@ public abstract class LiveFeed {
         }
     }
 
-    private Mono<?> processSend(String guildId, RestChannel channel, MultipartRequest<MessageCreateRequest> request) {
-        return channel.createMessage(request)
-            .doOnError(error -> LOGGER.error("Error sending message to guild: {}, channelId: {}", guildId, channel.getId().asString(), error))
-            .timeout(Duration.ofSeconds(3))
-            // retry only on TimeoutException
-            .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
-                .filter(error -> error instanceof TimeoutException)
-                .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
-                    "Retries exhausted sending message to guild: " + guildId + ", channelId: " + channel.getId().asString(),
-                    signal.failure())))
-            .onErrorResume(error -> {
-                if (Exceptions.isRetryExhausted(error))
-                    handleBroadcastError(error.getCause(), guildId, channel);
-                else
-                    handleBroadcastError(error, guildId, channel);
-                return Mono.empty();
-            });
+    private void processSend(String guildId, GuildMessageChannel channel, List<MessageEmbed> embeds) {
+        try {
+            channel.sendMessageEmbeds(embeds).complete();
+        } catch (Throwable error) {
+            handleBroadcastError(error, guildId, channel);
+        }
     }
 
-    private void handleBroadcastError(final Throwable error, final String guildId, final RestChannel channel) {
-        if (error instanceof ClientException e) {
-            int code = e.getStatus().code();
-            if (code == 429) {
-                // rate limit
-                LOGGER.error("Rate limited while broadcasting message to channel: {}", channel.getId().asString());
+    private void handleBroadcastError(final Throwable error, final String guildId, final GuildMessageChannel channel) {
+        if (error instanceof ErrorResponseException e) {
+            var response = e.getErrorResponse();
+            if (response == ErrorResponse.MISSING_PERMISSIONS || response == ErrorResponse.MISSING_ACCESS || response == ErrorResponse.UNKNOWN_CHANNEL) {
+                LOGGER.error("Missing permissions while broadcasting message to channel: {}", channel.getId());
+                disableFeed(guildId);
                 return;
-            } else if (code == 403 || code == 404) {
-                var cloudflareError = e.getErrorResponse()
-                    .map(r -> r.getFields().get("body"))
-                    .filter(body -> body instanceof String)
-                    .map(body -> (String) body)
-                    .map(body -> body.contains("cloudflare"))
-                    .orElse(false);
-                if (cloudflareError) {
-                    LOGGER.error("Cloudflare error while broadcasting message to channel: {}", channel.getId().asString(), error);
-                    return;
-                } else {
-                    // missing permissions or channel deleted, disable immediately
-                    LOGGER.error("Missing permissions while broadcasting message to channel: {}", channel.getId().asString());
-                    disableFeed(guildId);
-                    return;
-                }
             }
         }
-        // for any unknown error, count it and disable if we get too many
         LOGGER.error("Error broadcasting message to guild: {}", guildId, error);
-        countMessageSendFailure(guildId);
+        // todo: not sure the full set of exception jda throws
+//        countMessageSendFailure(guildId);
     }
 
     private void countMessageSendFailure(final String guildId) {
@@ -259,12 +217,8 @@ public abstract class LiveFeed {
             int failCount = guildMessageSendFailCountCache
                 .get(guildId, () -> new AtomicInteger(0))
                 .incrementAndGet();
-            if (failCount > 5
-                // sanity check that we aren't disabling when msgs to all guilds are failing
-                && guildMessageSendFailCountCache.size() < liveChannels.size()
-            ) {
+            if (failCount > 5 && guildMessageSendFailCountCache.size() < liveChannels.size()) {
                 LOGGER.error("Disabling {} for guild {} due to message send failures", feedName(), guildId);
-                // todo: try sending one last notification message that we disabled live feed?
                 disableFeed(guildId);
             }
         } catch (final Throwable e) {

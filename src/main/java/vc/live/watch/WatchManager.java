@@ -1,22 +1,18 @@
 package vc.live.watch;
 
-import discord4j.common.util.Snowflake;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.object.entity.User;
-import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.core.spec.MessageCreateSpec;
-import discord4j.core.util.MentionUtil;
-import discord4j.discordjson.json.UserGuildData;
-import discord4j.rest.http.client.ClientException;
-import discord4j.rest.util.Color;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
+import net.dv8tion.jda.api.utils.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import reactor.core.Exceptions;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 import vc.api.model.ProfileDataImpl;
 import vc.config.watch.GuildChatWatchRepository;
 import vc.config.watch.GuildPlayerWatchRepository;
@@ -32,11 +28,9 @@ import vc.live.dto.ConnectionsRecord;
 import vc.live.dto.DeathsRecord;
 import vc.live.dto.enums.Connectiontype;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -52,7 +46,7 @@ public class WatchManager {
     private final UserChatWatchRepository userChatWatchRepository;
     private final UserPlayerWatchRepository userPlayerWatchRepository;
     private final FeedApiManager feedListener;
-    private final GatewayDiscordClient discordClient;
+    private final JDA discordClient;
     private final boolean watchesEnabled;
     private final ConcurrentLinkedDeque<ConnectionsRecord> joinsQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<ConnectionsRecord> leavesQueue = new ConcurrentLinkedDeque<>();
@@ -67,7 +61,7 @@ public class WatchManager {
         final UserChatWatchRepository userChatWatchRepository,
         final UserPlayerWatchRepository userPlayerWatchRepository,
         final FeedApiManager feedListener,
-        final GatewayDiscordClient discordClient,
+        final JDA discordClient,
         @Value("${WATCHES}")
         final String watchesEnabled
     ) {
@@ -203,7 +197,7 @@ public class WatchManager {
     private <T> void processQueue(
         String id,
         ConcurrentLinkedDeque<T> queue,
-        Function<T, EmbedCreateSpec> watchEmbedProvider,
+        Function<T, MessageEmbed> watchEmbedProvider,
         Function<T, UUID> targetUuidProvider,
         Function<T, String> targetNameProvider,
         BiFunction<T, UserPlayerWatchConfig, Boolean> userActivePredicate,
@@ -288,86 +282,16 @@ public class WatchManager {
         String id,
         String targetName,
         T userWatch,
-        Supplier<EmbedCreateSpec> embedSupplier,
+        Supplier<MessageEmbed> embedSupplier,
         Consumer<T> removeWatchConsumer
     ) {
         try {
-            var channel = discordClient.getUserById(Snowflake.of(userWatch.ownerUserId()))
-                .doOnSuccess(user -> LOGGER.info("[{}] Sending {} user notification to {}",
-                    id,
-                    targetName,
-                    user.getUsername()))
-                .flatMap(User::getPrivateChannel)
-                .block(Duration.ofSeconds(10));
-
-            var msg = MessageCreateSpec.builder()
-                .addEmbed(embedSupplier.get())
-                .build();
-
-            channel.createMessage(msg)
-                .doOnError(error -> LOGGER.error("Error sending {} user notification to: {}",
-                    targetName,
-                    userWatch.ownerUserName()))
-                .timeout(Duration.ofSeconds(3))
-                .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
-                    .filter(error -> error instanceof TimeoutException)
-                    .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
-                        "Retries exhausted sending " + targetName + " notification to user: " + userWatch.ownerUserName() + ", channelId: " + channel.getId()
-                            .asString(),
-                        signal.failure())))
-                .onErrorResume(error -> {
-                    if (error instanceof ClientException e) {
-                        int code = e.getStatus().code();
-                        if (code == 429) {
-                            LOGGER.error("Rate limited while sending {} notification to user: {}",
-                                targetName,
-                                userWatch.ownerUserName());
-                        } else if (code == 403 || code == 404) {
-                            var cloudflareError = e.getErrorResponse()
-                                .map(r -> r.getFields().get("body"))
-                                .filter(body -> body instanceof String)
-                                .map(body -> (String) body)
-                                .map(body -> body.contains("cloudflare"))
-                                .orElse(false);
-                            if (!cloudflareError) {
-                                LOGGER.error(
-                                    "Missing permissions while sending {} notification to user: {}. Removing watch.",
-                                    targetName,
-                                    userWatch.ownerUserName());
-                                removeWatchConsumer.accept(userWatch);
-                            }
-                        }
-                    }
-                    LOGGER.error("Error sending {} user notification to: {}",
-                        targetName,
-                        userWatch.ownerUserName(),
-                        error);
-                    return Mono.empty();
-                })
-                .block(Duration.ofSeconds(10));
-        } catch (ClientException e) {
-            int code = e.getStatus().code();
-            if (code == 429) {
-                LOGGER.error("Rate limited while sending {} notification to user: {}",
-                    targetName,
-                    userWatch.ownerUserName());
-            } else if (code == 403 || code == 404) {
-                var cloudflareError = e.getErrorResponse()
-                    .map(r -> r.getFields().get("body"))
-                    .filter(body -> body instanceof String)
-                    .map(body -> (String) body)
-                    .map(body -> body.contains("cloudflare"))
-                    .orElse(false);
-                if (!cloudflareError) {
-                    LOGGER.error(
-                        "Missing permissions while sending {} notification to user: {}. Removing watch.",
-                        targetName,
-                        userWatch.ownerUserName());
-                    removeWatchConsumer.accept(userWatch);
-                }
-            }
-            LOGGER.error("Error sending {} user notification to {}", targetName, userWatch.ownerUserId(), e);
+            var user = discordClient.retrieveUserById(userWatch.ownerUserId()).complete();
+            LOGGER.info("[{}] Sending {} user notification to {}", id, targetName, user.getName());
+            var dm = user.openPrivateChannel().complete();
+            dm.sendMessageEmbeds(embedSupplier.get()).complete();
         } catch (Exception e) {
+            removeWatchConsumer.accept(userWatch);
             LOGGER.error("Error sending {} user notification to {}", targetName, userWatch.ownerUserId(), e);
         }
     }
@@ -376,20 +300,19 @@ public class WatchManager {
         String id,
         String targetName,
         T guildWatch,
-        Supplier<EmbedCreateSpec> embedSupplier,
+        Supplier<MessageEmbed> embedSupplier,
         Consumer<T> removeGuildWatchFunction
     ) {
         try {
-            var guildSnowflake = Snowflake.of(guildWatch.guildId());
-            var guild = discordClient.getGuildById(guildSnowflake).block(Duration.ofSeconds(10));
+            var guild = discordClient.getGuildById(guildWatch.guildId());
             if (guild == null) {
                 LOGGER.warn("Guild with ID {} not found", guildWatch.guildId());
                 removeGuildWatchFunction.accept(guildWatch);
                 return;
             }
 
-            var channel = guild.getChannelById(Snowflake.of(guildWatch.channelId())).block(Duration.ofSeconds(10));
-            if (channel == null) {
+            var guildChannel = guild.getGuildChannelById(guildWatch.channelId());
+            if (!(guildChannel instanceof GuildMessageChannel channel)) {
                 LOGGER.warn("Channel with ID {} not found in guild {}", guildWatch.channelId(), guildWatch.guildId());
                 removeGuildWatchFunction.accept(guildWatch);
                 return;
@@ -400,77 +323,23 @@ public class WatchManager {
                 targetName,
                 guild.getName(),
                 channel.getName());
-            var msgBuilder = MessageCreateSpec.builder()
-                .addEmbed(embedSupplier.get());
-
+            var msg = channel.sendMessageEmbeds(embedSupplier.get());
             if (guildWatch.mentionUserId() != null && !guildWatch.mentionUserId().isBlank()) {
-                var mention = MentionUtil.forUser(Snowflake.of(guildWatch.mentionUserId()));
-                msgBuilder.content(mention);
+                msg = channel.sendMessage("<@" + guildWatch.mentionUserId() + ">").addEmbeds(embedSupplier.get());
             } else if (guildWatch.mentionRoleId() != null && !guildWatch.mentionRoleId().isBlank()) {
-                var mention = MentionUtil.forRole(Snowflake.of(guildWatch.mentionRoleId()));
-                msgBuilder.content(mention);
+                msg = channel.sendMessage("<@&" + guildWatch.mentionRoleId() + ">").addEmbeds(embedSupplier.get());
             }
-
-            channel.getRestChannel().createMessage(msgBuilder.build().asRequest())
-                .doOnError(error -> LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}",
+            msg.complete();
+        } catch (ErrorResponseException e) {
+            var response = e.getErrorResponse();
+            if (response == ErrorResponse.MISSING_PERMISSIONS || response == ErrorResponse.MISSING_ACCESS || response == ErrorResponse.UNKNOWN_CHANNEL) {
+                LOGGER.error(
+                    "Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.",
                     targetName,
                     guildWatch.guildId(),
-                    channel.getId()))
-                .timeout(Duration.ofSeconds(3))
-                .retryWhen(Retry.fixedDelay(1, Duration.ofSeconds(1))
-                    .filter(error -> error instanceof TimeoutException)
-                    .onRetryExhaustedThrow((spec, signal) -> Exceptions.retryExhausted(
-                        "Retries exhausted sending " + targetName + " notification to guild: " + guildWatch.guildId() + ", channelId: " + channel.getId()
-                            .asString(),
-                        signal.failure())))
-                .onErrorResume(error -> {
-                    if (error instanceof ClientException e) {
-                        int code = e.getStatus().code();
-                        if (code == 429) {
-                            LOGGER.error("Rate limited while sending {} notification to guild: {}, channelId: {}.",
-                                targetName,
-                                guildWatch.guildId(),
-                                channel.getId());
-                        } else if (code == 403 || code == 404) {
-                            var cloudflareError = e.getErrorResponse()
-                                .map(r -> r.getFields().get("body"))
-                                .filter(body -> body instanceof String)
-                                .map(body -> (String) body)
-                                .map(body -> body.contains("cloudflare"))
-                                .orElse(false);
-                            if (!cloudflareError) {
-                                LOGGER.error(
-                                    "Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.",
-                                    targetName,
-                                    guildWatch.guildId(),
-                                    channel.getId());
-                                removeGuildWatchFunction.accept(guildWatch);
-                            }
-                        }
-                    }
-                    LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}",
-                        targetName,
-                        guildWatch.guildId(),
-                        channel.getId(),
-                        error);
-                    return Mono.empty();
-                })
-                .block(Duration.ofSeconds(10));
-        } catch (ClientException e) {
-            int code = e.getStatus().code();
-            if (code == 429) {
-                LOGGER.error("Rate limited while sending {} notification to guild: {}, channelId: {}.", targetName, guildWatch.guildId(), guildWatch.channelId());
-            } else if (code == 403 || code == 404) {
-                var cloudflareError = e.getErrorResponse()
-                    .map(r -> r.getFields().get("body"))
-                    .filter(body -> body instanceof String)
-                    .map(body -> (String) body)
-                    .map(body -> body.contains("cloudflare"))
-                    .orElse(false);
-                if (!cloudflareError) {
-                    LOGGER.error("Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.", targetName, guildWatch.guildId(), guildWatch.channelId());
-                    removeGuildWatchFunction.accept(guildWatch);
-                }
+                    guildWatch.channelId());
+                removeGuildWatchFunction.accept(guildWatch);
+                return;
             }
             LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}", targetName, guildWatch.guildId(), guildWatch.channelId(), e);
         } catch (Exception e) {
@@ -478,80 +347,80 @@ public class WatchManager {
         }
     }
 
-    public EmbedCreateSpec joinsWatchEmbed(
+    public MessageEmbed joinsWatchEmbed(
         final ConnectionsRecord connection
     ) {
         var profile = new ProfileDataImpl(connection.playerName(), connection.playerUuid());
-        EmbedCreateSpec embed = EmbedCreateSpec.builder()
-            .title("Watched Player Online")
+        MessageEmbed embed = new EmbedBuilder()
+            .setTitle("Watched Player Online")
             .addField("Player", profile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
-            .thumbnail(profile.getAvatarURL())
-            .timestamp(connection.time().toInstant())
-            .color(Color.SEA_GREEN)
+            .setThumbnail(profile.getAvatarURL())
+            .setTimestamp(connection.time().toInstant())
+            .setColor(Color.SEA_GREEN)
             .build();
         return embed;
     }
 
-    public EmbedCreateSpec leavesWatchEmbed(
+    public MessageEmbed leavesWatchEmbed(
         final ConnectionsRecord connection
     ) {
         var profile = new ProfileDataImpl(connection.playerName(), connection.playerUuid());
-        EmbedCreateSpec embed = EmbedCreateSpec.builder()
-            .title("Watched Player Offline")
+        MessageEmbed embed = new EmbedBuilder()
+            .setTitle("Watched Player Offline")
             .addField("Player", profile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
-            .thumbnail(profile.getAvatarURL())
-            .timestamp(connection.time().toInstant())
-            .color(Color.RUBY)
+            .setThumbnail(profile.getAvatarURL())
+            .setTimestamp(connection.time().toInstant())
+            .setColor(Color.RUBY)
             .build();
         return embed;
     }
 
-    public EmbedCreateSpec chatsWatchEmbed(
+    public MessageEmbed chatsWatchEmbed(
         final ChatsRecord chat
     ) {
         var profile = new ProfileDataImpl(chat.playerName(), chat.playerUuid());
-        EmbedCreateSpec embed = EmbedCreateSpec.builder()
-            .title("Watched Player Chat")
+        MessageEmbed embed = new EmbedBuilder()
+            .setTitle("Watched Player Chat")
             .addField("Player", profile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
             .addField("Message", escape(chat.chat()), false)
-            .thumbnail(profile.getAvatarURL())
-            .timestamp(chat.time().toInstant())
-            .color(chat.chat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.SEA_GREEN)
+            .setThumbnail(profile.getAvatarURL())
+            .setTimestamp(chat.time().toInstant())
+            .setColor(chat.chat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.SEA_GREEN)
             .build();
         return embed;
     }
 
-    public EmbedCreateSpec chatsKeywordWatchEmbed(
+    public MessageEmbed chatsKeywordWatchEmbed(
         final ChatsRecord chat,
         final String keyword
     ) {
         var profile = new ProfileDataImpl(chat.playerName(), chat.playerUuid());
-        EmbedCreateSpec embed = EmbedCreateSpec.builder()
-            .title("Watched Keyword in Chat")
+        MessageEmbed embed = new EmbedBuilder()
+            .setTitle("Watched Keyword in Chat")
             .addField("Player", profile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
             .addField("Message", escape(chat.chat()), false)
             .addField("Keyword", escape(keyword), false)
-            .thumbnail(profile.getAvatarURL())
-            .timestamp(chat.time().toInstant())
-            .color(chat.chat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.SEA_GREEN)
+            .setThumbnail(profile.getAvatarURL())
+            .setTimestamp(chat.time().toInstant())
+            .setColor(chat.chat().startsWith(">") ? Color.MEDIUM_SEA_GREEN : Color.SEA_GREEN)
             .build();
         return embed;
     }
 
-    public EmbedCreateSpec deathsWatchEmbed(
+    public MessageEmbed deathsWatchEmbed(
         final DeathsRecord death
     ) {
         var profile = new ProfileDataImpl(death.victimPlayerName(), death.victimPlayerUuid());
-        var embed = EmbedCreateSpec.builder()
-            .title("Watched Player Death")
+        var embed = new EmbedBuilder()
+            .setTitle("Watched Player Death")
             .addField("Victim", profile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true);
@@ -564,20 +433,20 @@ public class WatchManager {
         }
         embed
             .addField("Death Message", escape(death.deathMessage()).replace(escape(death.victimPlayerName()), "**" + escape(death.victimPlayerName()) + "**"), false)
-            .thumbnail(profile.getAvatarURL())
-            .timestamp(death.time().toInstant())
-            .color(Color.RUBY)
+            .setThumbnail(profile.getAvatarURL())
+            .setTimestamp(death.time().toInstant())
+            .setColor(Color.RUBY)
             .build();
         return embed.build();
     }
 
-    public EmbedCreateSpec killsWatchEmbed(
+    public MessageEmbed killsWatchEmbed(
         final DeathsRecord death
     ) {
         var killerProfile = new ProfileDataImpl(death.killerPlayerName(), death.killerPlayerUuid());
         var victimProfile = new ProfileDataImpl(death.victimPlayerName(), death.victimPlayerUuid());
-        return EmbedCreateSpec.builder()
-            .title("Watched Player Kill")
+        return new EmbedBuilder()
+            .setTitle("Watched Player Kill")
             .addField("Killer", killerProfile.toDiscordFieldValue(), true)
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
@@ -585,9 +454,9 @@ public class WatchManager {
             .addField("\u200B", "\u200B", true)
             .addField("\u200B", "\u200B", true)
             .addField("Death Message", escape(death.deathMessage()).replace(escape(killerProfile.name()), "**" + escape(killerProfile.name()) + "**"), false)
-            .thumbnail(killerProfile.getAvatarURL())
-            .timestamp(death.time().toInstant())
-            .color(Color.SEA_GREEN)
+            .setThumbnail(killerProfile.getAvatarURL())
+            .setTimestamp(death.time().toInstant())
+            .setColor(Color.SEA_GREEN)
             .build();
     }
 
@@ -611,7 +480,7 @@ public class WatchManager {
         }
     }
 
-    public void onAllGuildsLoaded(final List<UserGuildData> guilds) {
+    public void onAllGuildsLoaded(final List<Guild> guilds) {
         // todo: remove guild watches for guilds that we are no longer in
     }
 

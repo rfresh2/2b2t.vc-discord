@@ -1,13 +1,13 @@
 package vc.commands;
 
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.core.spec.MessageCreateFields;
-import discord4j.rest.util.Color;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.utils.Color;
+import net.dv8tion.jda.api.utils.FileUpload;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 import vc.api.VcDataDumpApi;
 import vc.api.model.ProfileData;
 import vc.commands.options.ChatInteractionOptionResolver;
@@ -15,8 +15,8 @@ import vc.commands.options.PlayerLookupOption;
 import vc.openapi.handler.ApiException;
 import vc.util.PlayerLookup;
 
-import java.io.ByteArrayInputStream;
 import java.net.http.HttpTimeoutException;
+import java.nio.charset.StandardCharsets;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -38,25 +38,24 @@ public class DataCommand implements SlashCommand {
     }
 
     @Override
-    public Mono<Message> handle(final ChatInputInteractionEvent event) {
+    public WebhookMessageCreateAction<Message> handle(final SlashCommandInteractionEvent event) {
         var ctx = this.resolver.resolveOptions(event);
         if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
         return resolvePlayerDataDump(event, ctx.profileData);
     }
 
-    public Mono<Message> resolvePlayerDataDump(ChatInputInteractionEvent event, ProfileData identity) {
+    public WebhookMessageCreateAction<Message> resolvePlayerDataDump(SlashCommandInteractionEvent event, ProfileData identity) {
         String playerDataDump = null;
         try {
             playerDataDump = vcDataDumpApi.getPlayerDataDump(identity.uuid(), null);
         } catch (final Exception e) {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
-                    return event.createFollowup()
-                        .withEmbeds(populateIdentity(embed(event), identity)
-                            .color(Color.RUBY)
-                            .description("No Data")
-                            .thumbnail(identity.getAvatarURL())
-                            .build());
+                    return event.getHook().sendMessageEmbeds(populateIdentity(embed(event), identity)
+                        .setColor(Color.RUBY)
+                        .setDescription("No Data")
+                        .setThumbnail(identity.getAvatarURL())
+                        .build());
                 } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
                     LOGGER.error("Timeout searching for data dump: {}", identity.uuid(), httpTimeoutException);
                     return error(event, "Timeout searching for data. Try again in a minute");
@@ -67,20 +66,19 @@ public class DataCommand implements SlashCommand {
             }
         }
         int dataCount = playerDataDump != null ? (int) playerDataDump.lines().count() : 0;
-        if (playerDataDump == null || dataCount == 0)
-            return event.createFollowup()
-                .withEmbeds(populateIdentity(embed(event), identity)
-                    .color(Color.RUBY)
-                    .description("No Data")
-                    .thumbnail(identity.getAvatarURL())
-                    .build());
-        return event.createFollowup()
-            .withFiles(MessageCreateFields.File.of(identity.name() + ".csv", new ByteArrayInputStream(playerDataDump.getBytes())))
-            .withEmbeds(populateIdentity(embed(event), identity)
-                .addField("Data Count", ""+dataCount, true)
-                .description("CSV Generated!")
-                .color(Color.CYAN)
-                .thumbnail(identity.getAvatarURL())
+        if (playerDataDump == null || dataCount == 0) {
+            return event.getHook().sendMessageEmbeds(populateIdentity(embed(event), identity)
+                .setColor(Color.RUBY)
+                .setDescription("No Data")
+                .setThumbnail(identity.getAvatarURL())
+                .build());
+        }
+        return event.getHook().sendFiles(FileUpload.fromData(playerDataDump.getBytes(StandardCharsets.UTF_8), identity.name() + ".csv"))
+            .addEmbeds(populateIdentity(embed(event), identity)
+                .addField("Data Count", String.valueOf(dataCount), true)
+                .setDescription("CSV Generated!")
+                .setColor(Color.CYAN)
+                .setThumbnail(identity.getAvatarURL())
                 .build());
     }
 }
