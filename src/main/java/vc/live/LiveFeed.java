@@ -19,6 +19,7 @@ import java.net.URI;
 import java.net.URL;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -175,27 +176,33 @@ public abstract class LiveFeed {
 
             var channels = new ArrayList<>(liveChannels.entrySet());
             Collections.shuffle(channels);
+            long beforeAll = System.currentTimeMillis();
             Lists.partition(channels, 50).forEach(c -> {
-                long before = System.currentTimeMillis();
-                for (var entry : c) {
-                    processSend(entry.getKey(), entry.getValue(), embeds);
-                }
-                long after = System.currentTimeMillis();
-                if (after - before > 20000) {
-                    LOGGER.info("[{}] Sent {} events in {}ms", feedName(), embeds.size(), after - before);
+                try {
+                    CompletableFuture.allOf(
+                            c.stream()
+                                .map(entry -> processSend(entry.getKey(), entry.getValue(), embeds))
+                                .toArray(CompletableFuture[]::new))
+                        .join();
+                } catch (final Throwable e) {
+                    LOGGER.error("[{}] Error sending feed batch", feedName(), e);
                 }
             });
+            long afterAll = System.currentTimeMillis();
+            if (afterAll - beforeAll > 20000) {
+                LOGGER.info("[{}] Sent {} events in {}ms", feedName(), embeds.size(), afterAll - beforeAll);
+            }
         } catch (final Throwable e) {
             LOGGER.error("Error processing message queue", e);
         }
     }
 
-    private void processSend(String guildId, GuildMessageChannel channel, List<MessageEmbed> embeds) {
-        try {
-            channel.sendMessageEmbeds(embeds).complete();
-        } catch (Throwable error) {
-            handleBroadcastError(error, guildId, channel);
-        }
+    private CompletableFuture<net.dv8tion.jda.api.entities.Message> processSend(String guildId, GuildMessageChannel channel, List<MessageEmbed> embeds) {
+        return channel.sendMessageEmbeds(embeds)
+            .submit(true)
+            .whenComplete((message, error) -> {
+                if (error != null) handleBroadcastError(error, guildId, channel);
+            });
     }
 
     private void handleBroadcastError(final Throwable error, final String guildId, final GuildMessageChannel channel) {
