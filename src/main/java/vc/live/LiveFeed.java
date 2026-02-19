@@ -21,6 +21,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -36,6 +37,7 @@ public abstract class LiveFeed {
     protected final Map<String, GuildMessageChannel> liveChannels;
     protected final LiveFeedRepository liveFeedRepository;
     protected final LiveFeedDispatcher dispatcher;
+    protected final AtomicBoolean inDispatch = new AtomicBoolean(false);
     private final PriorityBlockingQueue<Message> messageQueue;
     private final Cache<String, AtomicInteger> guildMessageSendFailCountCache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, MINUTES)
@@ -166,6 +168,7 @@ public abstract class LiveFeed {
 
     @Scheduled(initialDelay = 5, fixedRate = 10, timeUnit = TimeUnit.SECONDS)
     protected void processMessageQueue() {
+        if (!inDispatch.compareAndSet(false, true)) return;
         try {
             final List<MessageEmbed> embeds = new ArrayList<>(4);
             int staleDropped = 0;
@@ -184,6 +187,7 @@ public abstract class LiveFeed {
                 LOGGER.info("[{}] Dropped {} stale feed events", feedName(), staleDropped);
             }
             if (embeds.isEmpty()) {
+                inDispatch.set(false);
                 return;
             }
 
@@ -203,6 +207,7 @@ public abstract class LiveFeed {
         } catch (final Throwable e) {
             LOGGER.error("Error processing message queue", e);
         }
+        inDispatch.set(false);
     }
 
     @Scheduled(fixedRate = 30, initialDelay = 30, timeUnit = TimeUnit.SECONDS)
@@ -212,8 +217,7 @@ public abstract class LiveFeed {
         if (localQueueDepth == 0 && dispatchDepth == 0) return;
 
         LOGGER.info(
-            "[{}] queueDepth={} dispatchDepth={} liveChannels={}",
-            feedName(),
+            "queueDepth={} dispatchDepth={} liveChannels={}",
             localQueueDepth,
             dispatchDepth,
             liveChannels.size()
@@ -221,8 +225,7 @@ public abstract class LiveFeed {
 
         if (localQueueDepth >= FEED_QUEUE_WARN_THRESHOLD) {
             LOGGER.warn(
-                "[{}] Input queue depth high: {} (capacity {})",
-                feedName(),
+                "Input queue depth high: {} (capacity {})",
                 localQueueDepth,
                 MESSAGE_Q_CAPACITY
             );
