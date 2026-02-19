@@ -196,6 +196,7 @@ public abstract class LiveFeed {
             long beforeAll = System.currentTimeMillis();
             dispatcher.submitBatch(feedLane(), channels, embeds, this::handleBroadcastError)
                 .whenComplete((ok, error) -> {
+                    inDispatch.set(false);
                     if (error != null) {
                         LOGGER.error("[{}] Error sending feed batch", feedName(), error);
                     }
@@ -206,8 +207,8 @@ public abstract class LiveFeed {
                 });
         } catch (final Throwable e) {
             LOGGER.error("Error processing message queue", e);
+            inDispatch.set(false);
         }
-        inDispatch.set(false);
     }
 
     @Scheduled(fixedRate = 30, initialDelay = 30, timeUnit = TimeUnit.SECONDS)
