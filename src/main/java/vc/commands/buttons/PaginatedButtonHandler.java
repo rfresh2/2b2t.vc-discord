@@ -1,17 +1,17 @@
 package vc.commands.buttons;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
-import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.Button;
-import discord4j.core.object.emoji.Emoji;
-import discord4j.core.object.entity.Message;
-import discord4j.discordjson.possible.Possible;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.components.buttons.ButtonStyle;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
 import vc.util.PlayerLookup;
 
@@ -26,33 +26,38 @@ public class PaginatedButtonHandler {
     public static final Logger LOGGER = LoggerFactory.getLogger(PaginatedButtonHandler.class);
     public static final String ID_PREFIX_DELIMITER = ":";
 
-    public Mono<Message> defaultButtonHandler(ButtonInteractionEvent event, ObjectMapper objectMapper, String commandName, PlayerLookup playerLookup, CommandResolver resolver, ErrorResolver errorResolver) {
-        var args = decodeButtonId(objectMapper, commandName, event.getCustomId());
-        return Mono.defer(() -> {
-            Optional<ProfileData> playerIdentityOptional = playerLookup.getPlayerIdentity(args.playerName());
-            if (playerIdentityOptional.isEmpty()) {
-                return errorResolver.error(event, "Unable to find player");
-            }
-            ProfileData identity = playerIdentityOptional.get();
-            return resolver.resolve(event, identity, args.page(), args.startDate(), args.endDate());
-        });
+    public WebhookMessageCreateAction<Message> defaultButtonHandler(
+        ButtonInteractionEvent event,
+        ObjectMapper objectMapper,
+        String commandName,
+        PlayerLookup playerLookup,
+        CommandResolver resolver,
+        ErrorResolver errorResolver
+    ) {
+        var args = decodeButtonId(objectMapper, commandName, event.getComponentId());
+        Optional<ProfileData> playerIdentityOptional = playerLookup.getPlayerIdentity(args.playerName());
+        if (playerIdentityOptional.isEmpty()) {
+            return errorResolver.error(event.getHook(), "Unable to find player");
+        }
+        ProfileData identity = playerIdentityOptional.get();
+        return resolver.resolve(event.getHook(), identity, args.page(), args.startDate(), args.endDate());
     }
 
     @FunctionalInterface
     public interface CommandResolver {
-        Mono<Message> resolve(DeferrableInteractionEvent event, ProfileData identity, int page, LocalDate startDate, LocalDate endDate);
+        WebhookMessageCreateAction<Message> resolve(InteractionHook event, ProfileData identity, int page, LocalDate startDate, LocalDate endDate);
     }
 
     @FunctionalInterface
     public interface ErrorResolver {
-        Mono<Message> error(DeferrableInteractionEvent event, String message);
+        WebhookMessageCreateAction<Message> error(InteractionHook event, String message);
     }
 
-    public Possible<List<Button>> getButtons(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
+    public List<Button> getButtons(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
         return getButtons(objectMapper, commandName, totalPageCount, page, identity, null, startDate, endDate);
     }
 
-    public Possible<List<Button>> getButtons(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, String word, LocalDate startDate, LocalDate endDate) {
+    public List<Button> getButtons(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, String word, LocalDate startDate, LocalDate endDate) {
         List<Button> buttons = new ArrayList<>();
         String playerName = identity != null ? identity.name() : null;
         if (page > 1) {
@@ -61,12 +66,12 @@ public class PaginatedButtonHandler {
                 padding = "0";
             }
             var firstPageArgs = new PaginatedCommandArgs(playerName, word, 1, startDate, endDate, padding);
-            addButtonSafe(encodeButtonId(objectMapper, commandName, firstPageArgs), Emoji.unicode("⏮"), buttons);
+            addButtonSafe(encodeButtonId(objectMapper, commandName, firstPageArgs), "⏮", buttons);
             var prevPageArgs = new PaginatedCommandArgs(playerName, word, page - 1, startDate, endDate, null);
-            addButtonSafe(encodeButtonId(objectMapper, commandName, prevPageArgs), Emoji.unicode("◀"), buttons);
+            addButtonSafe(encodeButtonId(objectMapper, commandName, prevPageArgs), "◀", buttons);
         } else {
-            addDisabledButton(Emoji.unicode("⏮"), buttons);
-            addDisabledButton(Emoji.unicode("◀"), buttons);
+            addDisabledButton("⏮", buttons);
+            addDisabledButton("◀", buttons);
         }
         if (page < totalPageCount) {
             String padding = null;
@@ -74,35 +79,34 @@ public class PaginatedButtonHandler {
                 padding = "0";
             }
             var nextPageArgs = new PaginatedCommandArgs(playerName, word, page + 1, startDate, endDate, padding);
-            addButtonSafe(encodeButtonId(objectMapper, commandName, nextPageArgs), Emoji.unicode("▶"), buttons);
+            addButtonSafe(encodeButtonId(objectMapper, commandName, nextPageArgs), "▶", buttons);
             var lastPageArgs = new PaginatedCommandArgs(playerName, word, totalPageCount, startDate, endDate, null);
-            addButtonSafe(encodeButtonId(objectMapper, commandName, lastPageArgs), Emoji.unicode("⏭"), buttons);
+            addButtonSafe(encodeButtonId(objectMapper, commandName, lastPageArgs), "⏭", buttons);
         } else {
-            addDisabledButton(Emoji.unicode("▶"), buttons);
-            addDisabledButton(Emoji.unicode("⏭"), buttons);
+            addDisabledButton("▶", buttons);
+            addDisabledButton("⏭", buttons);
         }
-        return buttons.isEmpty() ? Possible.absent() : Possible.of(buttons);
+        return buttons;
     }
 
-    public Possible<List<ActionRow>> getButtonRow(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
+    public List<ActionRow> getButtonRow(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, LocalDate startDate, LocalDate endDate) {
         return getButtonRow(objectMapper, commandName, totalPageCount, page, identity, null, startDate, endDate);
     }
 
-    public Possible<List<ActionRow>> getButtonRow(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, String word, LocalDate startDate, LocalDate endDate) {
-        return getButtons(objectMapper, commandName, totalPageCount, page, identity, word, startDate, endDate)
-            .map(buttons -> List.of(ActionRow.of(buttons)));
+    public List<ActionRow> getButtonRow(ObjectMapper objectMapper, String commandName, int totalPageCount, int page, ProfileData identity, String word, LocalDate startDate, LocalDate endDate) {
+        return List.of(ActionRow.of(getButtons(objectMapper, commandName, totalPageCount, page, identity, word, startDate, endDate)));
     }
 
-    public void addButtonSafe(String encodedId, Emoji emoji, List<Button> out) {
+    public void addButtonSafe(String encodedId, String emoji, List<Button> out) {
         if (encodedId.length() > 100) {
             LOGGER.warn("Button ID too long: {}", encodedId);
             return;
         }
-        out.add(Button.secondary(encodedId, emoji));
+        out.add(Button.of(ButtonStyle.SECONDARY, encodedId, " ").withEmoji(Emoji.fromUnicode(emoji)));
     }
 
-    public void addDisabledButton(Emoji emoji, List<Button> out) {
-        out.add(Button.secondary(UUID.randomUUID().toString(), emoji).disabled());
+    public void addDisabledButton(String emoji, List<Button> out) {
+        out.add(Button.of(ButtonStyle.SECONDARY, UUID.randomUUID().toString(), " ").withEmoji(Emoji.fromUnicode(emoji)).asDisabled());
     }
 
     public String encodeButtonId(ObjectMapper objectMapper, String commandName, PaginatedCommandArgs args) {

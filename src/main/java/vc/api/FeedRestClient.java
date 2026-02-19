@@ -1,12 +1,14 @@
 package vc.api;
 
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
-import reactor.netty.http.client.HttpClient;
 import reactor.util.retry.Retry;
 import tools.jackson.databind.ObjectMapper;
 import vc.live.dto.ChatsRecord;
@@ -14,7 +16,7 @@ import vc.live.dto.ConnectionsRecord;
 import vc.live.dto.DeathsRecord;
 
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.Objects;
 
 @Component
 public class FeedRestClient {
@@ -42,25 +44,24 @@ public class FeedRestClient {
         return buildFlux("/connections", ConnectionsRecord.class);
     }
 
-    private HttpClient httpClient() {
-        return HttpClient.create()
+    private WebClient webClient() {
+        return WebClient.builder()
             .baseUrl("https://api.2b2t.vc/feed")
-            .headers(h -> h
-                .add(HttpHeaderNames.USER_AGENT, "2b2t.vc-discord")
-                .add("X-API-Key", apiKey)
-                .add(HttpHeaderNames.ACCEPT, HttpHeaderValues.TEXT_EVENT_STREAM));
+            .defaultHeader(HttpHeaders.USER_AGENT, "2b2t.vc-discord")
+            .defaultHeader("X-API-Key", apiKey)
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.TEXT_EVENT_STREAM_VALUE)
+            .build();
     }
 
     private <T> Flux<T> buildFlux(String uri, Class<T> clazz) {
-        return httpClient()
+        return webClient()
             .get()
             .uri(uri)
-            .responseContent()
-            .asString()
+            .retrieve()
+            .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {})
+            .map(ServerSentEvent::data)
+            .filter(Objects::nonNull)
             .timeout(Duration.ofMinutes(5))
-            .flatMapIterable(s -> Arrays.asList(s.split("\n")))
-            .filter(s -> s.startsWith("data:"))
-            .map(s -> s.substring("data:".length()).trim())
             .filter(s -> !s.isBlank())
             .map(s -> objectMapper.readValue(s, clazz))
             .retryWhen(Retry.fixedDelay(Long.MAX_VALUE, Duration.ofSeconds(2))

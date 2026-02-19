@@ -5,14 +5,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import discord4j.core.DiscordClientBuilder;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.object.presence.ClientActivity;
-import discord4j.core.object.presence.ClientPresence;
-import discord4j.core.object.presence.Status;
-import discord4j.gateway.intent.Intent;
-import discord4j.gateway.intent.IntentSet;
-import discord4j.rest.RestClient;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.entities.Activity;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,10 +33,9 @@ public class Application {
     @Value("${BOT_TOKEN}")
     String token;
     private static final Logger LOGGER = getLogger("Application");
-    private GatewayDiscordClient gatewayDiscordClient;
+    private JDA jda;
 
     public static void main(String[] args) {
-//        System.setProperty("reactor.schedulers.defaultBoundedElasticOnVirtualThreads", "true");
         new SpringApplicationBuilder(Application.class)
             .registerShutdownHook(true)
             .build()
@@ -55,19 +50,13 @@ public class Application {
     }
 
     @Bean
-    public GatewayDiscordClient gatewayDiscordClient() {
-        this.gatewayDiscordClient = DiscordClientBuilder.create(token).build()
-            .gateway()
-            .setEnabledIntents(IntentSet.of(Intent.GUILDS))
-            .setInitialPresence(ignore -> ClientPresence.of(Status.ONLINE, ClientActivity.custom("/commands")))
-            .login()
-            .block();
-        return this.gatewayDiscordClient;
-    }
-
-    @Bean
-    public RestClient discordRestClient(GatewayDiscordClient client) {
-        return client.getRestClient();
+    public JDA jda() throws InterruptedException {
+        this.jda = JDABuilder.createDefault(token)
+            .setStatus(OnlineStatus.ONLINE)
+            .setActivity(Activity.playing("/commands"))
+            .build();
+        this.jda.awaitReady();
+        return this.jda;
     }
 
     @Bean
@@ -98,8 +87,8 @@ public class Application {
     public void onDestroy() {
         LOGGER.info("Shutting down Application");
         try {
-            if (this.gatewayDiscordClient != null) {
-                this.gatewayDiscordClient.logout().block(Duration.ofSeconds(15));
+            if (this.jda != null) {
+                this.jda.shutdown();
             }
         } catch (Exception e) {
             LOGGER.error("Error during shutdown", e);

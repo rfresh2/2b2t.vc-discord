@@ -1,18 +1,17 @@
 package vc.commands;
 
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.discordjson.json.ApplicationCommandRequest;
-import discord4j.rest.util.Color;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.utils.Color;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 import vc.process.GlobalCommandRegistrar;
 
 import java.util.List;
 
 @Component
 public class CommandsCommand implements SlashCommand {
-    List<ApplicationCommandRequest> commands;
+    private final List<GlobalCommandRegistrar.RegisteredCommand> commands;
 
     public CommandsCommand(final GlobalCommandRegistrar registrar) {
         this.commands = registrar.getCommands();
@@ -24,15 +23,14 @@ public class CommandsCommand implements SlashCommand {
     }
 
     @Override
-    public Mono<Message> handle(final ChatInputInteractionEvent event) {
+    public WebhookMessageCreateAction<Message> handle(final SlashCommandInteractionEvent event) {
         var commandInfos = this.commands.stream()
-            .map(c -> "`/" + c.name() + "` -> " + c.description().toOptional().orElse(""))
+            .map(c -> "`/" + c.name() + "` -> " + c.description())
             .toList();
-        return event.createFollowup()
-            .withEmbeds(embed(event)
-                .title("Commands")
-                .description(String.join("\n", commandInfos))
-                .color(Color.CYAN)
-                .build());
+        return event.getHook().sendMessageEmbeds(embed(event)
+            .setTitle("Commands")
+            .setDescription(String.join("\n", commandInfos))
+            .setColor(Color.CYAN)
+            .build());
     }
 }

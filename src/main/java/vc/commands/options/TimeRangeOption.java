@@ -1,6 +1,5 @@
 package vc.commands.options;
 
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
@@ -11,8 +10,8 @@ public class TimeRangeOption implements ChatInteractionOption {
         LocalDate startDate;
         LocalDate endDate;
         try {
-            startDate = getLocalDateIfPresent(context.event, "startdate");
-            endDate = getLocalDateIfPresent(context.event, "enddate");
+            startDate = getLocalDateIfPresent(context, "startdate");
+            endDate = getLocalDateIfPresent(context, "enddate");
             if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
                 context.setError("Start Date must be before End Date");
                 return;
@@ -25,9 +24,8 @@ public class TimeRangeOption implements ChatInteractionOption {
         context.endDate = endDate;
     }
 
-    // throws runtime exception if date is present but format is invalid
-    @Nullable LocalDate getLocalDateIfPresent(ChatInputInteractionEvent event, String argName) {
-        var inputOptional = event.getOptionAsString(argName);
+    @Nullable LocalDate getLocalDateIfPresent(ChatInteractionOptionContext context, String argName) {
+        var inputOptional = context.getOptionAsString(argName);
         if (inputOptional.isEmpty()) return null;
         try {
             return LocalDate.parse(inputOptional.get());

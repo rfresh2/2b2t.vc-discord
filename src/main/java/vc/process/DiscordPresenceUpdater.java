@@ -1,9 +1,7 @@
 package vc.process;
 
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.object.presence.ClientActivity;
-import discord4j.core.object.presence.ClientPresence;
-import discord4j.core.object.presence.Status;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Activity;
 import org.slf4j.Logger;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -22,12 +20,10 @@ import static java.util.Arrays.asList;
 @Component
 public class DiscordPresenceUpdater {
     private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger("LivePresence");
-    private final GatewayDiscordClient discordClient;
+    private final JDA jda;
     private final QueueApi queueApi;
     private final TabListApi tabListApi;
     private final Random random = new Random();
-
-    // todo: could be cool to have a secondary list of all 2b2t motd's and randomly select one of those
 
     private static final List<String> statusMessages = asList(
         "/commands",
@@ -36,8 +32,8 @@ public class DiscordPresenceUpdater {
         "Powered by ZenithProxy!"
     );
 
-    public DiscordPresenceUpdater(final GatewayDiscordClient discordClient, final QueueApi queueApi, final TabListApi tabListApi) {
-        this.discordClient = discordClient;
+    public DiscordPresenceUpdater(final JDA jda, final QueueApi queueApi, final TabListApi tabListApi) {
+        this.jda = jda;
         this.queueApi = queueApi;
         this.tabListApi = tabListApi;
     }
@@ -45,11 +41,7 @@ public class DiscordPresenceUpdater {
     @Scheduled(fixedRate = 1, timeUnit = TimeUnit.MINUTES)
     void updatePresence() {
         try {
-            this.discordClient.updatePresence(
-                    ClientPresence.of(
-                        Status.ONLINE,
-                        ClientActivity.custom(selectStatusMessage())))
-                .block();
+            this.jda.getPresence().setActivity(Activity.playing(selectStatusMessage()));
         } catch (final Exception e) {
             LOGGER.error("Error updating presence", e);
         }

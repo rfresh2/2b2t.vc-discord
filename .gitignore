@@ -27,6 +27,7 @@ hs_err_pid*
 target/
 log/
 .env
+.env.*
 
 *.db
 *.db-journal

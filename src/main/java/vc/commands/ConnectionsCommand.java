@@ -2,14 +2,14 @@ package vc.commands;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.rest.util.Color;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.utils.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
 import vc.commands.buttons.ButtonCommand;
 import vc.commands.buttons.PaginatedButtonHandler;
@@ -27,8 +27,8 @@ import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
+import static vc.discord.DiscordTimestampFormat.SHORT_DATE_TIME;
 
 @Component
 public class ConnectionsCommand implements SlashCommand, ButtonCommand {
@@ -56,45 +56,44 @@ public class ConnectionsCommand implements SlashCommand, ButtonCommand {
     }
 
     @Override
-    public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        var ctx = this.resolver.resolveOptions(event);
+    public WebhookMessageCreateAction<Message> handle(final SlashCommandInteractionEvent event) {
+        var ctx = resolver.resolveOptions(event);
         if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
-        return resolveConnections(event, ctx.profileData, ctx.page, ctx.startDate, ctx.endDate);
+        return resolveConnections(event.getHook(), ctx.profileData, ctx.page, ctx.startDate, ctx.endDate);
     }
 
-    private Mono<Message> resolveConnections(final DeferrableInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
+    private WebhookMessageCreateAction<Message> resolveConnections(final InteractionHook hook, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
         ConnectionsResponse connectionsResponse = null;
         try {
             connectionsResponse = connectionsApi.connections(identity.uuid(), null, startDate, endDate, 25, page);
         } catch (final Exception e) {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
-                    return event.createFollowup()
-                        .withEmbeds(populateIdentity(embed(event), identity)
-                            .color(Color.RUBY)
-                            .description("No connections found")
-                            .thumbnail(identity.getAvatarURL())
-                            .build());
+                    return hook.sendMessageEmbeds(populateIdentity(embed(hook), identity)
+                        .setColor(Color.RUBY)
+                        .setDescription("No connections found")
+                        .setThumbnail(identity.getAvatarURL())
+                        .build());
                 } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
                     LOGGER.error("Timeout searching for connections: {}", identity.uuid(), httpTimeoutException);
-                    return error(event, "Timeout searching for connections. Try again in a minute");
+                    return error(hook, "Timeout searching for connections. Try again in a minute");
                 }
-            } else {
-                LOGGER.error("Error processing connections response", e);
-                throw new RuntimeException(e);
             }
+            LOGGER.error("Error processing connections response", e);
+            throw new RuntimeException(e);
         }
-        if (connectionsResponse == null || connectionsResponse.getConnections() == null || connectionsResponse.getConnections().isEmpty())
-            return event.createFollowup()
-                .withEmbeds(populateIdentity(embed(event), identity)
-                    .color(Color.RUBY)
-                    .description("No connections found")
-                    .thumbnail(identity.getAvatarURL())
-                    .build());
+        if (connectionsResponse == null || connectionsResponse.getConnections() == null || connectionsResponse.getConnections().isEmpty()) {
+            return hook.sendMessageEmbeds(populateIdentity(embed(hook), identity)
+                .setColor(Color.RUBY)
+                .setDescription("No connections found")
+                .setThumbnail(identity.getAvatarURL())
+                .build());
+        }
+
         final StringBuilder result = new StringBuilder();
         final AtomicBoolean truncated = new AtomicBoolean(false);
         connectionsResponse.getConnections().stream()
-            .map(c -> (c.getConnection() == Connection.ConnectionEnum.JOIN ? ":green_circle:" : ":red_circle:")  + " " + SHORT_DATE_TIME.format(c.getTime().toInstant()))
+            .map(c -> (c.getConnection() == Connection.ConnectionEnum.JOIN ? ":green_circle:" : ":red_circle:") + " " + SHORT_DATE_TIME.format(c.getTime().toInstant()))
             .forEachOrdered(s -> {
                 if (result.length() + s.length() + 1 > 4090) {
                     truncated.set(true);
@@ -102,22 +101,21 @@ public class ConnectionsCommand implements SlashCommand, ButtonCommand {
                 }
                 result.append(s).append("\n");
             });
-        if (!result.isEmpty()) result.deleteCharAt(result.length() - 1); // cut off the last newline
+        if (!result.isEmpty()) result.deleteCharAt(result.length() - 1);
         if (truncated.get()) LOGGER.warn("Truncated connections response");
-        return event.createFollowup()
-            .withEmbeds(populateIdentity(embed(event), identity)
-                .color(Color.CYAN)
-                .description(result.toString())
-                .addField("Total", ""+connectionsResponse.getTotal(), true)
+        return hook.sendMessageEmbeds(populateIdentity(embed(hook), identity)
+                .setColor(Color.CYAN)
+                .setDescription(result.toString())
+                .addField("Total", String.valueOf(connectionsResponse.getTotal()), true)
                 .addField("Page", page + " / " + connectionsResponse.getPageCount(), true)
                 .addField("\u200B", "\u200B", true)
-                .thumbnail(identity.getAvatarURL())
+                .setThumbnail(identity.getAvatarURL())
                 .build())
-            .withComponents(buttonHandler.getButtonRow(objectMapper, getName(), connectionsResponse.getPageCount(), page, identity, startDate, endDate));
+            .setComponents(buttonHandler.getButtonRow(objectMapper, getName(), connectionsResponse.getPageCount(), page, identity, startDate, endDate));
     }
 
     @Override
-    public Mono<Message> handleButton(final ButtonInteractionEvent event) {
+    public WebhookMessageCreateAction<Message> handleButton(final ButtonInteractionEvent event) {
         return buttonHandler.defaultButtonHandler(event, objectMapper, getName(), playerLookup, this::resolveConnections, this::error);
     }
 }

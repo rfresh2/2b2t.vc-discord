@@ -2,14 +2,14 @@ package vc.commands;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.rest.util.Color;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.utils.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
 import vc.commands.buttons.ButtonCommand;
 import vc.commands.buttons.PaginatedButtonHandler;
@@ -26,8 +26,8 @@ import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static discord4j.common.util.TimestampFormat.SHORT_DATE_TIME;
 import static org.slf4j.LoggerFactory.getLogger;
+import static vc.discord.DiscordTimestampFormat.SHORT_DATE_TIME;
 import static vc.util.DiscordMarkdownEscape.escape;
 
 @Component
@@ -56,41 +56,39 @@ public class KillsCommand implements SlashCommand, ButtonCommand {
     }
 
     @Override
-    public Mono<Message> handle(final ChatInputInteractionEvent event) {
+    public WebhookMessageCreateAction<Message> handle(final SlashCommandInteractionEvent event) {
         var ctx = resolver.resolveOptions(event);
         if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
-        return resolveKills(event, ctx.profileData, ctx.page, ctx.startDate, ctx.endDate);
+        return resolveKills(event.getHook(), ctx.profileData, ctx.page, ctx.startDate, ctx.endDate);
     }
 
-    private Mono<Message> resolveKills(final DeferrableInteractionEvent event, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
+    private WebhookMessageCreateAction<Message> resolveKills(final InteractionHook hook, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
         KillsResponse killsResponse = null;
         try {
             killsResponse = deathsApi.kills(identity.uuid(), null, startDate, endDate, 25, page);
         } catch (final Exception e) {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
-                    return event.createFollowup()
-                        .withEmbeds(populateIdentity(embed(event), identity)
-                            .color(Color.RUBY)
-                            .description("No kills found")
-                            .thumbnail(identity.getAvatarURL())
-                            .build());
+                    return hook.sendMessageEmbeds(populateIdentity(embed(hook), identity)
+                        .setColor(Color.RUBY)
+                        .setDescription("No kills found")
+                        .setThumbnail(identity.getAvatarURL())
+                        .build());
                 } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
                     LOGGER.error("Timeout searching for kills: {}", identity.uuid(), httpTimeoutException);
-                    return error(event, "Timeout searching for kills. Try again in a minute");
+                    return error(hook, "Timeout searching for kills. Try again in a minute");
                 }
-            } else {
-                LOGGER.error("Error resolving kills", e);
-                throw new RuntimeException(e);
             }
+            LOGGER.error("Error resolving kills", e);
+            throw new RuntimeException(e);
         }
-        if (killsResponse == null || killsResponse.getKills() == null || killsResponse.getKills().isEmpty())
-            return event.createFollowup()
-                .withEmbeds(populateIdentity(embed(event), identity)
-                    .color(Color.RUBY)
-                    .description("No kills found")
-                    .thumbnail(identity.getAvatarURL())
-                    .build());
+        if (killsResponse == null || killsResponse.getKills() == null || killsResponse.getKills().isEmpty()) {
+            return hook.sendMessageEmbeds(populateIdentity(embed(hook), identity)
+                .setColor(Color.RUBY)
+                .setDescription("No kills found")
+                .setThumbnail(identity.getAvatarURL())
+                .build());
+        }
 
         final StringBuilder result = new StringBuilder();
         final AtomicBoolean truncated = new AtomicBoolean(false);
@@ -103,22 +101,21 @@ public class KillsCommand implements SlashCommand, ButtonCommand {
                 }
                 result.append(s).append("\n");
             });
-        if (!result.isEmpty()) result.deleteCharAt(result.length() - 1); // cut off the last newline
+        if (!result.isEmpty()) result.deleteCharAt(result.length() - 1);
         if (truncated.get()) LOGGER.warn("Truncated kills response");
-        return event.createFollowup()
-            .withEmbeds(populateIdentity(embed(event), identity)
-                .color(Color.CYAN)
-                .description(result.toString())
-                .addField("Total", ""+killsResponse.getTotal(), true)
+        return hook.sendMessageEmbeds(populateIdentity(embed(hook), identity)
+                .setColor(Color.CYAN)
+                .setDescription(result.toString())
+                .addField("Total", String.valueOf(killsResponse.getTotal()), true)
                 .addField("Page", page + " / " + killsResponse.getPageCount(), true)
                 .addField("\u200B", "\u200B", true)
-                .thumbnail(identity.getAvatarURL())
+                .setThumbnail(identity.getAvatarURL())
                 .build())
-            .withComponents(buttonHandler.getButtonRow(objectMapper, getName(), killsResponse.getPageCount(), page, identity, startDate, endDate));
+            .setComponents(buttonHandler.getButtonRow(objectMapper, getName(), killsResponse.getPageCount(), page, identity, startDate, endDate));
     }
 
     @Override
-    public Mono<Message> handleButton(final ButtonInteractionEvent event) {
+    public WebhookMessageCreateAction<Message> handleButton(final ButtonInteractionEvent event) {
         return buttonHandler.defaultButtonHandler(event, objectMapper, getName(), playerLookup, this::resolveKills, this::error);
     }
 }

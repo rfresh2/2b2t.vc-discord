@@ -1,7 +1,6 @@
 package vc.commands.options;
 
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +16,7 @@ public class ChatInteractionOptionResolver {
         return this;
     }
 
-    public ChatInteractionOptionContext resolveOptions(ChatInputInteractionEvent event) {
+    public ChatInteractionOptionContext resolveOptions(SlashCommandInteractionEvent event) {
         var ctx = new ChatInteractionOptionContext(event);
         try {
             for (ChatInteractionOption option : options) {
@@ -25,10 +24,7 @@ public class ChatInteractionOptionResolver {
                 option.apply(ctx);
             }
         } catch (final Exception e) {
-            LOGGER.error("Error while resolving options for event: {} with options: {}",
-                event.getCommandName(),
-                event.getOptions().stream().map(ApplicationCommandInteractionOption::getName).toArray(),
-                e);
+            LOGGER.error("Error while resolving options for event: {}", event.getName(), e);
             if (!ctx.isErrorSet()) ctx.setError("Error while resolving command options");
         }
         return ctx;

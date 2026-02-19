@@ -1,12 +1,12 @@
 package vc.commands;
 
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.rest.util.Color;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.utils.Color;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 import vc.api.model.ProfileData;
 import vc.commands.options.ChatInteractionOptionResolver;
 import vc.commands.options.PlayerLookupOption;
@@ -40,49 +40,47 @@ public class PlaytimeCommand implements SlashCommand {
     }
 
     @Override
-    public Mono<Message> handle(final ChatInputInteractionEvent event) {
+    public WebhookMessageCreateAction<Message> handle(final SlashCommandInteractionEvent event) {
         var ctx = resolver.resolveOptions(event);
         if (ctx.isErrorSet()) return error(event, ctx.getErrorMessage());
         return resolvePlaytime(event, ctx.profileData);
     }
 
-    private Mono<Message> resolvePlaytime(ChatInputInteractionEvent event, final ProfileData identity) {
+    private WebhookMessageCreateAction<Message> resolvePlaytime(SlashCommandInteractionEvent event, final ProfileData identity) {
         PlaytimeResponse playtime = null;
         try {
             playtime = playtimeApi.playtime(identity.uuid(), null);
         } catch (final Exception e) {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
-                    return event.createFollowup()
-                        .withEmbeds(populateIdentity(embed(event), identity)
-                            .color(Color.RUBY)
-                            .description("Never Played")
-                            .thumbnail(identity.getAvatarURL())
-                            .build());
+                    return event.getHook().sendMessageEmbeds(populateIdentity(embed(event), identity)
+                        .setColor(Color.RUBY)
+                        .setDescription("Never Played")
+                        .setThumbnail(identity.getAvatarURL())
+                        .build());
                 } else if (apiException.getCause() instanceof HttpTimeoutException httpTimeoutException) {
                     LOGGER.error("Timeout searching for playtime: {}", identity.uuid(), httpTimeoutException);
                     return error(event, "Timeout getting playtime. Try again in a minute");
                 }
-            } else {
-                LOGGER.error("Failed to get playtime for player: {}", identity.uuid(), e);
-                throw new RuntimeException(e);
             }
+            LOGGER.error("Failed to get playtime for player: {}", identity.uuid(), e);
+            throw new RuntimeException(e);
         }
-        if (isNull(playtime))
-            return event.createFollowup()
-                .withEmbeds(populateIdentity(embed(event), identity)
-                    .color(Color.RUBY)
-                    .description("Never Played")
-                    .thumbnail(identity.getAvatarURL())
-                    .build());
+
+        if (isNull(playtime)) {
+            return event.getHook().sendMessageEmbeds(populateIdentity(embed(event), identity)
+                .setColor(Color.RUBY)
+                .setDescription("Never Played")
+                .setThumbnail(identity.getAvatarURL())
+                .build());
+        }
         Integer playtimeSeconds = playtime.getPlaytimeSeconds();
         String durationStr = formatDuration(playtimeSeconds);
-        return event.createFollowup()
-            .withEmbeds(populateIdentity(embed(event), identity)
-                .color(Color.CYAN)
-                .description(durationStr)
-                .thumbnail(identity.getAvatarURL())
-                .build());
+        return event.getHook().sendMessageEmbeds(populateIdentity(embed(event), identity)
+            .setColor(Color.CYAN)
+            .setDescription(durationStr)
+            .setThumbnail(identity.getAvatarURL())
+            .build());
     }
 
     private String formatDuration(long durationInSeconds) {

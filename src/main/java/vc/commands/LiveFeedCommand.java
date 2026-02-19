@@ -1,18 +1,16 @@
 package vc.commands;
 
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
-import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.channel.Channel;
-import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.core.spec.MessageCreateSpec;
-import discord4j.rest.http.client.ClientException;
-import discord4j.rest.util.Color;
-import discord4j.rest.util.Permission;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.channel.Channel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.utils.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Mono;
 import vc.live.LiveFeed;
 
 public abstract class LiveFeedCommand implements SlashCommand {
@@ -26,81 +24,65 @@ public abstract class LiveFeedCommand implements SlashCommand {
     public abstract String feedName();
 
     @Override
-    public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        if (event.getInteraction().getGuildId().isEmpty()) return error(event, "This command can only be used inside a discord server");
-        if (!validateUserPermissions(event)) return error(event, "You must have permission: " + Permission.MANAGE_MESSAGES + " to use this command");
-        var enableOption = event.getOption("enable");
-        var isEnableSubCommand = enableOption.isPresent();
-        var isDisableSubCommand = event.getOption("disable").isPresent();
-        if (isEnableSubCommand && isDisableSubCommand) return error(event, "Cannot enable and disable at the same time");
-        if (!isEnableSubCommand && !isDisableSubCommand) return error(event, "Must specify either enable or disable");
-        var guildId = event.getInteraction().getGuildId().get().asString();
-        if (isEnableSubCommand) {
-            return enableOption
-                .flatMap(sub -> sub.getOption("channel"))
-                .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asChannel)
-                .map(channelMono -> channelMono.flatMap(channel -> {
-                    if (channel == null) return error(event, "Channel is required when enabling " + feedName());
-                    try {
-                        if (!testPermissions(guildId, channel)) {
-                            return error(event, "Bot must have permissions to send messages in: " + channel.getMention());
-                        }
-                        liveFeed.enableFeed(guildId, channel.getId().asString());
-                        return event.createFollowup()
-                            .withEmbeds(embed(event)
-                                .title(feedName() + " Enabled")
-                                .color(Color.CYAN)
-                                .addField("Channel", channel.getMention(), true)
-                                .build());
-                    } catch (final Throwable e) {
-                        return error(event, "Unable to enable " + feedName() + ": " + e.getMessage());
-                    }}))
-                .orElseGet(() -> error(event, "Channel is required when enabling " + feedName()));
-        } else {
+    public WebhookMessageCreateAction<Message> handle(final SlashCommandInteractionEvent event) {
+        if (!event.isFromGuild()) return error(event, "This command can only be used inside a discord server");
+        if (!validateUserPermissions(event)) return error(event, "You must have permission: " + Permission.MESSAGE_MANAGE + " to use this command");
+
+        var subcommand = event.getSubcommandName();
+        if (subcommand == null) return error(event, "Must specify either enable or disable");
+
+        var guildId = event.getGuild().getId();
+        if ("enable".equals(subcommand)) {
+            Channel channel = event.getOption("channel", OptionMapping::getAsChannel);
+            if (channel == null) return error(event, "Channel is required when enabling " + feedName());
+            if (!(channel instanceof GuildMessageChannel messageChannel)) {
+                return error(event, "Selected channel must be a text channel");
+            }
             try {
-                liveFeed.disableFeed(guildId);
-                return event.createFollowup()
-                    .withEmbeds(embed(event)
-                        .title(feedName() + " Disabled")
-                        .color(Color.CYAN)
-                        .build());
+                if (!testPermissions(guildId, messageChannel)) {
+                    return error(event, "Bot must have permissions to send messages in: " + messageChannel.getAsMention());
+                }
+                liveFeed.enableFeed(guildId, messageChannel.getId());
+                return event.getHook().sendMessageEmbeds(embed(event)
+                    .setTitle(feedName() + " Enabled")
+                    .setColor(Color.CYAN)
+                    .addField("Channel", messageChannel.getAsMention(), true)
+                    .build());
             } catch (final Throwable e) {
-                return error(event, "Unable to disable " + feedName() + ": " + e.getMessage());
+                return error(event, "Unable to enable " + feedName() + ": " + e.getMessage());
             }
         }
-    }
-
-    private boolean validateUserPermissions(final ChatInputInteractionEvent event) {
-        return event.getInteraction().getMember()
-            .map(member -> member.getBasePermissions().block())
-            .map(perms -> perms.contains(Permission.MANAGE_MESSAGES) || perms.contains(Permission.ADMINISTRATOR))
-            .orElse(false);
-    }
-
-    private boolean testPermissions(final String guildId, final Channel channel) {
+        if (!"disable".equals(subcommand)) {
+            return error(event, "Must specify either enable or disable");
+        }
         try {
-            var embed = EmbedCreateSpec.builder()
-                .description("✔ " + feedName() + " Permissions Test Success! ✔")
-                .color(Color.MEDIUM_SEA_GREEN)
-                .build();
-            var msg = MessageCreateSpec.builder()
-                .addEmbed(embed)
-                .build()
-                .asRequest();
-            channel.getRestChannel().createMessage(msg)
-                .block();
-            return true;
-        } catch (final ClientException clientException) {
-            if (clientException.getStatus().code() == 403) {
-                LOGGER.warn("Missing permissions for feed: {}, guild: {}, in channel: {}", feedName(), guildId, channel.getId().asString());
-                return false;
-            } else {
-                LOGGER.warn("Failed testing permissions for feed: {}, guild: {}, in channel: {} - [{}] {}", feedName(), guildId, channel.getId().asString(), clientException.getStatus().code(), clientException.getMessage());
-            }
+            liveFeed.disableFeed(guildId);
+            return event.getHook().sendMessageEmbeds(embed(event)
+                .setTitle(feedName() + " Disabled")
+                .setColor(Color.CYAN)
+                .build());
         } catch (final Throwable e) {
-            LOGGER.warn("Failed testing permissions for feed: {}, guild: {}, in channel: {}", feedName(), guildId, channel.getId().asString(), e);
+            return error(event, "Unable to disable " + feedName() + ": " + e.getMessage());
         }
-        return false;
+    }
+
+    private boolean validateUserPermissions(final SlashCommandInteractionEvent event) {
+        var member = event.getMember();
+        if (member == null) return false;
+        return member.hasPermission(Permission.MESSAGE_MANAGE) || member.hasPermission(Permission.ADMINISTRATOR);
+    }
+
+    private boolean testPermissions(final String guildId, final GuildMessageChannel channel) {
+        try {
+            var testMessage = channel.sendMessageEmbeds(new EmbedBuilder()
+                .setDescription("✔ " + feedName() + " Permissions Test Success! ✔")
+                .setColor(Color.MEDIUM_SEA_GREEN)
+                .build()).submit().get();
+//            testMessage.delete().queue();
+            return true;
+        } catch (final Throwable e) {
+            LOGGER.warn("Failed testing permissions for feed: {}, guild: {}, in channel: {}", feedName(), guildId, channel.getId(), e);
+            return false;
+        }
     }
 }

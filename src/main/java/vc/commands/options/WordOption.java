@@ -5,7 +5,7 @@ import vc.util.Validator;
 public class WordOption implements ChatInteractionOption {
     @Override
     public void apply(final ChatInteractionOptionContext context) {
-        var wordOptional = context.event.getOptionAsString("word");
+        var wordOptional = context.getOptionAsString("word");
         if (wordOptional.isPresent()) {
             var word = wordOptional.get();
             if (word.isBlank() || word.length() < 3 || word.length() > 50) {

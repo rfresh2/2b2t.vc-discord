@@ -21,7 +21,7 @@ public class PlayerLookupOption implements ChatInteractionOption {
 
     @Override
     public void apply(final ChatInteractionOptionContext context) {
-        var playerNameOptional = context.event.getOptionAsString("player");
+        var playerNameOptional = context.getOptionAsString("player");
         if (playerNameOptional.isEmpty()) {
             if (!optional) context.setError("Player name required");
             return;

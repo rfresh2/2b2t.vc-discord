@@ -1,17 +1,17 @@
 package vc.commands;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.core.spec.MessageCreateFields;
-import discord4j.rest.util.Color;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.utils.Color;
+import net.dv8tion.jda.api.utils.FileUpload;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 import vc.openapi.handler.PriorityPlayersApi;
 import vc.openapi.model.PriorityPlayersResponse;
 
-import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -32,35 +32,31 @@ public class PriorityPlayersCommand implements SlashCommand {
     }
 
     @Override
-    public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        return Mono.defer(() -> {
-            PriorityPlayersResponse response = null;
-            try {
-                response = priorityPlayersApi.priorityPlayers();
-            } catch (final Throwable e) {
-                LOGGER.error("Failed to get priority players", e);
-            }
-            if (response == null || response.getPlayers() == null || response.getPlayers().isEmpty()) {
-                return error(event, "Unable to resolve priority players");
-            }
+    public WebhookMessageCreateAction<Message> handle(final SlashCommandInteractionEvent event) {
+        PriorityPlayersResponse response = null;
+        try {
+            response = priorityPlayersApi.priorityPlayers();
+        } catch (final Throwable e) {
+            LOGGER.error("Failed to get priority players", e);
+        }
+        if (response == null || response.getPlayers() == null || response.getPlayers().isEmpty()) {
+            return error(event, "Unable to resolve priority players");
+        }
 
-            // write players to json
-            String jsonString = null;
-            try {
-                jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response);
-            } catch (final Throwable e) {
-                LOGGER.error("Failed to write priority players to json", e);
-            }
-            if (jsonString == null || jsonString.isEmpty()) {
-                return error(event, "Failed to dump priority players list");
-            }
-            return event.createFollowup()
-                .withFiles(MessageCreateFields.File.of("priority_players.json", new ByteArrayInputStream(jsonString.getBytes())))
-                .withEmbeds(embed(event)
-                    .addField("Player Count", ""+response.getPlayers().size(), true)
-                    .description("JSON Generated!")
-                    .color(Color.CYAN)
-                    .build());
-        });
+        String jsonString = null;
+        try {
+            jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response);
+        } catch (final Throwable e) {
+            LOGGER.error("Failed to write priority players to json", e);
+        }
+        if (jsonString == null || jsonString.isEmpty()) {
+            return error(event, "Failed to dump priority players list");
+        }
+        return event.getHook().sendFiles(FileUpload.fromData(jsonString.getBytes(StandardCharsets.UTF_8), "priority_players.json"))
+            .addEmbeds(embed(event)
+                .addField("Player Count", String.valueOf(response.getPlayers().size()), true)
+                .setDescription("JSON Generated!")
+                .setColor(Color.CYAN)
+                .build());
     }
 }

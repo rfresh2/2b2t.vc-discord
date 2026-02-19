@@ -1,23 +1,20 @@
 package vc.commands;
 
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.rest.util.Color;
-import org.slf4j.Logger;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.utils.Color;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 import vc.openapi.handler.DeathsApi;
 import vc.openapi.model.PlayerDeathOrKillCountResponse;
 
-import static org.slf4j.LoggerFactory.getLogger;
 import static vc.util.DiscordMarkdownEscape.escape;
 
 @Component
 public class KillsTopMonthCommand implements SlashCommand {
-    private static final Logger LOGGER = getLogger(KillsTopMonthCommand.class);
     private final DeathsApi deathsApi;
 
-    public KillsTopMonthCommand(DeathsApi deathsApi) {
+    public KillsTopMonthCommand(final DeathsApi deathsApi) {
         this.deathsApi = deathsApi;
     }
 
@@ -27,16 +24,14 @@ public class KillsTopMonthCommand implements SlashCommand {
     }
 
     @Override
-    public Mono<Message> handle(final ChatInputInteractionEvent event) {
-        PlayerDeathOrKillCountResponse response = null;
+    public WebhookMessageCreateAction<Message> handle(final SlashCommandInteractionEvent event) {
+        PlayerDeathOrKillCountResponse response;
         try {
             response = deathsApi.killsTopMonth();
-        } catch (final Throwable e) {
-            LOGGER.error("Failed to get kills top month response", e);
+        } catch (Exception e) {
+            return error(event, "Unable to resolve kills top data");
         }
-        if (response == null || response.getPlayers() == null || response.getPlayers().isEmpty()) {
-            return error(event, "Unable to resolve kills list");
-        }
+
         StringBuilder result = new StringBuilder();
         for (int i = 0, deathListSize = Math.min(50, response.getPlayers().size()); i < deathListSize; i++) {
             var player = response.getPlayers().get(i);
@@ -49,11 +44,11 @@ public class KillsTopMonthCommand implements SlashCommand {
         if (!result.isEmpty()) {
             result.deleteCharAt(result.length() - 1);
         }
-        return event.createFollowup()
-            .withEmbeds(embed(event)
-                .title("Top Kills Count (30 days)")
-                .color(Color.CYAN)
-                .description(result.toString())
-                .build());
+
+        return event.getHook().sendMessageEmbeds(embed(event)
+            .setTitle("Top Kills Count (30 days)")
+            .setDescription(result.toString())
+            .setColor(Color.CYAN)
+            .build());
     }
 }
