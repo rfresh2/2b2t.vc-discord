@@ -2,7 +2,6 @@ package vc.live;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
@@ -19,7 +18,6 @@ import java.net.URI;
 import java.net.URL;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -33,9 +31,11 @@ import static org.slf4j.LoggerFactory.getLogger;
 public abstract class LiveFeed {
     private final Logger LOGGER = getLogger(getClass().getSimpleName());
     private static final int MESSAGE_Q_CAPACITY = 1000;
+    private static final int FEED_QUEUE_WARN_THRESHOLD = 700;
     protected final JDA jda;
     protected final Map<String, GuildMessageChannel> liveChannels;
     protected final LiveFeedRepository liveFeedRepository;
+    protected final LiveFeedDispatcher dispatcher;
     private final PriorityBlockingQueue<Message> messageQueue;
     private final Cache<String, AtomicInteger> guildMessageSendFailCountCache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, MINUTES)
@@ -46,11 +46,13 @@ public abstract class LiveFeed {
         final FeedApiManager feedListener,
         final JDA jda,
         final LiveFeedRepository liveFeedRepository,
+        final LiveFeedDispatcher dispatcher,
         final boolean liveFeedEnabled
     ) {
         this.feedListener = feedListener;
         this.jda = jda;
         this.liveFeedRepository = liveFeedRepository;
+        this.dispatcher = dispatcher;
         this.liveChannels = new ConcurrentHashMap<>();
         this.messageQueue = new PriorityBlockingQueue<>(MESSAGE_Q_CAPACITY);
         if (liveFeedEnabled) {
@@ -71,6 +73,8 @@ public abstract class LiveFeed {
     protected abstract LiveFeedConfig enableRecordInternal(final LiveFeedConfig in, final String guildId, final String channelId);
 
     protected abstract List<InputQueue> inputQueues();
+
+    protected abstract LiveFeedDispatcher.FeedLane feedLane();
 
     record InputQueue<T>(
         String name,
@@ -164,52 +168,73 @@ public abstract class LiveFeed {
     protected void processMessageQueue() {
         try {
             final List<MessageEmbed> embeds = new ArrayList<>(4);
+            int staleDropped = 0;
             synchronized (this.messageQueue) {
                 Message message;
                 var now = Instant.now().toEpochMilli();
                 while (embeds.size() < 10 && (message = messageQueue.poll()) != null) {
-                    if (now - message.timestamp > MINUTES.toMillis(20)) continue;
+                    if (now - message.timestamp > MINUTES.toMillis(20)) {
+                        staleDropped++;
+                        continue;
+                    }
                     embeds.add(message.embedData());
                 }
             }
-            if (embeds.isEmpty()) return;
+            if (staleDropped > 0) {
+                LOGGER.info("[{}] Dropped {} stale feed events", feedName(), staleDropped);
+            }
+            if (embeds.isEmpty()) {
+                return;
+            }
 
             var channels = new ArrayList<>(liveChannels.entrySet());
             Collections.shuffle(channels);
             long beforeAll = System.currentTimeMillis();
-            Lists.partition(channels, 50).forEach(c -> {
-                try {
-                    CompletableFuture.allOf(
-                            c.stream()
-                                .map(entry -> processSend(entry.getKey(), entry.getValue(), embeds))
-                                .toArray(CompletableFuture[]::new))
-                        .join();
-                } catch (final Throwable e) {
-                    LOGGER.error("[{}] Error sending feed batch", feedName(), e);
-                }
-            });
-            long afterAll = System.currentTimeMillis();
-            if (afterAll - beforeAll > 20000) {
-                LOGGER.info("[{}] Sent {} events in {}ms", feedName(), embeds.size(), afterAll - beforeAll);
-            }
+            dispatcher.submitBatch(feedLane(), channels, embeds, this::handleBroadcastError)
+                .whenComplete((ok, error) -> {
+                    if (error != null) {
+                        LOGGER.error("[{}] Error sending feed batch", feedName(), error);
+                    }
+                    long afterAll = System.currentTimeMillis();
+                    if (afterAll - beforeAll > 20000) {
+                        LOGGER.info("[{}] Sent {} events in {}ms", feedName(), embeds.size(), afterAll - beforeAll);
+                    }
+                });
         } catch (final Throwable e) {
             LOGGER.error("Error processing message queue", e);
         }
     }
 
-    private CompletableFuture<net.dv8tion.jda.api.entities.Message> processSend(String guildId, GuildMessageChannel channel, List<MessageEmbed> embeds) {
-        return channel.sendMessageEmbeds(embeds)
-            .submit(true)
-            .whenComplete((message, error) -> {
-                if (error != null) handleBroadcastError(error, guildId, channel);
-            });
+    @Scheduled(fixedRate = 30, initialDelay = 30, timeUnit = TimeUnit.SECONDS)
+    protected void reportQueueHealth() {
+        final int localQueueDepth = messageQueue.size();
+        final int dispatchDepth = dispatcher.pendingDepth(feedLane());
+        if (localQueueDepth == 0 && dispatchDepth == 0) return;
+
+        LOGGER.info(
+            "[{}] queueDepth={} dispatchDepth={} liveChannels={}",
+            feedName(),
+            localQueueDepth,
+            dispatchDepth,
+            liveChannels.size()
+        );
+
+        if (localQueueDepth >= FEED_QUEUE_WARN_THRESHOLD) {
+            LOGGER.warn(
+                "[{}] Input queue depth high: {} (capacity {})",
+                feedName(),
+                localQueueDepth,
+                MESSAGE_Q_CAPACITY
+            );
+        }
     }
 
-    private void handleBroadcastError(final Throwable error, final String guildId, final GuildMessageChannel channel) {
+    private void handleBroadcastError(final String guildId, final Throwable error) {
+        var channel = liveChannels.get(guildId);
         if (error instanceof ErrorResponseException e) {
             var response = e.getErrorResponse();
             if (response == ErrorResponse.MISSING_PERMISSIONS || response == ErrorResponse.MISSING_ACCESS || response == ErrorResponse.UNKNOWN_CHANNEL) {
-                LOGGER.error("Missing permissions while broadcasting message to channel: {}", channel.getId());
+                LOGGER.error("Missing permissions while broadcasting message to channel: {}", channel == null ? "unknown" : channel.getId());
                 disableFeed(guildId);
                 return;
             }

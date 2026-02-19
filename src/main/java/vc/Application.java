@@ -9,7 +9,6 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.requests.RestConfig;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,8 +54,6 @@ public class Application {
         this.jda = JDABuilder.createDefault(token)
             .setStatus(OnlineStatus.ONLINE)
             .setActivity(Activity.playing("/commands"))
-            .setRestConfig(new RestConfig()
-                .setRelativeRateLimit(false))
             .build();
         this.jda.awaitReady();
         return this.jda;

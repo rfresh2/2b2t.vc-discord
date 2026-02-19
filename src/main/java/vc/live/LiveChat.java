@@ -23,10 +23,11 @@ public class LiveChat extends LiveFeed {
         final FeedApiManager feedListener,
         final JDA jda,
         final LiveFeedRepository liveFeedRepository,
+        final LiveFeedDispatcher dispatcher,
         @Value("${LIVE_FEEDS}")
         final String liveFeedsEnabled
     ) {
-        super(feedListener, jda, liveFeedRepository, Boolean.parseBoolean(liveFeedsEnabled));
+        super(feedListener, jda, liveFeedRepository, dispatcher, Boolean.parseBoolean(liveFeedsEnabled));
     }
 
     @Override
@@ -55,6 +56,11 @@ public class LiveChat extends LiveFeed {
             new InputQueue<>("Chats", feedListener::addChatListener, ChatsRecord.class, this::getChatEmbed, this::getChatTimestamp),
             new InputQueue<>("Deaths", feedListener::addDeathsListener, DeathsRecord.class, this::getDeathEmbed, this::getDeathTimestamp)
         );
+    }
+
+    @Override
+    protected LiveFeedDispatcher.FeedLane feedLane() {
+        return LiveFeedDispatcher.FeedLane.CHAT;
     }
 
     private MessageEmbed getChatEmbed(final ChatsRecord chat) {
