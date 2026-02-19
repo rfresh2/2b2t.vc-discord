@@ -99,7 +99,10 @@ public class LiveFeedDispatcher {
         try {
             task.channel().sendMessageEmbeds(task.embeds())
                 .queue(
-                    msg -> {},
+                    msg -> {
+                        dispatchedSinceLastReport.incrementAndGet();
+                        task.batchState().onTaskDone();
+                    },
                     error -> {
                         try {
                             dispatchedSinceLastReport.incrementAndGet();
