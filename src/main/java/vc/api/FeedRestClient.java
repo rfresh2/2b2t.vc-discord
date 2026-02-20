@@ -59,7 +59,7 @@ public class FeedRestClient {
             .retrieve()
             .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {})
             .mapNotNull(ServerSentEvent::data)
-            .timeout(Duration.ofMinutes(5))
+            .timeout(Duration.ofMinutes(20))
             .filter(s -> !s.isBlank())
             .map(s -> objectMapper.readValue(s, clazz))
             .retryWhen(Retry.fixedDelay(Long.MAX_VALUE, Duration.ofSeconds(2))
