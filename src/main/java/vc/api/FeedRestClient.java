@@ -16,7 +16,6 @@ import vc.live.dto.ConnectionsRecord;
 import vc.live.dto.DeathsRecord;
 
 import java.time.Duration;
-import java.util.Objects;
 
 @Component
 public class FeedRestClient {
@@ -59,8 +58,7 @@ public class FeedRestClient {
             .uri(uri)
             .retrieve()
             .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {})
-            .map(ServerSentEvent::data)
-            .filter(Objects::nonNull)
+            .mapNotNull(ServerSentEvent::data)
             .timeout(Duration.ofMinutes(5))
             .filter(s -> !s.isBlank())
             .map(s -> objectMapper.readValue(s, clazz))
