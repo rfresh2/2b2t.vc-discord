@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.utils.Color;
 import org.slf4j.Logger;
@@ -341,7 +342,18 @@ public class WatchManager {
                 removeGuildWatchFunction.accept(guildWatch);
                 return;
             }
-            LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}", targetName, guildWatch.guildId(), guildWatch.channelId(), e);
+            LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}",
+                targetName,
+                guildWatch.guildId(),
+                guildWatch.channelId(),
+                e);
+        } catch (InsufficientPermissionException e) {
+            LOGGER.error(
+                "Missing permissions while sending {} notification to guild: {}, channelId: {}. Removing watch.",
+                targetName,
+                guildWatch.guildId(),
+                guildWatch.channelId());
+            removeGuildWatchFunction.accept(guildWatch);
         } catch (Exception e) {
             LOGGER.error("Error sending guild notification {} to guild: {}, channelId: {}", targetName, guildWatch.guildId(), guildWatch.channelId(), e);
         }

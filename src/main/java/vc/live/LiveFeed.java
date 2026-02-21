@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 import org.slf4j.Logger;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -242,6 +243,10 @@ public abstract class LiveFeed {
                 disableFeed(guildId);
                 return;
             }
+        } else if (error instanceof InsufficientPermissionException e) {
+            LOGGER.error("Missing permissions while broadcasting message to channel: {}", channel == null ? "unknown" : channel.getId());
+            disableFeed(guildId);
+            return;
         }
         LOGGER.error("Error broadcasting message to guild: {}", guildId, error);
         // todo: not sure the full set of exception jda throws
