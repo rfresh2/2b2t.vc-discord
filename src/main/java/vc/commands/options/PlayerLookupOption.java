@@ -33,7 +33,7 @@ public class PlayerLookupOption implements ChatInteractionOption {
         }
         Optional<ProfileData> playerIdentity = playerLookup.getPlayerIdentity(playerName);
         if (playerIdentity.isEmpty()) {
-            context.setError("No player named `" + playerName + "` exists\nCheck for previous accounts with `/names`");
+            context.setError("No player named `" + playerName + "` exists\nSearch for previous accounts with https://laby.net");
             return;
         }
         context.profileData = playerIdentity.get();
