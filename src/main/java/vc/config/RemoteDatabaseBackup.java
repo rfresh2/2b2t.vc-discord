@@ -39,7 +39,7 @@ public class RemoteDatabaseBackup implements DisposableBean {
                 PutObjectArgs.builder()
                     .bucket(bucketName)
                     .object(backupPath)
-                    .stream(fileStream, Files.size(path), -1)
+                    .stream(fileStream, Files.size(path), -1L)
                     .build());
             LOGGER.info("Uploaded database backup: {}", backupPath);
         } catch (final Exception e) {
