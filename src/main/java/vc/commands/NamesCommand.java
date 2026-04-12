@@ -44,7 +44,7 @@ public class NamesCommand implements SlashCommand {
                 return error(event, "Timed out searching. Try again in a minute");
             }
             LOGGER.error("Error searching for names: {}", player, e);
-            return error(event, "Error searching. Try again later. Or run the search directly here: https://laby.net/");
+            return error(event, "Error searching. Try again later. Or run the search directly here: https://laby.net/@" + player);
         }
 
         var builder = embed(event)
