@@ -105,7 +105,7 @@ public class SlashCommandListener extends ListenerAdapter {
                 afterTime.toEpochMilli() - beforeTime.toEpochMilli(),
                 username,
                 guildLog,
-                command.getName(),
+                event.getFullCommandName(),
                 !dataOptions.isEmpty() ? " : " + dataOptions : "");
             if (error != null) {
                 LOGGER.error("Error executing command", error);
