@@ -25,7 +25,13 @@ public class JdbiConfiguration {
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbiConfiguration.class);
 
     @Bean
-    public Connection connection() {
+    public Connection connection(
+        RemoteDatabaseBackup remoteDatabaseBackup,
+        @Value("${DB_REMOTE_DOWNLOAD}") final String dbRemoteDownload
+    ) {
+        if (Boolean.parseBoolean(dbRemoteDownload)) {
+            remoteDatabaseBackup.syncFromRemote();
+        }
         final Path dbPath = Paths.get("config.db");
         try {
             return DriverManager.getConnection("jdbc:sqlite:" + dbPath);
@@ -38,13 +44,8 @@ public class JdbiConfiguration {
     @Bean
     public Jdbi jdbi(
         DatabaseMigrator migrator,
-        RemoteDatabaseBackup remoteDatabaseBackup,
-        @Value("${DB_REMOTE_DOWNLOAD}") final String dbRemoteDownload,
         Connection connection
     ) {
-        if (Boolean.parseBoolean(dbRemoteDownload)) {
-            remoteDatabaseBackup.syncFromRemote();
-        }
         Jdbi jdbi = Jdbi.create(connection);
         new SQLitePlugin().customizeJdbi(jdbi);
         jdbi.registerRowMapper(ConstructorMapper.factory(LiveFeedConfig.class));
