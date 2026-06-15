@@ -1,10 +1,10 @@
-package vc.api;
+package vc.api.laby;
 
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import vc.api.model.LabyProfileSearch;
-import vc.api.model.LabyProfileSearchResponse;
+import vc.api.laby.model.LabyProfileSearch;
+import vc.api.laby.model.LabyProfileSearchResponse;
 
 @Component
 public class LabyRestClient {

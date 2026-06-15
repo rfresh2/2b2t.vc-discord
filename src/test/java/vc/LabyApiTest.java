@@ -1,6 +1,6 @@
 package vc;
 
-import vc.api.LabyRestClient;
+import vc.api.laby.LabyRestClient;
 
 public class LabyApiTest {
     private final Application app = new Application();

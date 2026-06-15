@@ -6,7 +6,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
-import vc.api.FeedRestClient;
+import vc.api.vc.FeedRestClient;
 import vc.live.dto.ChatsRecord;
 import vc.live.dto.ConnectionsRecord;
 import vc.live.dto.DeathsRecord;

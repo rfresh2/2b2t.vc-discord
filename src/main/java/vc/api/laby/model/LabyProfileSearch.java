@@ -1,4 +1,4 @@
-package vc.api.model;
+package vc.api.laby.model;
 
 import org.jspecify.annotations.Nullable;
 

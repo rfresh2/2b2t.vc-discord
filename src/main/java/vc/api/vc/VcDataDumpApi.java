@@ -1,4 +1,4 @@
-package vc.api;
+package vc.api.vc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import vc.openapi.handler.ApiClient;

@@ -1,6 +1,7 @@
-package vc.api;
+package vc.api.vc;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
@@ -19,7 +20,7 @@ import java.time.Duration;
 
 @Component
 public class FeedRestClient {
-    private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(FeedRestClient.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FeedRestClient.class);
     private final ObjectMapper objectMapper;
     private final String apiKey;
 

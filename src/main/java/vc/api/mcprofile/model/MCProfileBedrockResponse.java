@@ -1,4 +1,6 @@
-package vc.api.model;
+package vc.api.mcprofile.model;
+
+import vc.api.model.ProfileData;
 
 import java.util.UUID;
 
