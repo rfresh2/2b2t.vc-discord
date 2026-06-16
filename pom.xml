@@ -15,14 +15,7 @@
 
     <properties>
         <java.version>25</java.version>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jackson-version>2.22.0</jackson-version>
-        <jackson-annotations-version>2.22</jackson-annotations-version>
-        <swagger-annotations-version>2.2.19</swagger-annotations-version>
-        <maven-plugin-version>1.0.0</maven-plugin-version>
-        <junit-version>4.13.1</junit-version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
         <default.package>vc.openapi</default.package>
     </properties>
 
@@ -87,27 +80,22 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>${jackson-version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${jackson-annotations-version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson-version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-json-provider</artifactId>
-            <version>${jackson-version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${jackson-version}</version>
         </dependency>
         <dependency>
             <groupId>javax.annotation</groupId>
