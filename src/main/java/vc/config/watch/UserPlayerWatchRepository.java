@@ -65,7 +65,18 @@ public class UserPlayerWatchRepository {
     public void write(final UserPlayerWatchConfig config) {
         try (var handle = jdbi.open()) {
             handle.createUpdate("""
-                INSERT OR REPLACE INTO user_player_watch_config VALUES (
+                INSERT OR REPLACE INTO user_player_watch_config (
+                    watch_id,
+                    owner_user_id,
+                    owner_user_name,
+                    joins,
+                    leaves,
+                    chats,
+                    deaths,
+                    kills,
+                    target_uuid,
+                    target_name
+                ) VALUES (
                     :watchId,
                     :ownerUserId,
                     :ownerUserName,

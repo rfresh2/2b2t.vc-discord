@@ -50,7 +50,13 @@ public class UserChatWatchRepository {
     public void write(final UserChatWatchConfig config) {
         try (var handle = jdbi.open()) {
             handle.createUpdate("""
-                INSERT OR REPLACE INTO user_chat_watch_config VALUES (
+                INSERT OR REPLACE INTO user_chat_watch_config (
+                    watch_id,
+                    owner_user_id,
+                    owner_user_name,
+                    keyword,
+                    case_sensitive
+                ) VALUES (
                     :watchId,
                     :ownerUserId,
                     :ownerUserName,

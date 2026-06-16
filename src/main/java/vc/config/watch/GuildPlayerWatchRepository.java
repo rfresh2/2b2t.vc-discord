@@ -64,7 +64,21 @@ public class GuildPlayerWatchRepository {
     public void write(final GuildPlayerWatchConfig config) {
         try (var handle = jdbi.open()) {
             handle.createUpdate("""
-                INSERT OR REPLACE INTO guild_player_watch_config VALUES (
+                INSERT OR REPLACE INTO guild_player_watch_config (
+                    watch_id,
+                    guild_id,
+                    guild_name,
+                    channel_id,
+                    joins,
+                    leaves,
+                    chats,
+                    deaths,
+                    kills,
+                    mention_user_id,
+                    mention_role_id,
+                    target_uuid,
+                    target_name
+                ) VALUES (
                     :watchId,
                     :guildId,
                     :guildName,

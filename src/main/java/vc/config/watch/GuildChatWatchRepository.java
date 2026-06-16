@@ -50,7 +50,16 @@ public class GuildChatWatchRepository {
     public void write(final GuildChatWatchConfig config) {
         try (var handle = jdbi.open()) {
             handle.createUpdate("""
-                INSERT OR REPLACE INTO guild_chat_watch_config VALUES (
+                INSERT OR REPLACE INTO guild_chat_watch_config (
+                    watch_id,
+                    guild_id,
+                    guild_name,
+                    channel_id,
+                    keyword,
+                    case_sensitive,
+                    mention_user_id,
+                    mention_role_id
+                ) VALUES (
                     :watchId,
                     :guildId,
                     :guildName,

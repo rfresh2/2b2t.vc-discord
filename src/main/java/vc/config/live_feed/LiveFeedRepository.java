@@ -75,7 +75,14 @@ public class LiveFeedRepository {
     public void write(final LiveFeedConfig config) {
         try (var handle = jdbi.open()) {
             handle.createUpdate("""
-                INSERT OR REPLACE INTO live_feed_config VALUES (
+                INSERT OR REPLACE INTO live_feed_config (
+                    guild_id,
+                    guild_name,
+                    live_chat_enabled,
+                    live_chat_channel_id,
+                    live_connections_enabled,
+                    live_connections_channel_id
+                ) VALUES (
                     :guildId,
                     :guildName,
                     :liveChatEnabled,
