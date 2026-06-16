@@ -16,8 +16,8 @@ jobs:
       - name: Setup JDK
         uses: actions/setup-java@v5
         with:
-          java-version: '25'
-          distribution: 'zulu'
+          java-version: 25
+          distribution: temurin
 
       - name: Elevate wrapper permissions
         run: chmod +x ./mvnw
@@ -30,3 +30,5 @@ jobs:
         with:
           name: 2b2t.vc-discord
           path: target/2b2t.vc-discord-*.jar
+          if-no-files-found: error
+          archive: false
