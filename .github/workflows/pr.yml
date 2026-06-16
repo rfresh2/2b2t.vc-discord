@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup JDK
         uses: actions/setup-java@v5
@@ -23,7 +23,7 @@ jobs:
         run: ./mvnw install spring-boot:repackage
 
       - name: Upload Java Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: 2b2t.vc-discord
           path: target/2b2t.vc-discord-*.jar
