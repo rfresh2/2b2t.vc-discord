@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
 import net.dv8tion.jda.api.utils.Color;
@@ -74,8 +75,13 @@ public class WatchGuildCommand implements SlashCommand {
                 .map(GuildMessageChannel.class::cast)
                 .orElse(null);
             if (channel == null) return error(event, "Channel option is required to add a watch");
-            if (!testPermissions(guildId, channel)) return error(event, "Bot must have permissions to send messages in: " + channel.getAsMention());
-
+            var permTestResult = testPermissions(guildId, channel);
+            if (!permTestResult.success()) {
+                return error(event, permTestResult.reason() != null
+                    ? "\nMissing permission: " + permTestResult.reason().getPermission().getName()
+                    : "Bot must have permissions to send messages in: " + channel.getAsMention()
+                );
+            }
             String keyword = Optional.ofNullable(event.getOption("keyword", OptionMapping::getAsString)).orElse("").replace("< >", " ");
             if (keyword.length() < 3 || keyword.length() > 50) return error(event, "Keyword must be between 3 and 50 characters");
             if (!Validator.isValidChat(keyword)) return error(event, "Keyword contains invalid chat characters");
@@ -170,8 +176,13 @@ public class WatchGuildCommand implements SlashCommand {
                 .map(GuildMessageChannel.class::cast)
                 .orElse(null);
             if (channel == null) return error(event, "Channel option is required to add a watch");
-            if (!testPermissions(guildId, channel)) return error(event, "Bot must have permissions to send messages in: " + channel.getAsMention());
-
+            var permTestResult = testPermissions(guildId, channel);
+            if (!permTestResult.success()) {
+                return error(event, permTestResult.reason() != null
+                    ? "\nMissing permission: " + permTestResult.reason().getPermission().getName()
+                    : "Bot must have permissions to send messages in: " + channel.getAsMention()
+                );
+            }
             boolean joins = Optional.ofNullable(event.getOption("joins", OptionMapping::getAsBoolean)).orElse(true);
             boolean leaves = Optional.ofNullable(event.getOption("leaves", OptionMapping::getAsBoolean)).orElse(true);
             boolean chats = Optional.ofNullable(event.getOption("chats", OptionMapping::getAsBoolean)).orElse(true);
@@ -291,19 +302,23 @@ public class WatchGuildCommand implements SlashCommand {
         return playerLookup.getPlayerIdentity(playerName);
     }
 
-    private boolean testPermissions(final String guildId, final GuildMessageChannel channel) {
+    private PermissionsTestResult testPermissions(final String guildId, final GuildMessageChannel channel) {
         try {
             var test = channel.sendMessageEmbeds(new EmbedBuilder()
                 .setDescription("✔ Watch Notifications Permissions Test Success! ✔")
                 .setColor(Color.MEDIUM_SEA_GREEN)
                 .build()).submit().get();
-//            test.delete().queue();
-            return true;
+//            testMessage.delete().queue();
+            return new PermissionsTestResult(true, null);
         } catch (final Throwable e) {
             LOGGER.warn("Failed testing permissions for guild: {}, in channel: {}", guildId, channel.getId(), e);
-            return false;
+            return new PermissionsTestResult(
+                false,
+                (e instanceof InsufficientPermissionException permEx) ? permEx : null);
         }
     }
+
+    record PermissionsTestResult(boolean success, InsufficientPermissionException reason) { }
 
     private boolean validateUserPermissions(final SlashCommandInteractionEvent event) {
         var member = event.getMember();

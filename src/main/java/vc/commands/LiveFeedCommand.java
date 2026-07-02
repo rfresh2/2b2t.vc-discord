@@ -6,9 +6,11 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
 import net.dv8tion.jda.api.utils.Color;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vc.live.LiveFeed;
@@ -39,8 +41,12 @@ public abstract class LiveFeedCommand implements SlashCommand {
                 return error(event, "Selected channel must be a text channel");
             }
             try {
-                if (!testPermissions(guildId, messageChannel)) {
-                    return error(event, "Bot must have permissions to send messages in: " + messageChannel.getAsMention());
+                var permTestResult = testPermissions(guildId, messageChannel);
+                if (!permTestResult.success()) {
+                    return error(event, permTestResult.reason() != null
+                        ? "\nMissing permission: " + permTestResult.reason().getPermission().getName()
+                        : "Bot must have permissions to send messages in: " + messageChannel.getAsMention()
+                    );
                 }
                 liveFeed.enableFeed(guildId, messageChannel.getId());
                 return event.getHook().sendMessageEmbeds(embed(event)
@@ -72,17 +78,21 @@ public abstract class LiveFeedCommand implements SlashCommand {
         return member.hasPermission(Permission.MESSAGE_MANAGE) || member.hasPermission(Permission.ADMINISTRATOR);
     }
 
-    private boolean testPermissions(final String guildId, final GuildMessageChannel channel) {
+    private PermissionsTestResult testPermissions(final String guildId, final GuildMessageChannel channel) {
         try {
             var testMessage = channel.sendMessageEmbeds(new EmbedBuilder()
                 .setDescription("✔ " + feedName() + " Permissions Test Success! ✔")
                 .setColor(Color.MEDIUM_SEA_GREEN)
                 .build()).submit().get();
 //            testMessage.delete().queue();
-            return true;
+            return new PermissionsTestResult(true, null);
         } catch (final Throwable e) {
             LOGGER.warn("Failed testing permissions for feed: {}, guild: {}, in channel: {}", feedName(), guildId, channel.getId(), e);
-            return false;
+            return new PermissionsTestResult(
+                false,
+                (e instanceof InsufficientPermissionException permEx) ? permEx : null);
         }
     }
+
+    record PermissionsTestResult(boolean success, @Nullable InsufficientPermissionException reason) { }
 }
