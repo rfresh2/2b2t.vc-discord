@@ -50,7 +50,7 @@
         <dependency>
             <groupId>com.github.rfresh2</groupId>
             <artifactId>JDA</artifactId>
-            <version>6.4.32</version>
+            <version>6.5.33</version>
         </dependency>
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
