@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.requests.RestConfig;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,6 +53,7 @@ public class Application {
     @Bean
     public JDA jda() throws InterruptedException {
         this.jda = JDABuilder.createDefault(token)
+            .setRestConfig(new RestConfig().setMaxQueuedRequestsPerBucket(10_000))
             .setStatus(OnlineStatus.ONLINE)
             .setActivity(Activity.playing("/commands"))
             .build();
