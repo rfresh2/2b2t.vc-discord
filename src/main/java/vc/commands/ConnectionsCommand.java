@@ -3,6 +3,7 @@ package vc.commands;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
@@ -117,5 +118,10 @@ public class ConnectionsCommand implements SlashCommand, ButtonCommand {
     @Override
     public WebhookMessageCreateAction<Message> handleButton(final ButtonInteractionEvent event) {
         return buttonHandler.defaultButtonHandler(event, objectMapper, getName(), playerLookup, this::resolveConnections, this::error);
+    }
+
+    @Override
+    public WebhookMessageCreateAction<Message> handleModal(final ModalInteractionEvent event) {
+        return buttonHandler.defaultModalHandler(event, objectMapper, getName(), playerLookup, this::resolveConnections, this::error);
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
@@ -124,6 +125,21 @@ public class ChatsCommand implements SlashCommand, ButtonCommand {
     @Override
     public WebhookMessageCreateAction<Message> handleButton(final ButtonInteractionEvent event) {
         return buttonHandler(event, objectMapper, getName(), playerLookup, this::resolveChats, this::error);
+    }
+
+    @Override
+    public WebhookMessageCreateAction<Message> handleModal(final ModalInteractionEvent event) {
+        return buttonHandler.modalHandler(event, objectMapper, getName(), (args, page) -> {
+            ProfileData identity = null;
+            if (args.playerName() != null) {
+                var playerIdentityOptional = playerLookup.getPlayerIdentity(args.playerName());
+                if (playerIdentityOptional.isEmpty()) {
+                    return error(event.getHook(), "Unable to find player");
+                }
+                identity = playerIdentityOptional.get();
+            }
+            return resolveChats(event.getHook(), identity, args.word(), page, args.startDate(), args.endDate());
+        }, this::error);
     }
 
     @FunctionalInterface

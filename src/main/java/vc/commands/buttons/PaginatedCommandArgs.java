@@ -10,6 +10,7 @@ public record PaginatedCommandArgs(
     int page,
     @Nullable LocalDate startDate,
     @Nullable LocalDate endDate,
+    @Nullable String action,
     @Nullable String a // padding if needed
 ) {
 }
