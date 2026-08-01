@@ -203,13 +203,13 @@
                 }
               }
             },
-            "description": "All 2b2t chats during a window of time, starting from startDate until endDate or pageSize is met.\n\nResults are sorted in ascending order by default.\n\nstartDate is required if sort is ASC, endDate is required if sort is DESC.\n\nstartDate and endDate must be ISO 8601 formatted strings, in this format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX\n\nExample: \"2022-10-31T01:30:00.000\".\n"
+            "description": "All 2b2t chats during a window of time, starting from startDate until endDate or pageSize is met.\n\nResults are sorted in ascending order by default.\n\nstartDate and endDate must be ISO 8601 formatted strings, in this format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX\n\nExample: \"2022-10-31T01:30:00.000\".\n"
           },
           "204": {
             "description": "No chats found in this window."
           },
           "400": {
-            "description": "Bad request. startDate must be provided"
+            "description": "Bad request"
           }
         },
         "tags": [
@@ -291,6 +291,18 @@
             }
           },
           {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
             "description": "Must be between 1-100",
             "in": "query",
             "name": "pageSize",
@@ -320,7 +332,7 @@
                 }
               }
             },
-            "description": "Connection history for given player"
+            "description": "Connection history for given player.\n\nResults are sorted in descending order by default.\n\nstartDate and endDate must be ISO 8601 formatted strings, in this format: yyyy-MM-dd\n\nExample: \"2022-10-31\"\n"
           },
           "204": {
             "description": "No data for player"
@@ -398,13 +410,13 @@
                 }
               }
             },
-            "description": "All 2b2t connections during a window of time, starting from startDate (required) until endDate or pageSize is met\n\nstartDate and endDate must be ISO 8601 formatted strings, in this format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX\n\nExample: \"2022-10-31T01:30:00.000\".\n"
+            "description": "All 2b2t connections during a window of time, starting from startDate until endDate or pageSize is met\n\nResults are sorted in ascending order by default.\n\nstartDate and endDate must be ISO 8601 formatted strings, in this format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX\n\nExample: \"2022-10-31T01:30:00.000\".\n"
           },
           "204": {
             "description": "No connections found in this window."
           },
           "400": {
-            "description": "Bad request. startDate must be provided"
+            "description": "Bad request"
           }
         },
         "tags": [
@@ -453,6 +465,18 @@
             }
           },
           {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
             "description": "Must be between 1-100",
             "in": "query",
             "name": "pageSize",
@@ -482,13 +506,13 @@
                 }
               }
             },
-            "description": "Death history for given player"
+            "description": "Death history for given player.\n\nResults are sorted in descending order by default.\n\nstartDate and endDate must be ISO 8601 formatted strings, in this format: yyyy-MM-dd\n\nExample: \"2022-10-31\".\n"
           },
           "204": {
             "description": "No data for player"
           },
           "400": {
-            "description": "Bad request. Either uuid or playerName must be provided."
+            "description": "Bad request"
           }
         },
         "tags": [
@@ -743,6 +767,18 @@
             }
           },
           {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
             "description": "Must be between 1-100",
             "in": "query",
             "name": "pageSize",
@@ -772,7 +808,7 @@
                 }
               }
             },
-            "description": "Kill history for given player"
+            "description": "Kill history for given player\n\nResults are sorted in descending order by default.\n\nstartDate and endDate must be ISO 8601 formatted strings, in this format: yyyy-MM-dd\n\nExample: \"2022-10-31\".\n"
           },
           "204": {
             "description": "No data for player"

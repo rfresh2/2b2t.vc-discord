@@ -65,7 +65,7 @@ public class KillsCommand implements SlashCommand, ButtonCommand {
     private WebhookMessageCreateAction<Message> resolveKills(final InteractionHook hook, final ProfileData identity, int page, LocalDate startDate, LocalDate endDate) {
         KillsResponse killsResponse = null;
         try {
-            killsResponse = deathsApi.kills(identity.uuid(), null, startDate, endDate, 25, page);
+            killsResponse = deathsApi.kills(identity.uuid(), null, startDate, endDate, "desc", 25, page);
         } catch (final Exception e) {
             if (e instanceof ApiException apiException) {
                 if (apiException.getCause() instanceof MismatchedInputException || apiException.getCode() == 204) {
