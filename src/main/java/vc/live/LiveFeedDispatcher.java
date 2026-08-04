@@ -33,6 +33,7 @@ public class LiveFeedDispatcher {
     private final Object lock = new Object();
     private final double requestsPerSecond;
     private final double maxTokens;
+    private final long requestTimeoutMillis;
     private FeedLane nextLane = FeedLane.CHAT;
     private double tokens;
     private long lastRefillNanos;
@@ -44,10 +45,13 @@ public class LiveFeedDispatcher {
         @Value("${LIVE_FEED_REQUESTS_PER_SECOND:40}")
         final double requestsPerSecond,
         @Value("${LIVE_FEED_BURST_CAPACITY:40}")
-        final double maxTokens
+        final double maxTokens,
+        @Value("${LIVE_FEED_REQUEST_TIMEOUT_MILLIS:90000}")
+        final long requestTimeoutMillis
     ) {
         this.requestsPerSecond = Math.max(1.0, requestsPerSecond);
         this.maxTokens = Math.max(1.0, maxTokens);
+        this.requestTimeoutMillis = Math.max(1, requestTimeoutMillis);
         this.tokens = this.maxTokens;
         this.lastRefillNanos = System.nanoTime();
         lanes.put(FeedLane.CHAT, new ArrayDeque<>());
@@ -96,34 +100,37 @@ public class LiveFeedDispatcher {
             tokens -= 1.0;
         }
 
+        final var callbackResult = new CompletableFuture<Throwable>();
+        callbackResult
+            .orTimeout(requestTimeoutMillis, TimeUnit.MILLISECONDS)
+            .whenComplete((requestError, timeoutError) -> completeTask(
+                task,
+                requestError == null ? timeoutError : requestError
+            ));
+
         try {
             task.channel().sendMessageEmbeds(task.embeds())
+                .timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS)
                 .queue(
-                    msg -> {
-                        dispatchedSinceLastReport.incrementAndGet();
-                        task.batchState().onTaskDone();
-                    },
-                    error -> {
-                        try {
-                            dispatchedSinceLastReport.incrementAndGet();
-                            if (error != null) {
-                                failedSinceLastReport.incrementAndGet();
-                                task.errorHandler().accept(task.guildId(), error);
-                            }
-                        } finally {
-                            task.batchState().onTaskDone();
-                        }
-                    });
+                    msg -> callbackResult.complete(null),
+                    callbackResult::complete
+                );
         } catch (Throwable t) {
-            try {
-                failedSinceLastReport.incrementAndGet();
-                task.errorHandler().accept(task.guildId(), t);
-            } finally {
-                dispatchedSinceLastReport.incrementAndGet();
-                task.batchState().onTaskDone();
-            }
+            callbackResult.complete(t);
         }
         return true;
+    }
+
+    private void completeTask(final DispatchTask task, final Throwable error) {
+        try {
+            dispatchedSinceLastReport.incrementAndGet();
+            if (error != null) {
+                failedSinceLastReport.incrementAndGet();
+                task.errorHandler().accept(task.guildId(), error);
+            }
+        } finally {
+            task.batchState().onTaskDone();
+        }
     }
 
     public int pendingDepth(final FeedLane lane) {
