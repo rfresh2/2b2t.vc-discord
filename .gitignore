@@ -32,3 +32,4 @@ log/
 *.db
 *.db-journal
 backups/
+scripts/
