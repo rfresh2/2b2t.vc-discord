@@ -13,7 +13,7 @@
   "paths": {
     "/bots/month": {
       "get": {
-        "operationId": "onlinePlayers_1",
+        "operationId": "botsMonth",
         "responses": {
           "200": {
             "content": {
