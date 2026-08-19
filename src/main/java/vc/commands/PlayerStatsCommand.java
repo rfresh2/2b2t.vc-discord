@@ -91,8 +91,8 @@ public class PlayerStatsCommand implements SlashCommand {
         var secondsInMinute = 60L;
         var secondsInHour = secondsInMinute * 60L;
         var secondsInDay = secondsInHour * 24L;
-        var secondsInMonth = secondsInDay * 30L; // assuming 30 days per month
-        var secondsInYear = secondsInMonth * 12L;
+        var secondsInMonth = (long) (secondsInDay * 30.436875);
+        var secondsInYear = (long) (secondsInDay * 365.2425);
 
         var years = durationInSeconds / secondsInYear;
         var months = (durationInSeconds % secondsInYear) / secondsInMonth;
