@@ -23,7 +23,6 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PreDestroy;
 import java.time.Duration;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -34,7 +33,6 @@ public class Application {
     @Value("${BOT_TOKEN}")
     String token;
     private static final Logger LOGGER = getLogger("Application");
-    private JDA jda;
 
     public static void main(String[] args) {
         new SpringApplicationBuilder(Application.class)
@@ -50,15 +48,15 @@ public class Application {
         return requestFactory;
     }
 
-    @Bean
+    @Bean(destroyMethod = "shutdown")
     public JDA jda() throws InterruptedException {
-        this.jda = JDABuilder.createDefault(token)
+        var jda = JDABuilder.createDefault(token)
             .setRestConfig(new RestConfig().setMaxQueuedRequestsPerBucket(10_000))
             .setStatus(OnlineStatus.ONLINE)
             .setActivity(Activity.playing("/commands"))
             .build();
-        this.jda.awaitReady();
-        return this.jda;
+        jda.awaitReady();
+        return jda;
     }
 
     @Bean
@@ -83,17 +81,5 @@ public class Application {
         mapper.registerModule(new JavaTimeModule());
         mapper.registerModule(new JsonNullableModule());
         return mapper;
-    }
-
-    @PreDestroy
-    public void onDestroy() {
-        LOGGER.info("Shutting down Application");
-        try {
-            if (this.jda != null) {
-                this.jda.shutdown();
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error during shutdown", e);
-        }
     }
 }
