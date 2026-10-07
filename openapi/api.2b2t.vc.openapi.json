@@ -1181,6 +1181,30 @@
         ]
       }
     },
+    "/tablist/render": {
+      "get": {
+        "operationId": "tablistRender",
+        "responses": {
+          "200": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "description": "Image of the in-game tablist with all online players"
+          },
+          "204": {
+            "description": "Tablist has not been rendered yet"
+          }
+        },
+        "tags": [
+          "TabList"
+        ]
+      }
+    },
     "/time": {
       "get": {
         "operationId": "getWorldTime",
